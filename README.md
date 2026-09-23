@@ -1,0 +1,60 @@
+# Planck to \(P=k_BTB\)
+
+This Manim presentation derives the single-mode radio noise formula from
+Planck spectral radiance. The bridge uses the throughput of one spatial mode,
+\(A\Omega=\lambda^2\), and explicitly selects one of the two polarizations
+included in \(B_\nu\).
+
+## Render
+
+Manim is installed in the base conda environment.
+
+```bash
+# Fast preview
+conda run -n base manim -pql planck_to_ktb.py PlanckToKTB
+
+# Final 1920 x 1080 render
+conda run -n base manim -pqh planck_to_ktb.py PlanckToKTB
+```
+
+The presentation omits the source-script footer by default. Show it when
+needed with:
+
+```bash
+SHOW_PROVENANCE=1 conda run -n base manim -pqh planck_to_ktb.py PlanckToKTB
+```
+
+## Physics conventions
+
+- \(B_\nu\) is spectral radiance per unit frequency and includes both
+  polarizations.
+- One matched receiver mode has \(A\Omega=\lambda^2\) and selects one
+  polarization.
+- The Rayleigh-Jeans limit requires \(h\nu\ll k_BT\).
+- \(P=k_BTB\) gives available thermal-noise power for one matched mode over
+  bandwidth \(B\). Receiver loss, mismatch, and receiver-added noise require
+  additional factors or noise temperatures.
+
+The exact thermal power spectral density of one mode, excluding zero-point
+energy, is
+
+\[
+\frac{dP}{d\nu}=\frac{h\nu}{\exp[h\nu/(k_BT)]-1}.
+\]
+
+# Digital modulation and antenna radiation
+
+`telecom_modulations.py` is a ten-section animated lecture that follows the
+signal chain from bits to symbols, ASK, FSK, PSK, QAM, an I/Q transmitter, and
+the radiated electromagnetic field.
+
+```bash
+# Fast preview
+conda run -n base manim -pql telecom_modulations.py TelecomModulations
+
+# Final 1920 x 1080 render
+conda run -n base manim -pqh telecom_modulations.py TelecomModulations
+```
+
+The source-script footer is shown by default. Hide it with
+`SHOW_PROVENANCE=0` when a clean presentation export is required.

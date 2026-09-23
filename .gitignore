@@ -1,0 +1,6 @@
+__pycache__/
+media/
+qa*/
+qa*.png
+*.mp4
+.DS_Store
