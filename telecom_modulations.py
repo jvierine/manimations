@@ -28,7 +28,7 @@ RED = "#FF6B6B"
 PURPLE = "#C792EA"
 GREEN = "#8BD17C"
 
-SHOW_PROVENANCE = os.getenv("SHOW_PROVENANCE", "1") != "0"
+SHOW_PROVENANCE = os.getenv("SHOW_PROVENANCE", "0") == "1"
 
 
 class TelecomModulations(Scene):
@@ -53,6 +53,7 @@ class TelecomModulations(Scene):
         return Text(text, font_size=25, color=MUTED)
 
     def clear_slide(self):
+        self.wait(1.2)
         protected = {self.provenance} if SHOW_PROVENANCE else set()
         removable = [m for m in self.mobjects if m not in protected]
         if removable:
@@ -135,6 +136,7 @@ class TelecomModulations(Scene):
 
     def construct(self):
         self.opening()
+        self.antenna_radiation()
         self.signal_model()
         self.bits_to_symbols()
         self.ask()
@@ -142,35 +144,54 @@ class TelecomModulations(Scene):
         self.psk()
         self.qam()
         self.iq_transmitter()
-        self.antenna_radiation()
         self.receiver_and_summary()
 
     def opening(self):
         self.next_section("Opening")
-        headline = Text(
-            "How bits become radio waves",
-            font_size=56,
+        question = Text(
+            "How do we transmit information\nwith electromagnetic waves?",
+            font_size=50,
             weight=SEMIBOLD,
             color=FG,
-        ).to_edge(UP, buff=0.80)
-        bits = Text("0  1  0  1  0", font_size=42, color=YELLOW)
-        arrow = Arrow(LEFT * 1.5, RIGHT * 1.5, color=MUTED, stroke_width=4)
-        wave = FunctionGraph(lambda x: 0.48 * np.sin(7 * x), x_range=[-2.1, 2.1], color=BLUE, stroke_width=4)
-        antenna = VGroup(
-            Line(DOWN * 0.75, UP * 0.75, color=FG, stroke_width=5),
-            Line(ORIGIN, UL * 0.68, color=FG, stroke_width=5),
-            Line(ORIGIN, UR * 0.68, color=FG, stroke_width=5),
+            line_spacing=0.92,
+        ).to_edge(UP, buff=0.52)
+
+        antenna_center = DOWN * 0.55
+        dipole = VGroup(
+            Line([0, 0.12, 0], [0, 1.55, 0], color=FG, stroke_width=7),
+            Line([0, -0.12, 0], [0, -1.55, 0], color=FG, stroke_width=7),
+            Dot(ORIGIN, radius=0.10, color=ORANGE),
+        ).move_to(antenna_center)
+        current = DoubleArrow(
+            dipole.get_bottom() + UP * 0.35,
+            dipole.get_top() + DOWN * 0.35,
+            color=ORANGE,
+            stroke_width=4,
         )
-        row = VGroup(bits, arrow, antenna, wave).arrange(RIGHT, buff=0.55).shift(DOWN * 0.35)
-        stages = Text(
-            "bits      symbols      RF voltage and current      electromagnetic field",
-            font_size=23,
-            color=MUTED,
-        ).next_to(row, DOWN, buff=0.58)
-        self.play(FadeIn(headline, shift=UP * 0.15))
-        self.play(LaggedStart(*[FadeIn(m, shift=RIGHT * 0.10) for m in row], lag_ratio=0.17))
-        self.play(FadeIn(stages))
-        self.wait(1.0)
+        current_label = MathTex(r"I(t)", font_size=34, color=ORANGE).next_to(dipole, LEFT, buff=0.28)
+        waves = VGroup()
+        for radius in [0.85, 1.55, 2.25, 2.95, 3.65]:
+            waves.add(
+                Arc(radius=radius, start_angle=-0.72, angle=1.44, color=BLUE, stroke_width=3).move_arc_center_to(antenna_center),
+                Arc(radius=radius, start_angle=PI - 0.72, angle=1.44, color=BLUE, stroke_width=3).move_arc_center_to(antenna_center),
+            )
+        field_label = Text(
+            "electromagnetic\nradiation",
+            font_size=25,
+            color=BLUE,
+            line_spacing=0.90,
+        ).move_to(RIGHT * 4.85 + DOWN * 0.45)
+        follow_up = Text(
+            "How can this waveform carry bits?",
+            font_size=30,
+            color=YELLOW,
+        ).to_edge(DOWN, buff=0.48)
+
+        self.play(FadeIn(question, shift=UP * 0.15))
+        self.play(FadeIn(dipole), GrowArrow(current), FadeIn(current_label))
+        self.play(LaggedStart(*[Create(arc) for arc in waves], lag_ratio=0.08), run_time=1.7)
+        self.play(FadeIn(field_label), FadeIn(follow_up))
+        self.wait(1.2)
         self.clear_slide()
 
     def signal_model(self):
@@ -346,7 +367,7 @@ class TelecomModulations(Scene):
 
     def antenna_radiation(self):
         self.next_section("Antenna radiation")
-        title = self.title("The antenna converts guided current into radiation")
+        title = self.title("An antenna launches an electromagnetic wave")
         dipole = VGroup(
             Line([0, 0.10, 0], [0, 2.0, 0], color=FG, stroke_width=8),
             Line([0, -0.10, 0], [0, -2.0, 0], color=FG, stroke_width=8),

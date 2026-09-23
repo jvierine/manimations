@@ -12,6 +12,7 @@ Set SHOW_PROVENANCE=1 to show a small source-script footer.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import numpy as np
 from manim import *
@@ -27,10 +28,11 @@ ACCENT = "#F3D35A"
 RED = "#FF6B6B"
 
 SHOW_PROVENANCE = os.getenv("SHOW_PROVENANCE", "0") == "1"
+HASLAM_MAP = Path(__file__).resolve().parent / "assets" / "haslam_408mhz.png"
 
 
 class PlanckToKTB(Scene):
-    """A six-section animated derivation for a 16:9 screen."""
+    """An animated derivation for a 16:9 screen."""
 
     def setup(self):
         self.camera.background_color = BG
@@ -58,7 +60,7 @@ class PlanckToKTB(Scene):
             protected.add(self.provenance)
         removable = [mob for mob in self.mobjects if mob not in protected]
         if removable:
-            self.play(*[FadeOut(mob, shift=0.08 * DOWN) for mob in removable], run_time=0.55)
+            self.play(*[FadeOut(mob, shift=0.08 * DOWN) for mob in removable], run_time=0.70)
 
     def construct(self):
         self.opening()
@@ -70,34 +72,29 @@ class PlanckToKTB(Scene):
         self.validity_and_close()
 
     def opening(self):
-        self.next_section("Opening")
+        self.next_section("Haslam radio sky")
 
+        title = self.title("The radio sky at 408 MHz")
+        sky_map = ImageMobject(str(HASLAM_MAP))
+        sky_map.scale_to_fit_width(12.55).shift(DOWN * 0.18)
         question = Text(
-            "Why does a warm source deliver",
-            font_size=46,
+            "Why do radio engineers use temperature to describe power?",
+            font_size=35,
             weight=SEMIBOLD,
             color=FG,
+            t2c={"temperature": ACCENT, "power": RADIO},
+        ).to_edge(DOWN, buff=0.24)
+        question_background = BackgroundRectangle(
+            question,
+            color=BG,
+            fill_opacity=0.92,
+            buff=0.18,
         )
-        result = MathTex(r"P=k_{\mathrm B}\,T\,B", font_size=88, color=ACCENT)
-        context = Text(
-            "into one matched radio mode?",
-            font_size=38,
-            color=MUTED,
-        )
-        group = VGroup(question, result, context).arrange(DOWN, buff=0.38)
 
-        chain = VGroup(
-            Text("Planck", font_size=27, color=PLANCK),
-            MathTex(r"\longrightarrow", color=MUTED),
-            Text("Rayleigh-Jeans", font_size=27, color=RJ),
-            MathTex(r"\longrightarrow", color=MUTED),
-            Text("one radio mode", font_size=27, color=RADIO),
-        ).arrange(RIGHT, buff=0.28).to_edge(DOWN, buff=0.64)
-
-        self.play(FadeIn(question, shift=0.2 * UP))
-        self.play(Write(result))
-        self.play(FadeIn(context), LaggedStart(*[FadeIn(m) for m in chain], lag_ratio=0.12))
-        self.wait(1.2)
+        self.play(FadeIn(title))
+        self.play(FadeIn(sky_map), run_time=1.6)
+        self.play(FadeIn(question_background), FadeIn(question, shift=0.12 * UP))
+        self.wait(2.5)
         self.clear_slide()
 
     def planck_spectrum(self):
@@ -156,7 +153,7 @@ class PlanckToKTB(Scene):
         self.play(FadeIn(title), Write(formula))
         self.play(Write(quantity), Write(units))
         self.play(LaggedStart(*[FadeIn(note, shift=0.12 * RIGHT) for note in notes], lag_ratio=0.16))
-        self.wait(1.2)
+        self.wait(2.0)
         self.clear_slide()
 
     def planck_and_rj_plot(self):
@@ -264,7 +261,7 @@ class PlanckToKTB(Scene):
             Create(tail_marker),
             FadeIn(tail_label),
         )
-        self.wait(0.8)
+        self.wait(1.2)
 
         mode_title = self.title("Power spectral density of one received mode")
         mode_relation = MathTex(
@@ -345,7 +342,7 @@ class PlanckToKTB(Scene):
             radio_region, RIGHT, buff=0.18
         ).shift(DOWN * 1.3)
         self.play(FadeIn(radio_region), FadeIn(zoom_text))
-        self.wait(0.8)
+        self.wait(1.2)
 
         zoom_axes = Axes(
             x_range=[6, 11, 1],
@@ -415,7 +412,7 @@ class PlanckToKTB(Scene):
             run_time=1.8,
         )
         self.play(FadeIn(flat_label, shift=0.15 * UP), run_time=1.0)
-        self.wait(1.5)
+        self.wait(2.0)
         self.clear_slide()
 
     def rayleigh_jeans_limit(self):
@@ -468,7 +465,7 @@ class PlanckToKTB(Scene):
         self.play(TransformMatchingTex(approx_eq, substituted))
         self.play(TransformFromCopy(substituted, rj_formula), Create(rj_box))
         self.play(FadeIn(interpretation))
-        self.wait(1.2)
+        self.wait(2.0)
         self.clear_slide()
 
     def single_mode_bridge(self):
@@ -495,13 +492,17 @@ class PlanckToKTB(Scene):
             )
             for dy in (-0.46, -0.22, 0, 0.22, 0.46)
         ])
-        mode_label = MathTex(r"A\Omega=\lambda^2", font_size=45, color=ACCENT).shift(UP * 0.2)
+        mode_label = MathTex(
+            r"A_{\mathrm e}\Omega_A=\lambda^2",
+            font_size=45,
+            color=ACCENT,
+        ).shift(UP * 0.2)
 
         power = MathTex(
             r"dP=",
             r"\frac{1}{2}",
             r"B_\nu",
-            r"(A\Omega)",
+            r"(A_{\mathrm e}\Omega_A)",
             r"d\nu",
             font_size=49,
         ).shift(DOWN * 1.62)
@@ -527,15 +528,61 @@ class PlanckToKTB(Scene):
         cancellation = MathTex(r"dP=k_{\mathrm B}T\,d\nu", font_size=63, color=RADIO).move_to(power)
         box = SurroundingRectangle(cancellation, buff=0.26, color=RADIO, corner_radius=0.12)
 
+        left_definitions = MathTex(
+            r"\begin{aligned}"
+            r"A_{\mathrm e}&:\ \text{effective aperture}\quad[\mathrm{m^2}]\\"
+            r"\Omega_A&:\ \text{beam solid angle}\quad[\mathrm{sr}]\\"
+            r"\lambda&:\ \text{wavelength}\quad[\mathrm m]"
+            r"\end{aligned}",
+            font_size=26,
+            color=FG,
+        )
+        right_definitions = MathTex(
+            r"\begin{aligned}"
+            r"dP&:\ \text{received power}\quad[\mathrm W]\\"
+            r"d\nu&:\ \text{frequency interval}\quad[\mathrm{Hz}]\\"
+            r"A_{\mathrm e}\Omega_A&:\ \text{single-mode throughput}\quad[\mathrm{m^2\,sr}]"
+            r"\end{aligned}",
+            font_size=26,
+            color=FG,
+        )
+        definitions = VGroup(left_definitions, right_definitions).arrange(
+            RIGHT, aligned_edge=UP, buff=0.65
+        ).shift(DOWN * 0.35)
+        if definitions.width > 12.6:
+            definitions.scale_to_fit_width(12.6)
+        polarization_note = MathTex(
+            r"\frac12:\ \text{one of the two polarizations contained in }B_\nu",
+            font_size=27,
+            color=RED,
+        ).next_to(definitions, DOWN, buff=0.38)
+
         self.play(FadeIn(title))
         self.play(FadeIn(source_group), FadeIn(antenna))
         self.play(LaggedStart(*[Create(ray) for ray in rays], lag_ratio=0.12))
         self.play(Write(mode_label))
         self.play(Write(power), FadeIn(annotations))
-        self.wait(0.8)
+        self.wait(1.0)
         self.play(FadeOut(annotations), TransformMatchingTex(power, substitution))
         self.play(TransformMatchingTex(substitution, cancellation), Create(box))
-        self.wait(1.3)
+        self.wait(0.8)
+
+        mode_target = MathTex(
+            r"A_{\mathrm e}\Omega_A=\lambda^2",
+            font_size=45,
+            color=ACCENT,
+        ).move_to(LEFT * 2.55 + UP * 1.55)
+        result_group = VGroup(box, cancellation)
+        self.play(
+            FadeOut(source_group),
+            FadeOut(antenna),
+            FadeOut(rays),
+            Transform(mode_label, mode_target),
+            result_group.animate.scale(0.84).move_to(RIGHT * 2.45 + UP * 1.55),
+            run_time=1.0,
+        )
+        self.play(FadeIn(definitions), FadeIn(polarization_note))
+        self.wait(2.3)
         self.clear_slide()
 
     def bandwidth_integration(self):
@@ -586,7 +633,7 @@ class PlanckToKTB(Scene):
         self.play(Create(axes), FadeIn(x_label))
         self.play(Create(baseline), FadeIn(psd))
         self.play(FadeIn(bandwidth_area), Create(left), Create(right), FadeIn(b_label))
-        self.wait(1.4)
+        self.wait(2.0)
         self.clear_slide()
 
     def validity_and_close(self):
@@ -633,4 +680,4 @@ class PlanckToKTB(Scene):
         self.play(LaggedStart(*[FadeIn(row, shift=0.15 * RIGHT) for row in assumptions], lag_ratio=0.18))
         self.play(FadeIn(example_group, shift=0.2 * UP))
         self.play(FadeIn(takeaway))
-        self.wait(2.0)
+        self.wait(2.5)

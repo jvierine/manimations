@@ -5,6 +5,19 @@ Planck spectral radiance. The bridge uses the throughput of one spatial mode,
 \(A\Omega=\lambda^2\), and explicitly selects one of the two polarizations
 included in \(B_\nu\).
 
+The opening scene uses the pyGDSM `HaslamSkyModel` at 408 MHz. Regenerate the
+kelvin map and its native-resolution HEALPix HDF5 data product with:
+
+```bash
+conda run -n base python make_haslam_map.py
+```
+
+The generator writes `assets/haslam_408mhz.png` and
+`assets/haslam_408mhz.h5`. The HDF5 dataset is named
+`brightness_temperature_k`; its attributes record the unit, HEALPix ordering,
+Galactic coordinate system, frequency, resolution, model, and generating
+script.
+
 ## Render
 
 Manim is installed in the base conda environment.
@@ -56,5 +69,5 @@ conda run -n base manim -pql telecom_modulations.py TelecomModulations
 conda run -n base manim -pqh telecom_modulations.py TelecomModulations
 ```
 
-The source-script footer is shown by default. Hide it with
-`SHOW_PROVENANCE=0` when a clean presentation export is required.
+The source-script footer is hidden by default. Show it with
+`SHOW_PROVENANCE=1` when script provenance is required in the video.
