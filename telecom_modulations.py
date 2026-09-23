@@ -197,34 +197,50 @@ class TelecomModulations(Scene):
 
     def signal_model(self):
         self.next_section("Signal model")
-        title = self.title("Three controls on a carrier")
+        title = self.title("The modulated electric field")
         eq = MathTex(
             r"E(t)=", r"A(t)", r"\cos\!\left(2\pi", r"f(t)", r"t+", r"\phi(t)", r"\right)",
             font_size=55,
-        ).shift(UP * 0.78)
+        ).shift(UP * 1.28)
         eq[1].set_color(ORANGE)
         eq[3].set_color(CYAN)
         eq[5].set_color(PURPLE)
-        labels = VGroup(
-            VGroup(Text("amplitude", font_size=27, color=ORANGE), Text("ASK", font_size=23, color=MUTED)),
-            VGroup(Text("frequency", font_size=27, color=CYAN), Text("FSK", font_size=23, color=MUTED)),
-            VGroup(Text("phase", font_size=27, color=PURPLE), Text("PSK", font_size=23, color=MUTED)),
-        )
-        for g in labels:
-            g.arrange(DOWN, buff=0.14)
-        labels.arrange(RIGHT, buff=1.25).shift(DOWN * 1.0)
-        combined = VGroup(
-            Text("Amplitude + phase", font_size=30, color=YELLOW),
-            Text("QAM", font_size=29, color=FG),
-        ).arrange(DOWN, buff=0.12).shift(DOWN * 2.35)
-        arrows = VGroup(
-            Arrow(labels[0].get_top(), eq[1].get_bottom(), buff=0.18, color=ORANGE),
-            Arrow(labels[1].get_top(), eq[3].get_bottom(), buff=0.18, color=CYAN),
-            Arrow(labels[2].get_top(), eq[5].get_bottom(), buff=0.18, color=PURPLE),
-        )
+
+        definitions = VGroup(
+            VGroup(
+                MathTex(r"E(t)", font_size=36, color=FG),
+                Text("instantaneous electric field radiated by the antenna", font_size=24, color=FG),
+                MathTex(r"[\mathrm{V\,m^{-1}}]", font_size=27, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+            VGroup(
+                MathTex(r"A(t)", font_size=36, color=ORANGE),
+                Text("electric-field amplitude or envelope", font_size=24, color=FG),
+                MathTex(r"[\mathrm{V\,m^{-1}}]", font_size=27, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+            VGroup(
+                MathTex(r"f(t)", font_size=36, color=CYAN),
+                Text("instantaneous frequency", font_size=24, color=FG),
+                MathTex(r"[\mathrm{Hz}]", font_size=27, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+            VGroup(
+                MathTex(r"\phi(t)", font_size=36, color=PURPLE),
+                Text("phase", font_size=24, color=FG),
+                MathTex(r"[\mathrm{rad}]", font_size=27, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.30).shift(DOWN * 0.55)
+
+        modulation_note = VGroup(
+            Text("ASK changes", font_size=23, color=FG),
+            MathTex(r"A(t)", font_size=29, color=ORANGE),
+            Text("FSK changes", font_size=23, color=FG),
+            MathTex(r"f(t)", font_size=29, color=CYAN),
+            Text("PSK changes", font_size=23, color=FG),
+            MathTex(r"\phi(t)", font_size=29, color=PURPLE),
+        ).arrange(RIGHT, buff=0.24).to_edge(DOWN, buff=0.48)
+
         self.play(FadeIn(title), Write(eq))
-        self.play(LaggedStart(*[FadeIn(g) for g in labels], lag_ratio=0.16), Create(arrows))
-        self.play(FadeIn(combined, shift=UP * 0.12))
+        self.play(LaggedStart(*[FadeIn(row, shift=RIGHT * 0.10) for row in definitions], lag_ratio=0.14))
+        self.play(FadeIn(modulation_note))
         self.wait(1.1)
         self.clear_slide()
 
@@ -550,10 +566,19 @@ class TelecomModulations(Scene):
             MathTex(r"\mathbf{S}=\mathbf{E}\times\mathbf{H}", font_size=38, color=CYAN),
             MathTex(r"c=\frac{1}{\sqrt{\mu_0\varepsilon_0}}", font_size=36, color=BLUE),
         ).arrange(DOWN, buff=0.34).next_to(physics, DOWN, buff=0.48)
+        field_units = MathTex(
+            r"\mathbf{E}\ [\mathrm{V\,m^{-1}}]"
+            r"\qquad"
+            r"\mathbf{H}\ [\mathrm{A\,m^{-1}}]"
+            r"\qquad"
+            r"\mathbf{S}\ [\mathrm{W\,m^{-2}}]",
+            font_size=28,
+            color=FG,
+        ).next_to(equations, DOWN, buff=0.30)
         note = Text("The antenna does not radiate isolated bits. It radiates the modulated RF waveform.", font_size=23, color=MUTED).to_edge(DOWN, buff=0.48)
         self.play(FadeIn(title), FadeIn(dipole), FadeIn(feed), GrowArrow(current_arrow), FadeIn(current_label))
         self.play(LaggedStart(*[Create(a) for a in waves], lag_ratio=0.10), run_time=1.4)
         self.play(LaggedStart(*[FadeIn(line, shift=RIGHT * 0.12) for line in physics], lag_ratio=0.16))
-        self.play(Write(equations), FadeIn(note))
+        self.play(Write(equations), FadeIn(field_units), FadeIn(note))
         self.wait(1.1)
         self.clear_slide()
