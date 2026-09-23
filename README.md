@@ -57,9 +57,9 @@ energy, is
 
 # Digital modulation and antenna radiation
 
-`telecom_modulations.py` is a nine-section animated lecture. It begins with an
+`telecom_modulations.py` is an eleven-section animated lecture. It begins with an
 antenna radiating an electromagnetic wave, introduces BPSK one bit at a time,
-then extends the symbol idea to QPSK, ASK, FSK, and QAM.
+defines bit and symbol rates with units, then shows QPSK, ASK, FSK, and QAM.
 
 ```bash
 # Fast preview
