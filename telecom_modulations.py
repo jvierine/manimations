@@ -140,7 +140,9 @@ class TelecomModulations(Scene):
         self.signal_model()
         self.bpsk_mapping()
         self.psk()
+        self.rate_definitions()
         self.bits_to_symbols()
+        self.qpsk_waveform()
         self.ask()
         self.fsk()
         self.qam()
@@ -290,6 +292,65 @@ class TelecomModulations(Scene):
         self.wait(1.0)
         self.clear_slide()
 
+    def rate_definitions(self):
+        self.next_section("Bit rate and symbol rate")
+        title = self.title("Bit rate and symbol rate")
+
+        bit_column = VGroup(
+            VGroup(
+                MathTex(r"R_b", font_size=46, color=YELLOW),
+                Text("bit rate", font_size=28, color=FG),
+                MathTex(r"[\mathrm{bit\,s^{-1}}]", font_size=30, color=MUTED),
+            ).arrange(RIGHT, buff=0.28),
+            VGroup(
+                MathTex(r"T_b=\frac{1}{R_b}", font_size=40, color=YELLOW),
+                Text("bit duration", font_size=27, color=FG),
+                MathTex(r"[\mathrm{s}]", font_size=30, color=MUTED),
+            ).arrange(RIGHT, buff=0.28),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.45).move_to(LEFT * 3.25 + UP * 1.05)
+
+        symbol_column = VGroup(
+            VGroup(
+                MathTex(r"R_s", font_size=46, color=CYAN),
+                Text("symbol rate", font_size=28, color=FG),
+                MathTex(r"[\mathrm{symbol\,s^{-1}}]", font_size=27, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+            VGroup(
+                MathTex(r"T_s=\frac{1}{R_s}", font_size=40, color=CYAN),
+                Text("symbol duration", font_size=27, color=FG),
+                MathTex(r"[\mathrm{s}]", font_size=30, color=MUTED),
+            ).arrange(RIGHT, buff=0.24),
+            Text("1 baud = 1 symbol per second", font_size=23, color=MUTED),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.35).move_to(RIGHT * 3.25 + UP * 1.0)
+
+        relation = VGroup(
+            VGroup(
+                MathTex(r"M", font_size=38, color=PURPLE),
+                Text("number of possible symbols", font_size=25, color=FG),
+            ).arrange(RIGHT, buff=0.30),
+            VGroup(
+                MathTex(r"k=\log_2 M", font_size=38, color=PURPLE),
+                Text("bits per symbol", font_size=25, color=FG),
+            ).arrange(RIGHT, buff=0.30),
+            VGroup(
+                MathTex(r"R_b=kR_s", font_size=38, color=CYAN),
+                MathTex(r"T_s=kT_b", font_size=38, color=YELLOW),
+            ).arrange(RIGHT, buff=0.85),
+        ).arrange(DOWN, buff=0.28).shift(DOWN * 1.10)
+        examples = MathTex(
+            r"\mathrm{BPSK:}\ M=2,\ k=1"
+            r"\qquad"
+            r"\mathrm{QPSK:}\ M=4,\ k=2",
+            font_size=31,
+            color=FG,
+        ).to_edge(DOWN, buff=0.42)
+
+        self.play(FadeIn(title))
+        self.play(FadeIn(bit_column, shift=RIGHT * 0.10), FadeIn(symbol_column, shift=LEFT * 0.10))
+        self.play(Write(relation), FadeIn(examples))
+        self.wait(1.2)
+        self.clear_slide()
+
     def bits_to_symbols(self):
         self.next_section("Bits to symbols")
         title = self.title("More bits per symbol")
@@ -319,6 +380,68 @@ class TelecomModulations(Scene):
         self.play(Create(braces), FadeIn(symbol_labels))
         self.play(Write(rate), FadeIn(note), FadeIn(caveat))
         self.wait(1.0)
+        self.clear_slide()
+
+    def qpsk_waveform(self):
+        self.next_section("QPSK waveform")
+        title = self.title("QPSK waveform")
+        subtitle = Text(
+            "Each dibit selects one of four carrier phases",
+            font_size=27,
+            color=PURPLE,
+        ).next_to(title, DOWN, buff=0.18)
+
+        dibits = ["00", "01", "11", "10"]
+        phases = [0, PI / 2, PI, 3 * PI / 2]
+        phase_labels = [r"0^\circ", r"90^\circ", r"180^\circ", r"270^\circ"]
+        width = 10.4
+        left = -width / 2
+        cell_width = width / len(dibits)
+
+        cells = VGroup()
+        phase_texts = VGroup()
+        for i, (dibit, phase_label) in enumerate(zip(dibits, phase_labels)):
+            center_x = left + (i + 0.5) * cell_width
+            cell = Rectangle(
+                width=cell_width,
+                height=0.68,
+                stroke_color=MUTED,
+                stroke_width=2,
+            ).move_to([center_x, 1.85, 0])
+            label = Text(dibit, font_size=30, color=YELLOW).move_to(cell)
+            phase_text = MathTex(phase_label, font_size=27, color=PURPLE).next_to(cell, DOWN, buff=0.13)
+            cells.add(VGroup(cell, label))
+            phase_texts.add(phase_text)
+
+        samples_per_symbol = 120
+        points = []
+        cycles_per_symbol = 3
+        wave_y = -0.80
+        for i, phase in enumerate(phases):
+            for j in range(samples_per_symbol + 1):
+                u = j / samples_per_symbol
+                x = left + width * (i + u) / len(dibits)
+                carrier_phase = TAU * cycles_per_symbol * (i + u)
+                value = np.cos(carrier_phase + phase)
+                points.append([x, wave_y + 0.72 * value, 0])
+        wave = VMobject(color=PURPLE, stroke_width=3.5).set_points_as_corners(points)
+        boundaries = self.symbol_boundaries(len(dibits), width=width, y=wave_y, height=1.75)
+        equation = MathTex(
+            r"s_k(t)=A\cos(2\pi f_ct+\phi_k)",
+            font_size=37,
+            color=FG,
+        ).shift(DOWN * 2.08)
+        timing = MathTex(
+            r"M=4,\quad k=2,\quad T_s=2T_b,\quad R_s=R_b/2",
+            font_size=32,
+            color=CYAN,
+        ).to_edge(DOWN, buff=0.42)
+
+        self.play(FadeIn(title), FadeIn(subtitle))
+        self.play(LaggedStart(*[FadeIn(cell) for cell in cells], lag_ratio=0.10), FadeIn(phase_texts))
+        self.play(Create(boundaries), Create(wave), run_time=1.9)
+        self.play(Write(equation), FadeIn(timing))
+        self.wait(1.1)
         self.clear_slide()
 
     def modulation_slide(self, name, expansion, mode, color, mapping):
