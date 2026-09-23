@@ -138,13 +138,12 @@ class TelecomModulations(Scene):
         self.opening()
         self.antenna_radiation()
         self.signal_model()
+        self.bpsk_mapping()
+        self.psk()
         self.bits_to_symbols()
         self.ask()
         self.fsk()
-        self.psk()
         self.qam()
-        self.iq_transmitter()
-        self.receiver_and_summary()
 
     def opening(self):
         self.next_section("Opening")
@@ -227,26 +226,96 @@ class TelecomModulations(Scene):
         self.wait(1.1)
         self.clear_slide()
 
+    def bpsk_mapping(self):
+        self.next_section("BPSK mapping")
+        title = self.title("Binary phase shift keying")
+        subtitle = Text(
+            "One bit selects one of two carrier phases",
+            font_size=27,
+            color=PURPLE,
+        ).next_to(title, DOWN, buff=0.18)
+
+        rows = VGroup()
+        for bit, phase, sign, y in [
+            (0, r"0^\circ", 1, 0.75),
+            (1, r"180^\circ", -1, -0.75),
+        ]:
+            cell = RoundedRectangle(
+                width=0.82,
+                height=0.72,
+                corner_radius=0.10,
+                stroke_color=YELLOW if bit else FG,
+                stroke_width=2.5,
+            )
+            digit = Text(str(bit), font_size=32, color=YELLOW if bit else FG).move_to(cell)
+            phase_text = MathTex(r"\phi=" + phase, font_size=31, color=PURPLE)
+            wave = FunctionGraph(
+                lambda x, sign=sign: sign * 0.35 * np.cos(8 * x),
+                x_range=[-1.15, 1.15],
+                color=PURPLE,
+                stroke_width=3.5,
+            )
+            row = VGroup(VGroup(cell, digit), Arrow(LEFT * 0.45, RIGHT * 0.45, color=MUTED), phase_text, wave)
+            row.arrange(RIGHT, buff=0.34).move_to(LEFT * 3.05 + UP * y)
+            rows.add(row)
+
+        axes = Axes(
+            x_range=[-1.5, 1.5, 1],
+            y_range=[-1.0, 1.0, 1],
+            x_length=3.5,
+            y_length=2.5,
+            axis_config={"color": MUTED, "include_ticks": False, "include_numbers": False, "stroke_width": 2},
+            tips=True,
+        ).shift(RIGHT * 3.65 + DOWN * 0.05)
+        i_label = MathTex("I", font_size=29, color=FG).next_to(axes.x_axis, RIGHT, buff=0.10)
+        q_label = MathTex("Q", font_size=29, color=FG).next_to(axes.y_axis, UP, buff=0.10)
+        points = VGroup(
+            Dot(axes.c2p(1, 0), radius=0.12, color=YELLOW),
+            Dot(axes.c2p(-1, 0), radius=0.12, color=YELLOW),
+        )
+        point_labels = VGroup(
+            Text("0", font_size=28, color=FG).next_to(points[0], UP, buff=0.15),
+            Text("1", font_size=28, color=YELLOW).next_to(points[1], UP, buff=0.15),
+        )
+        constellation_label = Text("two possible symbols", font_size=24, color=MUTED).next_to(axes, DOWN, buff=0.18)
+        timing = VGroup(
+            MathTex(r"T_s=T_b", font_size=37, color=CYAN),
+            Text("one symbol interval carries one bit", font_size=25, color=FG),
+        ).arrange(RIGHT, buff=0.40).to_edge(DOWN, buff=0.50)
+
+        self.play(FadeIn(title), FadeIn(subtitle))
+        self.play(LaggedStart(*[FadeIn(row, shift=RIGHT * 0.12) for row in rows], lag_ratio=0.20))
+        self.play(Create(axes), FadeIn(i_label), FadeIn(q_label), FadeIn(points), FadeIn(point_labels))
+        self.play(FadeIn(constellation_label), FadeIn(timing))
+        self.wait(1.0)
+        self.clear_slide()
+
     def bits_to_symbols(self):
         self.next_section("Bits to symbols")
-        title = self.title("The modulator sends symbols")
+        title = self.title("More bits per symbol")
+        subtitle = Text(
+            "QPSK groups the bit stream into pairs",
+            font_size=27,
+            color=PURPLE,
+        ).next_to(title, DOWN, buff=0.18)
         bits = [0, 1, 1, 0, 1, 1, 0, 0]
         bit_text = VGroup(*[Text(str(b), font_size=37, color=YELLOW if b else FG) for b in bits]).arrange(RIGHT, buff=0.48)
-        bit_text.shift(UP * 1.35)
+        bit_text.shift(UP * 1.15)
         braces = VGroup()
         symbol_labels = VGroup()
         pairs = ["01", "10", "11", "00"]
-        phases = [r"90^\circ", r"180^\circ", r"270^\circ", r"0^\circ"]
+        phases = [r"90^\circ", r"270^\circ", r"180^\circ", r"0^\circ"]
         for i, (pair, phase) in enumerate(zip(pairs, phases)):
             pair_group = VGroup(bit_text[2 * i], bit_text[2 * i + 1])
             brace = Brace(pair_group, DOWN, buff=0.13, color=MUTED)
             label = MathTex(phase, font_size=29, color=PURPLE).next_to(brace, DOWN, buff=0.14)
             braces.add(brace)
             symbol_labels.add(label)
-        rate = MathTex(r"R_s=\frac{R_b}{\log_2 M}", font_size=48, color=CYAN).shift(DOWN * 0.45)
+        rate = MathTex(r"R_s=\frac{R_b}{\log_2 M}", font_size=48, color=CYAN).shift(DOWN * 0.60)
         note = Text("QPSK: 2 bits per symbol", font_size=29, color=FG).next_to(rate, DOWN, buff=0.35)
         caveat = Text("Coding and pulse shaping are omitted here", font_size=23, color=MUTED).to_edge(DOWN, buff=0.55)
-        self.play(FadeIn(title), LaggedStart(*[FadeIn(b) for b in bit_text], lag_ratio=0.08))
+        self.play(FadeIn(title), FadeIn(subtitle))
+        self.play(LaggedStart(*[FadeIn(b) for b in bit_text], lag_ratio=0.08))
         self.play(Create(braces), FadeIn(symbol_labels))
         self.play(Write(rate), FadeIn(note), FadeIn(caveat))
         self.wait(1.0)
@@ -287,13 +356,13 @@ class TelecomModulations(Scene):
         )
 
     def psk(self):
-        self.next_section("PSK")
+        self.next_section("BPSK waveform")
         self.modulation_slide(
-            "Phase shift keying",
-            "The symbol selects the carrier phase",
+            "BPSK waveform",
+            "Each bit selects phase 0° or 180°",
             "psk",
             PURPLE,
-            "BPSK example: 0 = 0°, 1 = 180°. The phase changes at symbol boundaries.",
+            "The carrier reverses sign when the selected phase changes by 180°.",
         )
 
     def qam(self):
@@ -332,39 +401,6 @@ class TelecomModulations(Scene):
         self.wait(1.0)
         self.clear_slide()
 
-    def iq_transmitter(self):
-        self.next_section("Transmitter")
-        title = self.title("From symbols to radio-frequency current")
-        labels = ["bits", "symbol\nmapper", "pulse-shaping\nfilter", "I/Q\nmodulator", "power\namplifier", "antenna"]
-        colors = [YELLOW, PURPLE, CYAN, BLUE, ORANGE, FG]
-        boxes = VGroup()
-        for label, color in zip(labels, colors):
-            box = RoundedRectangle(width=1.72, height=1.05, corner_radius=0.12, stroke_color=color, stroke_width=2.5)
-            text = Text(label, font_size=22, color=color, line_spacing=0.85).move_to(box)
-            boxes.add(VGroup(box, text))
-        boxes.arrange(RIGHT, buff=0.35).shift(DOWN * 0.15)
-        arrows = VGroup(*[
-            Arrow(boxes[i].get_right(), boxes[i + 1].get_left(), buff=0.08, color=MUTED, stroke_width=2.5, max_tip_length_to_length_ratio=0.16)
-            for i in range(len(boxes) - 1)
-        ])
-        baseband = Text("complex baseband", font_size=23, color=CYAN).next_to(VGroup(boxes[1], boxes[2]), DOWN, buff=0.45)
-        rf = Text("radio frequency", font_size=23, color=BLUE).next_to(VGroup(boxes[3], boxes[4]), DOWN, buff=0.45)
-        eq = MathTex(
-            r"x(t)=I(t)\cos(2\pi f_ct)-Q(t)\sin(2\pi f_ct)",
-            font_size=39,
-            color=FG,
-        ).shift(DOWN * 2.15)
-        pulse = Dot(color=YELLOW, radius=0.11).move_to(boxes[0].get_center())
-        self.play(FadeIn(title))
-        self.play(LaggedStart(*[FadeIn(b, shift=RIGHT * 0.12) for b in boxes], lag_ratio=0.10), Create(arrows))
-        self.play(FadeIn(baseband), FadeIn(rf), Write(eq))
-        self.add(pulse)
-        for i in range(1, len(boxes)):
-            self.play(pulse.animate.move_to(boxes[i].get_center()).set_color(colors[i]), run_time=0.38)
-        self.play(FadeOut(pulse))
-        self.wait(0.8)
-        self.clear_slide()
-
     def antenna_radiation(self):
         self.next_section("Antenna radiation")
         title = self.title("An antenna launches an electromagnetic wave")
@@ -398,38 +434,3 @@ class TelecomModulations(Scene):
         self.play(Write(equations), FadeIn(note))
         self.wait(1.1)
         self.clear_slide()
-
-    def receiver_and_summary(self):
-        self.next_section("Summary")
-        title = self.title("The receiver estimates the transmitted symbols")
-        chain_labels = ["radiated\nfield", "antenna", "downconvert", "sample", "decide", "bits"]
-        colors = [BLUE, FG, ORANGE, CYAN, PURPLE, YELLOW]
-        chain = VGroup()
-        for label, color in zip(chain_labels, colors):
-            circ = Circle(radius=0.55, stroke_color=color, stroke_width=2.5)
-            text = Text(label, font_size=19, color=color, line_spacing=0.85).move_to(circ)
-            chain.add(VGroup(circ, text))
-        chain.arrange(RIGHT, buff=0.58).shift(UP * 1.15)
-        arrows = VGroup(*[
-            Arrow(chain[i].get_right(), chain[i + 1].get_left(), buff=0.08, color=MUTED, stroke_width=2.3)
-            for i in range(len(chain) - 1)
-        ])
-        rows = [
-            ("ASK", "amplitude", ORANGE),
-            ("FSK", "frequency", CYAN),
-            ("PSK", "phase", PURPLE),
-            ("QAM", "amplitude + phase", YELLOW),
-        ]
-        summary = VGroup()
-        for acronym, control, color in rows:
-            summary.add(VGroup(
-                Text(acronym, font_size=30, weight=SEMIBOLD, color=color),
-                Text(control, font_size=27, color=FG),
-            ).arrange(RIGHT, buff=0.42))
-        summary.arrange(DOWN, aligned_edge=LEFT, buff=0.25).shift(DOWN * 1.35)
-        key = Text("Modulation maps information onto a carrier that an antenna can radiate", font_size=29, color=BLUE).to_edge(DOWN, buff=0.42)
-        self.play(FadeIn(title))
-        self.play(LaggedStart(*[FadeIn(c) for c in chain], lag_ratio=0.10), Create(arrows))
-        self.play(LaggedStart(*[FadeIn(row, shift=RIGHT * 0.12) for row in summary], lag_ratio=0.13))
-        self.play(FadeIn(key))
-        self.wait(1.6)
