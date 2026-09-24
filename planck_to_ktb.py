@@ -37,6 +37,7 @@ class PlanckToKTB(Slide):
 
     def setup(self):
         self._slide_started = False
+        self._pending_clear_keep = None
         self.camera.background_color = ManimColor(BG)
         self.provenance = Text(
             "Source: planck_to_ktb.py",
@@ -49,6 +50,7 @@ class PlanckToKTB(Slide):
     def start_slide(self, name: str):
         if self._slide_started:
             self.next_slide(name)
+            self._flush_pending_clear()
         else:
             self.next_section(name)
             self._slide_started = True
@@ -64,6 +66,13 @@ class PlanckToKTB(Slide):
         return note
 
     def clear_slide(self, *keep: Mobject):
+        self._pending_clear_keep = keep
+
+    def _flush_pending_clear(self):
+        if self._pending_clear_keep is None:
+            return
+        keep = self._pending_clear_keep
+        self._pending_clear_keep = None
         protected = set(keep)
         if SHOW_PROVENANCE:
             protected.add(self.provenance)
