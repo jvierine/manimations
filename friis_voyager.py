@@ -38,6 +38,7 @@ class FriisVoyager(Slide):
 
     def setup(self):
         self._slide_started = False
+        self._clear_pending = False
         self.camera.background_color = ManimColor(BG)
         self.provenance = Text(
             "Source: friis_voyager.py", font_size=15, color=MUTED
@@ -48,6 +49,7 @@ class FriisVoyager(Slide):
     def start_slide(self, name: str):
         if self._slide_started:
             self.next_slide(name)
+            self._flush_pending_clear()
         else:
             self.next_section(name)
             self._slide_started = True
@@ -56,6 +58,12 @@ class FriisVoyager(Slide):
         return Text(text, font_size=44, weight=SEMIBOLD, color=FG).to_edge(UP, buff=0.30)
 
     def clear_slide(self):
+        self._clear_pending = True
+
+    def _flush_pending_clear(self):
+        if not self._clear_pending:
+            return
+        self._clear_pending = False
         keep = {self.provenance} if SHOW_PROVENANCE else set()
         removable = [mob for mob in self.mobjects if mob not in keep]
         if removable:

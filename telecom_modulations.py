@@ -39,6 +39,7 @@ class TelecomModulations(Slide):
 
     def setup(self):
         self._slide_started = False
+        self._clear_pending = False
         self.camera.background_color = ManimColor(BG)
         self.provenance = Text(
             "Source: telecom_modulations.py",
@@ -51,6 +52,7 @@ class TelecomModulations(Slide):
     def start_slide(self, name: str):
         if self._slide_started:
             self.next_slide(name)
+            self._flush_pending_clear()
         else:
             self.next_section(name)
             self._slide_started = True
@@ -63,6 +65,12 @@ class TelecomModulations(Slide):
 
     def clear_slide(self):
         self.wait(1.2)
+        self._clear_pending = True
+
+    def _flush_pending_clear(self):
+        if not self._clear_pending:
+            return
+        self._clear_pending = False
         protected = {self.provenance} if SHOW_PROVENANCE else set()
         removable = [m for m in self.mobjects if m not in protected]
         if removable:
