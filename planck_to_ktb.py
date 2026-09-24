@@ -56,7 +56,10 @@ class PlanckToKTB(Slide):
             self._slide_started = True
 
     def title(self, text: str) -> Text:
-        return Text(text, font_size=44, weight=SEMIBOLD, color=FG).to_edge(UP, buff=0.32)
+        title = Text(text, font_size=44, weight=SEMIBOLD, color=FG)
+        if title.width > 13.1:
+            title.scale_to_fit_width(13.1)
+        return title.to_edge(UP, buff=0.32)
 
     def footer_note(self, text: str) -> Text:
         note = Text(text, font_size=22, color=MUTED)
@@ -490,121 +493,158 @@ class PlanckToKTB(Slide):
         self.clear_slide()
 
     def single_mode_bridge(self):
-        self.start_slide("Single-mode bridge")
+        """Radiance to one matched, lossless, reciprocal receiver mode.
 
-        title = self.title("One spatial mode and one polarization")
+        B_nu includes both polarizations; A_e is the peak co-polar effective
+        aperture. The beam integral is over the full sphere, not just its FWHM.
+        The exact antenna theorem applies to the ideal lossless case used here.
+        """
+        def equation(tex, y, color=FG, size=40):
+            mob = MathTex(tex, font_size=size, color=color)
+            if mob.width > 12.3:
+                mob.scale_to_fit_width(12.3)
+            return mob.move_to(UP * y)
 
-        source = Circle(radius=0.75, color=PLANCK, fill_color=PLANCK, fill_opacity=0.18)
-        source_label = Text("thermal field", font_size=27, color=PLANCK).next_to(source, DOWN, buff=0.18)
-        source_group = VGroup(source, source_label).shift(LEFT * 4.4 + DOWN * 0.35)
+        def caption(text, y, color=MUTED, size=26):
+            mob = Text(text, font_size=size, color=color)
+            if mob.width > 12.3:
+                mob.scale_to_fit_width(12.3)
+            return mob.move_to(UP * y)
 
-        aperture = Arc(radius=1.15, start_angle=-PI / 2, angle=PI, color=RADIO, stroke_width=7)
-        feed = Dot(aperture.get_center() + RIGHT * 0.45, color=RADIO, radius=0.1)
-        antenna_label = Text("matched receiver", font_size=27, color=RADIO).next_to(aperture, DOWN, buff=0.28)
-        antenna = VGroup(aperture, feed, antenna_label).shift(RIGHT * 4.35 + DOWN * 0.35)
+        def finish():
+            self.wait(2.5)
+            self.clear_slide()
 
+        self.start_slide("Radiance is not yet received power")
+        self.play(FadeIn(self.title("Radiance is not yet received power")))
+        radiance = equation(
+            r"B_\nu(T)\quad[\mathrm{W\,m^{-2}\,sr^{-1}\,Hz^{-1}}]", 2.35, RJ)
+        self.play(Write(radiance))
+        sky = Ellipse(width=1.0, height=2.0, color=PLANCK).move_to(LEFT * 4.4 + UP * .55)
+        aperture = Ellipse(width=.65, height=2.2, color=RADIO,
+                           fill_color=RADIO, fill_opacity=.3).move_to(RIGHT * 3.4 + UP * .55)
         rays = VGroup(*[
-            Line(
-                source.get_right() + UP * dy,
-                aperture.get_left() + UP * (0.55 * dy),
-                color=MUTED,
-                stroke_opacity=0.55,
-                stroke_width=2,
-            )
-            for dy in (-0.46, -0.22, 0, 0.22, 0.46)
+            Arrow(LEFT * 3.8 + UP * (.55 + dy),
+                  RIGHT * 3.0 + UP * (.55 + dy * .35),
+                  color=PLANCK, stroke_width=3, buff=.1)
+            for dy in (-.65, 0, .65)
         ])
-        mode_label = MathTex(
-            r"A_{\mathrm e}\Omega_A=\lambda^2",
-            font_size=45,
-            color=ACCENT,
-        ).shift(UP * 0.2)
-
-        power = MathTex(
-            r"dP=",
-            r"\frac{1}{2}",
-            r"B_\nu",
-            r"(A_{\mathrm e}\Omega_A)",
-            r"d\nu",
-            font_size=49,
-        ).shift(DOWN * 1.62)
-        power[1].set_color(RED)
-        power[2].set_color(RJ)
-        power[3].set_color(ACCENT)
-        annotations = VGroup(
-            Text("one of two polarizations", font_size=21, color=RED),
-            Text("Rayleigh-Jeans radiance", font_size=21, color=RJ),
-            Text("single-mode throughput", font_size=21, color=ACCENT),
-        ).arrange(RIGHT, buff=0.72).next_to(power, DOWN, buff=0.35)
-
-        substitution = MathTex(
-            r"dP=\frac12",
-            r"\left(\frac{2k_{\mathrm B}T\nu^2}{c^2}\right)",
-            r"\left(\frac{c^2}{\nu^2}\right)",
-            r"d\nu",
-            font_size=45,
-        ).move_to(power)
-        substitution[1].set_color(RJ)
-        substitution[2].set_color(ACCENT)
-
-        cancellation = MathTex(r"dP=k_{\mathrm B}T\,d\nu", font_size=63, color=RADIO).move_to(power)
-        box = SurroundingRectangle(cancellation, buff=0.26, color=RADIO, corner_radius=0.12)
-
-        left_definitions = MathTex(
-            r"\begin{aligned}"
-            r"A_{\mathrm e}&:\ \text{effective aperture}\quad[\mathrm{m^2}]\\"
-            r"\Omega_A&:\ \text{beam solid angle}\quad[\mathrm{sr}]\\"
-            r"\lambda&:\ \text{wavelength}\quad[\mathrm m]"
-            r"\end{aligned}",
-            font_size=26,
-            color=FG,
+        labels = VGroup(
+            MathTex(r"d\Omega\ [\mathrm{sr}]", font_size=30, color=PLANCK).next_to(sky, DOWN),
+            MathTex(r"A_{\mathrm e}(\theta,\phi)\ [\mathrm{m^2}]",
+                    font_size=30, color=RADIO).next_to(aperture, DOWN),
         )
-        right_definitions = MathTex(
-            r"\begin{aligned}"
-            r"dP&:\ \text{received power}\quad[\mathrm W]\\"
-            r"d\nu&:\ \text{frequency interval}\quad[\mathrm{Hz}]\\"
-            r"A_{\mathrm e}\Omega_A&:\ \text{single-mode throughput}\quad[\mathrm{m^2\,sr}]"
-            r"\end{aligned}",
-            font_size=26,
-            color=FG,
-        )
-        definitions = VGroup(left_definitions, right_definitions).arrange(
-            RIGHT, aligned_edge=UP, buff=0.65
-        ).shift(DOWN * 0.35)
-        if definitions.width > 12.6:
-            definitions.scale_to_fit_width(12.6)
-        polarization_note = MathTex(
-            r"\frac12:\ \text{one of the two polarizations contained in }B_\nu",
-            font_size=27,
-            color=RED,
-        ).next_to(definitions, DOWN, buff=0.38)
+        self.play(Create(sky), Create(aperture), LaggedStart(*[GrowArrow(r) for r in rays]), Write(labels))
+        self.play(FadeIn(caption("Collect from an angular patch, through an effective area,", -1.35)))
+        self.play(FadeIn(caption("within a small frequency interval.", -1.85)))
+        self.play(Write(equation(
+            r"d\nu:\ \text{frequency interval}\ [\mathrm{Hz}],\qquad"
+            r"\theta,\phi:\ \text{sky angles}\ [\mathrm{rad}]", -2.6, size=29)))
+        finish()
 
-        self.play(FadeIn(title))
-        self.play(FadeIn(source_group), FadeIn(antenna))
-        self.play(LaggedStart(*[Create(ray) for ray in rays], lag_ratio=0.12))
-        self.play(Write(mode_label))
-        self.play(Write(power), FadeIn(annotations))
-        self.wait(1.0)
-        self.play(FadeOut(annotations), TransformMatchingTex(power, substitution))
-        self.play(TransformMatchingTex(substitution, cancellation), Create(box))
-        self.wait(0.8)
+        self.start_slide("One polarization and the receiving beam")
+        self.play(FadeIn(self.title("One polarization; a weighted view of the sky")))
+        self.play(FadeIn(caption("Unpolarized thermal radiance contains two equal polarizations.", 2.4)))
+        self.play(Write(equation(
+            r"B_{\nu,\mathrm{one\ pol}}=\frac{B_\nu}{2}", 1.55, RED, 46)))
+        self.play(FadeIn(caption("A single-polarization receiver collects only one of them.", .75)))
+        self.play(Write(equation(
+            r"dP=\frac12\left[\int_{4\pi}B_\nu(\theta,\phi)\,"
+            r"A_{\mathrm e}(\theta,\phi)\,d\Omega\right]d\nu", -.25, size=39)))
+        self.play(Write(equation(
+            r"A_{\mathrm e}(\theta,\phi)=A_{\mathrm e}\,p(\theta,\phi),"
+            r"\qquad \max p=1", -1.5, RADIO, 36)))
+        self.play(FadeIn(caption("Effective area includes directional response; it is not just dish area.", -2.35, size=24)))
+        self.play(Write(equation(
+            r"dP:\ \text{available received power}\ [\mathrm W],\quad "
+            r"p:\ \text{normalized power pattern}\ [1]", -3.05, size=27)))
+        finish()
 
-        mode_target = MathTex(
-            r"A_{\mathrm e}\Omega_A=\lambda^2",
-            font_size=45,
-            color=ACCENT,
-        ).move_to(LEFT * 2.55 + UP * 1.55)
-        result_group = VGroup(box, cancellation)
-        self.play(
-            FadeOut(source_group),
-            FadeOut(antenna),
-            FadeOut(rays),
-            Transform(mode_label, mode_target),
-            result_group.animate.scale(0.84).move_to(RIGHT * 2.45 + UP * 1.55),
-            run_time=1.0,
-        )
-        self.play(FadeIn(definitions), FadeIn(polarization_note))
-        self.wait(2.3)
-        self.clear_slide()
+        self.start_slide("Area times beam solid angle")
+        self.play(FadeIn(self.title("Uniform sky: area × beam solid angle")))
+        self.play(FadeIn(caption("If the temperature is uniform over the receiving pattern,", 2.35)))
+        self.play(FadeIn(caption("the radiance comes outside the angular integral.", 1.9)))
+        self.play(Write(equation(
+            r"\Omega_A\equiv\int_{4\pi}p(\theta,\phi)\,d\Omega"
+            r"\quad[\mathrm{sr}]", .95, ACCENT, 44)))
+        self.play(Write(equation(
+            r"dP=\frac12 B_\nu(T)\,"
+            r"\underbrace{A_{\mathrm e}\Omega_A}_{\text{area times angular acceptance}}"
+            r"\,d\nu", -.5, size=44)))
+        self.play(Write(equation(
+            r"\frac{\mathrm W}{\mathrm{m^2\,sr\,Hz}}"
+            r"\ \times\ \mathrm{m^2\,sr}\ \times\ \mathrm{Hz}"
+            r"\ =\ \mathrm W", -2.05, RADIO, 34)))
+        self.play(FadeIn(caption("The beam solid angle integrates the whole pattern, including sidelobes.", -2.9, size=24)))
+        finish()
+
+        self.start_slide("Why one spatial mode has lambda squared throughput")
+        self.play(FadeIn(self.title("Bigger aperture, narrower view of the sky")))
+        # A side view of the angular acceptance, not a literal dish shape.
+        diagrams = VGroup()
+        for x, height, spread, label in [
+            (-3.2, .8, 1.1, "small aperture · wide beam"),
+            (3.2, 1.6, .42, "large aperture · narrow beam"),
+        ]:
+            origin = np.array([x + 1.35, 1.0, 0])
+            collector = Line(origin + UP * height / 2, origin - UP * height / 2,
+                             color=RADIO, stroke_width=8)
+            cone = Polygon(origin, origin + LEFT * 2.7 + UP * spread,
+                           origin + LEFT * 2.7 - UP * spread,
+                           color=PLANCK, fill_color=PLANCK, fill_opacity=.15)
+            text = Text(label, font_size=24, color=FG).move_to([x, -.5, 0])
+            diagrams.add(VGroup(cone, collector, text))
+        self.play(FadeIn(diagrams))
+        self.play(Write(equation(
+            r"A_{\mathrm e}\propto D^2,\qquad"
+            r"\Omega_A\propto\left(\frac{\lambda}{D}\right)^2",
+            -1.4, ACCENT, 43)))
+        self.play(FadeIn(caption("One receiver port combines the aperture field into one spatial mode.", -2.35, size=25)))
+        self.play(Write(equation(
+            r"D:\ \text{aperture size}\ [\mathrm m],\qquad"
+            r"\lambda=\frac c\nu:\ \text{wavelength}\ [\mathrm m]", -3.0, size=28)))
+        finish()
+
+        self.start_slide("Exact single mode antenna theorem")
+        self.play(FadeIn(self.title("The exact area–solid-angle relation")))
+        self.play(FadeIn(caption("For a lossless, reciprocal antenna with a matched receiver:", 2.4, size=27)))
+        self.play(Write(equation(
+            r"G_{\max}=\frac{4\pi}{\Omega_A},\qquad "
+            r"A_{\mathrm e}=\frac{\lambda^2}{4\pi}G_{\max}", 1.3, size=46)))
+        self.play(FadeIn(caption("Gain concentrates power; reciprocity gives the same collecting response.", .3, size=24)))
+        theorem = equation(
+            r"A_{\mathrm e}\Omega_A"
+            r"=\frac{\lambda^2G_{\max}}{4\pi}\,\frac{4\pi}{G_{\max}}"
+            r"=\lambda^2", -.7, ACCENT, 46)
+        self.play(Write(theorem))
+        self.play(FadeIn(caption("Area and angular acceptance are not independent for one spatial mode.", -1.8, size=25)))
+        self.play(Write(equation(
+            r"G_{\max}:\ \text{peak gain}\ [1]\quad"
+            r"(\text{equals directivity for a lossless antenna})", -2.55, size=27)))
+        self.play(FadeIn(caption("This is a product, not Ω alone; steradians are dimensionless in SI.", -3.15, size=23)))
+        finish()
+
+        self.start_slide("Radiance becomes kBT per hertz")
+        self.play(FadeIn(self.title("Now the factors cancel")))
+        self.play(Write(equation(
+            r"dP=\frac12\,B_\nu(T)\,(A_{\mathrm e}\Omega_A)\,d\nu",
+            2.15, size=46)))
+        self.play(Write(equation(
+            r"B_\nu(T)\simeq\frac{2k_{\mathrm B}T}{\lambda^2}"
+            r"\quad(h\nu\ll k_{\mathrm B}T),\qquad "
+            r"A_{\mathrm e}\Omega_A=\lambda^2", .95, RJ, 39)))
+        self.play(Write(equation(
+            r"dP=\underbrace{\frac12}_{\text{one polarization}}"
+            r"\underbrace{\frac{2k_{\mathrm B}T}{\lambda^2}}_{\text{radiance}}"
+            r"\underbrace{\lambda^2}_{\text{one spatial mode}}\,d\nu",
+            -.45, size=42)))
+        result = equation(r"dP=k_{\mathrm B}T\,d\nu", -1.95, RADIO, 56)
+        self.play(Write(result), Create(SurroundingRectangle(result, color=RADIO, buff=.18)))
+        self.play(Write(equation(
+            r"k_{\mathrm B}T\ [\mathrm J]=[\mathrm{W/Hz}],"
+            r"\qquad d\nu\ [\mathrm{Hz}]\quad\Longrightarrow\quad dP\ [\mathrm W]",
+            -3.0, size=29)))
+        finish()
 
     def bandwidth_integration(self):
         self.start_slide("Bandwidth integration")
