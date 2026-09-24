@@ -57,6 +57,17 @@ conda run -n base manim-slides convert --folder slides --offline \
 The exported page uses RevealJS and standard MP4 video. Viewers need only a
 web browser; they do not need Python, Manim, or `manim-slides`.
 
+For production exports, use the wrapper that checks every slide's final frame,
+creates review images, adds the navigation guard, and names videos by content
+to prevent stale browser caching:
+
+```bash
+conda run -n base python export_web.py /tmp/lecture-web PlanckToKTB FriisVoyager
+```
+
+Publish only each deck's `index.html` and `index_assets/`; the `qa-*` images
+are local review artifacts. See `AGENTS.md` for mandatory pause checks.
+
 ## Physics conventions
 
 - \(B_\nu\) is spectral radiance per unit frequency and includes both
