@@ -281,6 +281,9 @@ class PlanckToKTB(Slide):
         )
         self.wait(1.2)
 
+        # Hold the complete radiance plot and its yellow annotation until the
+        # presenter advances. The transformation belongs to the next segment.
+        self.start_slide("Spectral radiance to single-mode power")
         mode_title = self.title("Power spectral density of one received mode")
         mode_relation = MathTex(
             r"S_\nu\equiv\frac{\lambda^2}{2}B_\nu"
