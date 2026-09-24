@@ -840,35 +840,49 @@ class FriisVoyager(Slide):
     def shannon_capacity(self):
         self.start_slide("Shannon channel capacity")
         self.play(FadeIn(self.title("How much information can this noisy link carry?")))
-        model = Text(
-            "Ideal band-limited channel with additive white Gaussian noise",
+        introduction = Text(
+            "Shannon's capacity formula (derivation later)",
             font_size=27, color=MUTED,
         ).move_to(UP * 2.55)
-        self.play(FadeIn(model))
-        # Real orthogonal channel coordinates have 2B degrees of freedom per
-        # second. Gaussian inputs maximize output differential entropy for a
-        # given average power. This is a derivation sketch, not the coding proof.
-        self.aperture_equations([
-            r"Y=X+Z,\quad Z\ \text{independent Gaussian noise};\quad "
-            r"\sigma_X^2/\sigma_Z^2=P_{\rm r}/N",
-            r"I(X;Y)=h(Y)-h(Z)"
-            r"\quad\text{(output entropy minus noise entropy)}",
-            r"I_{\max}=\frac12\log_2\!\left[2\pi e(\sigma_X^2+\sigma_Z^2)\right]"
-            r"-\frac12\log_2(2\pi e\sigma_Z^2)",
-            r"I_{\max}=\frac12\log_2\!\left(1+\frac{P_{\rm r}}{N}\right)"
-            r"\quad[\mathrm{bit/real\ coordinate}]",
-            r"\underbrace{2B}_{\text{real coordinates per second}}\,I_{\max}"
-            r"=\boxed{C=B\log_2(1+\mathrm{SNR})}\quad[\mathrm{bit\,s^{-1}}]",
-        ], center=DOWN * 0.05, font_size=30)
-        notes = VGroup(
-            Text("Gaussian signals maximize entropy at fixed average power; h is differential entropy (bits).",
-                 font_size=22, color=MUTED),
-            MathTex(r"B\ [\mathrm{Hz}],\quad \mathrm{SNR}=P_{\rm r}/N\ [1]"
-                    r"\quad\text{(use the linear ratio, not dB)}", font_size=27, color=GOLD),
-            Text("Rates below C can approach arbitrarily small error with sufficiently long, suitable codes.",
-                 font_size=22, color=FG),
-        ).arrange(DOWN, buff=0.13).to_edge(DOWN, buff=0.25)
-        self.play(FadeIn(notes))
+        formula = MathTex(
+            r"C=B\log_2(1+\mathrm{SNR})"
+            r"=B\log_2\!\left(1+\frac{P_{\rm r}}{N}\right)",
+            font_size=52, color=GOLD,
+        ).move_to(UP * 1.55)
+        left = MathTex(
+            r"\begin{aligned}"
+            r"C&:\ \text{ideal information-rate limit}\ [\mathrm{bit/s}]\\"
+            r"B&:\ \text{channel bandwidth}\ [\mathrm{Hz}]"
+            r"\end{aligned}", font_size=29, color=FG,
+        )
+        right = MathTex(
+            r"\begin{aligned}"
+            r"P_{\rm r}&:\ \text{average received signal power}\ [\mathrm W]\\"
+            r"N&:\ \text{noise power within }B\ [\mathrm W]"
+            r"\end{aligned}", font_size=29, color=FG,
+        )
+        definitions = VGroup(left, right).arrange(RIGHT, buff=.6, aligned_edge=UP)
+        if definitions.width > 12.5:
+            definitions.scale_to_fit_width(12.5)
+        definitions.move_to(UP * .15)
+        ratio = MathTex(
+            r"\mathrm{SNR}=P_{\rm r}/N:\ \text{linear power ratio, not dB};"
+            r"\qquad \log_2:\ \text{base-2 logarithm}",
+            font_size=29, color=SIGNAL,
+        ).move_to(DOWN * .9)
+        assumptions = VGroup(
+            Text("Ideal band-limited channel with additive white Gaussian noise.",
+                 font_size=26, color=FG),
+            Text("Fixed average received power, ideal hardware and suitable long codes.",
+                 font_size=25, color=MUTED),
+            Text("Rates below C can approach arbitrarily small error. Practical rates are lower.",
+                 font_size=25, color=MUTED),
+        ).arrange(DOWN, buff=.24).move_to(DOWN * 2.35)
+        self.play(FadeIn(introduction))
+        self.play(Write(formula))
+        self.play(FadeIn(definitions))
+        self.play(Write(ratio))
+        self.play(LaggedStart(*[FadeIn(line) for line in assumptions], lag_ratio=.35))
         self.wait(3)
         self.clear_slide()
 
