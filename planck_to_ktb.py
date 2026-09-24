@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 from manim import *
+from manim_slides import Slide
 
 
 BG = "#07111F"
@@ -31,11 +32,12 @@ SHOW_PROVENANCE = os.getenv("SHOW_PROVENANCE", "0") == "1"
 HASLAM_MAP = Path(__file__).resolve().parent / "assets" / "haslam_408mhz.png"
 
 
-class PlanckToKTB(Scene):
+class PlanckToKTB(Slide):
     """An animated derivation for a 16:9 screen."""
 
     def setup(self):
-        self.camera.background_color = BG
+        self._slide_started = False
+        self.camera.background_color = ManimColor(BG)
         self.provenance = Text(
             "Source: planck_to_ktb.py",
             font_size=15,
@@ -43,6 +45,13 @@ class PlanckToKTB(Scene):
         ).to_corner(DR, buff=0.18)
         if SHOW_PROVENANCE:
             self.add(self.provenance)
+
+    def start_slide(self, name: str):
+        if self._slide_started:
+            self.next_slide(name)
+        else:
+            self.next_section(name)
+            self._slide_started = True
 
     def title(self, text: str) -> Text:
         return Text(text, font_size=44, weight=SEMIBOLD, color=FG).to_edge(UP, buff=0.32)
@@ -72,7 +81,7 @@ class PlanckToKTB(Scene):
         self.validity_and_close()
 
     def opening(self):
-        self.next_section("Haslam radio sky")
+        self.start_slide("Haslam radio sky")
 
         title = self.title("The radio sky at 408 MHz")
         sky_map = ImageMobject(str(HASLAM_MAP))
@@ -98,7 +107,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def planck_spectrum(self):
-        self.next_section("Planck spectrum")
+        self.start_slide("Planck spectrum")
 
         title = self.title("Planck spectral radiance")
         formula = MathTex(
@@ -157,7 +166,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def planck_and_rj_plot(self):
-        self.next_section("Planck and Rayleigh-Jeans plot")
+        self.start_slide("Planck and Rayleigh-Jeans plot")
 
         h = 6.62607015e-34
         k_b = 1.380649e-23
@@ -416,7 +425,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def rayleigh_jeans_limit(self):
-        self.next_section("Rayleigh-Jeans limit")
+        self.start_slide("Rayleigh-Jeans limit")
 
         title = self.title("The low-frequency limit")
         condition = MathTex(r"x\equiv\frac{h\nu}{k_{\mathrm B}T}\ll 1", font_size=48, color=RJ)
@@ -469,7 +478,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def single_mode_bridge(self):
-        self.next_section("Single-mode bridge")
+        self.start_slide("Single-mode bridge")
 
         title = self.title("One spatial mode and one polarization")
 
@@ -586,7 +595,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def bandwidth_integration(self):
-        self.next_section("Bandwidth integration")
+        self.start_slide("Bandwidth integration")
 
         title = self.title("Flat radio noise across the receiver bandwidth")
 
@@ -637,7 +646,7 @@ class PlanckToKTB(Scene):
         self.clear_slide()
 
     def validity_and_close(self):
-        self.next_section("Validity and example")
+        self.start_slide("Validity and example")
 
         title = self.title("What the radio formula assumes")
 

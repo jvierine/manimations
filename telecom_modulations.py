@@ -15,6 +15,7 @@ import os
 
 import numpy as np
 from manim import *
+from manim_slides import Slide
 
 
 BG = "#07111F"
@@ -31,13 +32,14 @@ GREEN = "#8BD17C"
 SHOW_PROVENANCE = os.getenv("SHOW_PROVENANCE", "0") == "1"
 
 
-class TelecomModulations(Scene):
+class TelecomModulations(Slide):
     """Ten-section animated lecture for a 16:9 screen."""
 
     bits = [0, 1, 0, 1, 0]
 
     def setup(self):
-        self.camera.background_color = BG
+        self._slide_started = False
+        self.camera.background_color = ManimColor(BG)
         self.provenance = Text(
             "Source: telecom_modulations.py",
             font_size=15,
@@ -45,6 +47,13 @@ class TelecomModulations(Scene):
         ).to_corner(DR, buff=0.18)
         if SHOW_PROVENANCE:
             self.add(self.provenance)
+
+    def start_slide(self, name: str):
+        if self._slide_started:
+            self.next_slide(name)
+        else:
+            self.next_section(name)
+            self._slide_started = True
 
     def title(self, text: str) -> Text:
         return Text(text, font_size=43, weight=SEMIBOLD, color=FG).to_edge(UP, buff=0.28)
@@ -148,7 +157,7 @@ class TelecomModulations(Scene):
         self.qam()
 
     def opening(self):
-        self.next_section("Opening")
+        self.start_slide("Opening")
         question = Text(
             "How do we transmit information\nwith electromagnetic waves?",
             font_size=50,
@@ -196,7 +205,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def signal_model(self):
-        self.next_section("Signal model")
+        self.start_slide("Signal model")
         title = self.title("The modulated electric field")
         eq = MathTex(
             r"E(t)=", r"A(t)", r"\cos\!\left(2\pi", r"f(t)", r"t+", r"\phi(t)", r"\right)",
@@ -245,7 +254,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def bpsk_mapping(self):
-        self.next_section("BPSK mapping")
+        self.start_slide("BPSK mapping")
         title = self.title("Binary phase shift keying")
         subtitle = Text(
             "One bit selects one of two carrier phases",
@@ -309,7 +318,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def rate_definitions(self):
-        self.next_section("Bit rate and symbol rate")
+        self.start_slide("Bit rate and symbol rate")
         title = self.title("Bit rate and symbol rate")
 
         bit_column = VGroup(
@@ -368,7 +377,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def bits_to_symbols(self):
-        self.next_section("Bits to symbols")
+        self.start_slide("Bits to symbols")
         title = self.title("More bits per symbol")
         subtitle = Text(
             "QPSK groups the bit stream into pairs",
@@ -399,7 +408,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def qpsk_waveform(self):
-        self.next_section("QPSK waveform")
+        self.start_slide("QPSK waveform")
         title = self.title("QPSK waveform")
         subtitle = Text(
             "Each dibit selects one of four carrier phases",
@@ -475,7 +484,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def ask(self):
-        self.next_section("ASK")
+        self.start_slide("ASK")
         self.modulation_slide(
             "Amplitude shift keying",
             "The symbol selects the carrier amplitude",
@@ -485,7 +494,7 @@ class TelecomModulations(Scene):
         )
 
     def fsk(self):
-        self.next_section("FSK")
+        self.start_slide("FSK")
         self.modulation_slide(
             "Frequency shift keying",
             "The symbol selects the instantaneous frequency",
@@ -495,7 +504,7 @@ class TelecomModulations(Scene):
         )
 
     def psk(self):
-        self.next_section("BPSK waveform")
+        self.start_slide("BPSK waveform")
         self.modulation_slide(
             "BPSK waveform",
             "Each bit selects phase 0° or 180°",
@@ -505,7 +514,7 @@ class TelecomModulations(Scene):
         )
 
     def qam(self):
-        self.next_section("QAM")
+        self.start_slide("QAM")
         title = self.title("Quadrature amplitude modulation")
         subtitle = self.subtitle("Each symbol selects both amplitude and phase").next_to(title, DOWN, buff=0.18)
         axes = Axes(
@@ -541,7 +550,7 @@ class TelecomModulations(Scene):
         self.clear_slide()
 
     def antenna_radiation(self):
-        self.next_section("Antenna radiation")
+        self.start_slide("Antenna radiation")
         title = self.title("An antenna launches an electromagnetic wave")
         dipole = VGroup(
             Line([0, 0.10, 0], [0, 2.0, 0], color=FG, stroke_width=8),
