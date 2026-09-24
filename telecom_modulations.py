@@ -546,8 +546,7 @@ class TelecomModulations(Slide):
         self.play(Create(axes), FadeIn(i_label), FadeIn(q_label), FadeIn(dots))
         self.play(Create(path), FadeIn(rings), Write(equation))
         self.play(LaggedStart(*[FadeIn(m) for m in explanation], lag_ratio=0.12))
-        self.wait(1.0)
-        self.clear_slide()
+        self.wait(3.0)
 
     def antenna_radiation(self):
         self.start_slide("Antenna radiation")
