@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 DECKS = {
+    "LinkBudget": ("link-budget", "Satellite link budget and bit error rate"),
     "PlanckToKTB": ("planck-to-ktb", "Planck law to radio noise"),
     "FriisVoyager": ("friis-voyager", "Friis transmission and Voyager"),
     "TelecomModulations": ("telecom-modulations", "Digital modulation"),
