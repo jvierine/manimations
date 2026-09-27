@@ -16,6 +16,8 @@ import os
 import numpy as np
 from manim import *
 from manim_slides import Slide
+# Reuse the Planck deck's TeX serif prose renderer, avoiding Pango glyph overlap.
+from planck_to_ktb import Text
 
 
 BG = "#07111F"
@@ -58,7 +60,10 @@ class TelecomModulations(Slide):
             self._slide_started = True
 
     def title(self, text: str) -> Text:
-        return Text(text, font_size=43, weight=SEMIBOLD, color=FG).to_edge(UP, buff=0.28)
+        heading = Text(text, font_size=43, weight=SEMIBOLD, color=FG)
+        if heading.width > 13.1:
+            heading.scale_to_fit_width(13.1)
+        return heading.to_edge(UP, buff=0.28)
 
     def subtitle(self, text: str) -> Text:
         return Text(text, font_size=25, color=MUTED)
@@ -163,6 +168,47 @@ class TelecomModulations(Slide):
         self.ask()
         self.fsk()
         self.qam()
+        self.clear_slide()
+        self.closing()
+
+    def closing(self):
+        self.start_slide("From bits to radio waves: the complete chain")
+        self.play(FadeIn(self.title("From bits to radio waves")))
+        steps = [
+            ("Bits", "The information", YELLOW),
+            ("Symbols", "Group and map the bits", PURPLE),
+            ("RF waveform", "Modulate the carrier", ORANGE),
+            ("Radio wave", "Radiate with an antenna", BLUE),
+        ]
+        cards = VGroup()
+        for x, (heading, detail, shade) in zip((-4.8,-1.6,1.6,4.8),steps):
+            box = RoundedRectangle(width=2.75,height=1.4,corner_radius=.12,
+                                   color=shade,fill_opacity=.08).move_to([x,1.25,0])
+            label = Text(heading,font_size=27,color=shade).move_to([x,1.48,0])
+            explanation = Text(detail,font_size=19,color=FG).move_to([x,.98,0])
+            if explanation.width>2.5:
+                explanation.scale_to_fit_width(2.5)
+            cards.add(VGroup(box,label,explanation))
+        self.play(FadeIn(cards[0]))
+        for left,right in zip(cards,cards[1:]):
+            arrow = Arrow(left.get_right(),right.get_left(),buff=.06,
+                          color=MUTED,stroke_width=3)
+            self.play(GrowArrow(arrow),FadeIn(right),run_time=.8)
+        summary = Text("Modulation encodes information in amplitude, frequency, or phase.",
+                       font_size=29,color=FG).move_to(DOWN*.3)
+        if summary.width>12.7:
+            summary.scale_to_fit_width(12.7)
+        schemes = MathTex(r"\mathrm{ASK}: A\qquad\mathrm{FSK}: f\qquad"
+                          r"\mathrm{PSK}: \phi\qquad\mathrm{QAM}: A\ \text{and}\ \phi",
+                          font_size=34,color=CYAN).move_to(DOWN*1.35)
+        finish = Text("The receiver measures the waveform to recover the symbols and bits.",
+                      font_size=27,color=FG).move_to(DOWN*2.75)
+        if finish.width>12.7:
+            finish.scale_to_fit_width(12.7)
+        self.play(FadeIn(summary),Write(schemes))
+        self.play(FadeIn(finish))
+        self.wait(3)
+        # Retain the completed closing slide until the presenter advances.
 
     def opening(self):
         self.start_slide("Opening")
@@ -171,7 +217,6 @@ class TelecomModulations(Slide):
             font_size=50,
             weight=SEMIBOLD,
             color=FG,
-            line_spacing=0.92,
         ).to_edge(UP, buff=0.52)
 
         antenna_center = DOWN * 0.55
@@ -197,7 +242,6 @@ class TelecomModulations(Slide):
             "electromagnetic\nradiation",
             font_size=25,
             color=BLUE,
-            line_spacing=0.90,
         ).move_to(RIGHT * 4.85 + DOWN * 0.45)
         follow_up = Text(
             "How can this waveform carry bits?",
@@ -515,10 +559,10 @@ class TelecomModulations(Slide):
         self.start_slide("BPSK waveform")
         self.modulation_slide(
             "BPSK waveform",
-            "Each bit selects phase 0° or 180°",
+            "Each bit selects phase 0 or 180 degrees",
             "psk",
             PURPLE,
-            "The carrier reverses sign when the selected phase changes by 180°.",
+            "The carrier reverses sign when the selected phase changes by 180 degrees.",
         )
 
     def qam(self):

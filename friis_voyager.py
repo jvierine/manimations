@@ -16,6 +16,9 @@ import numpy as np
 from scipy.special import j1
 from manim import *
 from manim_slides import Slide
+# Use the same serif TeX prose renderer as the corrected Planck deck.
+# This bypasses Pango/SVG glyph-position corruption for every Text call.
+from planck_to_ktb import Text
 
 
 BG = "#07111F"
@@ -217,8 +220,8 @@ class FriisVoyager(Slide):
         ).shift(UP * 1.90)
         statement[0].set_color(POWER)
         statement[1].set_color(MUTED)
-        note = Text(
-            "The same transmitted power crosses every sphere; its area is 4πR²",
+        note = Tex(
+            r"The same transmitted power crosses every sphere; its area is $4\pi R^2$",
             font_size=26,
             color=MUTED,
         ).to_edge(DOWN, buff=0.34)
@@ -496,12 +499,12 @@ class FriisVoyager(Slide):
                           color=POWER, stroke_width=4)
         x_label = MathTex(r"q=L\theta/\lambda\quad[1]", font_size=27).next_to(axes, DOWN)
         legend = VGroup(Text("field F", font_size=24, color=SIGNAL),
-                        Text("power |F|²", font_size=24, color=POWER)).arrange(
+                        Tex(r"power $|F|^2$", font_size=24, color=POWER)).arrange(
                             RIGHT, buff=0.55).next_to(axes, UP, buff=0.20)
         self.play(Create(axes), FadeIn(x_label), FadeIn(legend))
         self.play(Create(field))
         self.play(TransformFromCopy(field, power))
-        self.aperture_equations([
+        pattern_relations = self.aperture_equations([
             r"p(\theta)=|F(\theta)|^2",
             r"G(\theta)=G(0)\,p(\theta)",
             r"p(0)=1,\quad p(\theta)\geq0",
@@ -511,6 +514,18 @@ class FriisVoyager(Slide):
             r"\quad\Longrightarrow\quad\theta_{\rm null}\simeq\frac{\lambda}{L}",
             r"\text{full half-power beamwidth}\simeq0.886\,\frac{\lambda}{L}\quad[\mathrm{rad}]",
         ], center=DOWN * 2.60, font_size=32)
+        main_lobe = axes.get_area(power,x_range=[-1,1],color=POWER,opacity=.25)
+        conclusion = VGroup(
+            Text("The antenna concentrates power",font_size=25,color=POWER),
+            Text("around its pointing direction.",font_size=25,color=POWER),
+            MathTex(r"\Delta\theta\propto\frac{1}{L}\quad\text{at fixed }\lambda",
+                    font_size=32,color=GOLD),
+            Text("Double the antenna length:",font_size=24,color=FG),
+            Text("half the angular beamwidth.",font_size=24,color=FG),
+        ).arrange(DOWN,buff=.25).move_to([4.15,.35,0])
+        if conclusion.width>4.8:
+            conclusion.scale_to_fit_width(4.8)
+        self.play(FadeOut(pattern_relations),FadeIn(main_lobe),FadeIn(conclusion),run_time=1.5)
         self.wait(3)
         self.clear_slide()
 
@@ -584,7 +599,7 @@ class FriisVoyager(Slide):
             axes.plot(airy, x_range=[-3, 3, 0.015], color=GOLD),
         )
         labels = VGroup(
-            Text("linear aperture: sinc²", font_size=24, color=SIGNAL),
+            Tex(r"linear aperture: $\mathrm{sinc}^2$", font_size=24, color=SIGNAL),
             Text("circular aperture: Airy", font_size=24, color=GOLD),
             MathTex(r"\theta_{\rm null}\simeq1.22\,\lambda/D", font_size=30),
             MathTex(r"\text{full HPBW}\simeq1.03\,\lambda/D", font_size=28),
@@ -841,7 +856,7 @@ class FriisVoyager(Slide):
         self.start_slide("Shannon channel capacity")
         self.play(FadeIn(self.title("How much information can this noisy link carry?")))
         introduction = Text(
-            "Shannon's capacity formula (derivation later)",
+            "Shannon's capacity formula (we will not derive this here!)",
             font_size=27, color=MUTED,
         ).move_to(UP * 2.55)
         formula = MathTex(
@@ -904,7 +919,7 @@ class FriisVoyager(Slide):
                  font_size=22, color=MUTED),
             Text("Practical rates are lower: coding, modulation, overhead, losses and ground-station availability matter.",
                  font_size=22, color=MUTED),
-            Text("Data totals assume a continuous link; MB means 10⁶ bytes. Changing bandwidth also changes noise.",
+            Tex(r"Data totals assume a continuous link; MB means $10^6$ bytes. Changing bandwidth also changes noise.",
                  font_size=22, color=MUTED),
         ).arrange(DOWN, buff=0.15).to_edge(DOWN, buff=0.30)
         self.play(FadeIn(notes))

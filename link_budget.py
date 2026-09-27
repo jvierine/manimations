@@ -116,9 +116,9 @@ class LinkBudget(PlanckToKTB):
         self.lines([
             self.txt("Can the satellite deliver its data with an acceptable error rate?", 2.15, 33, FG),
             self.eq(r"R_{\mathrm{payload}}\geq\frac{\text{data volume}}{\text{usable contact time}}", .9, 43),
-            self.eq(r"\frac{600\ \mathrm{Mbit}}{600\ \mathrm s}=1\ \mathrm{Mbit\,s^{-1}}", -.25, 48, RADIO),
+            self.eq(r"\text{For example:}\quad\frac{600\ \mathrm{Mbit}}{600\ \mathrm s}=1\ \mathrm{Mbit\,s^{-1}}", -.25, 48, RADIO),
             self.txt("Then allow for framing, coding, retransmissions and missed contacts.", -1.45, 27),
-            self.txt("The budget connects received power to reliable bit decisions.", -2.5, 30, ACCENT),
+            self.txt("Is the received signal strong enough to send data at this rate with few enough errors?", -2.5, 30, ACCENT),
         ])
         self.finish()
 

@@ -22,6 +22,11 @@ defeats the purpose of the slide presentation.
   guard for a fix to fade-outs encoded into individual slide videos.
 - After changing boundaries, rebuild and re-export EVERY affected deck. Validate
   the newly referenced media rather than trusting an old render or cache.
+- Never splice isolated scene renders into an older deck manifest. The next
+  segment contains the preceding slide's fade-out, so replacing only the slide
+  leaves flashes of obsolete formulas/text at navigation boundaries. Rebuild
+  the whole affected deck in execution order; export_web.py rejects manifests
+  mixing render folders. Preserve pause-before-cleanup while doing this.
 - Inspect the final decoded frame of EVERY exported slide video in EVERY affected
   deck. Reject blank endings and confirm the expected completed content is present;
   checking only the last slide of a deck is insufficient.
@@ -32,6 +37,9 @@ defeats the purpose of the slide presentation.
 
 Public pages are under `https://juha.no/space/`; media belongs under
 `/mnt/shovel/share/space/` on `juha-no`. Viewers use the browser directly.
+After presentation changes, render, export, and deploy the updated browser
+deck there by default, unless the user explicitly asks to hold rendering or
+deployment. A source-only edit or local preview is not the completed delivery.
 Do not edit the user's Keynote deck.
 
 This regression affected all slides across all three decks and cost the user
