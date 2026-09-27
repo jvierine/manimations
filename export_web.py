@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import shutil
+import tempfile
 
 import cv2
 import numpy as np
@@ -21,6 +23,14 @@ def export(scene, root):
     slug, title = DECKS[scene]
     dest = root / slug
     dest.mkdir(parents=True, exist_ok=True)
+    slide_config = json.loads(Path(f"slides/{scene}.json").read_text())
+    render_folders = {Path(slide["file"]).resolve().parent for slide in slide_config["slides"]}
+    if len(render_folders) != 1:
+        raise RuntimeError(
+            f"{scene}: mixed scene renders are unsafe. A following segment can "
+            "still contain a fade-out of obsolete content. Re-render the entire "
+            "deck in execution order before exporting."
+        )
     frames = []
     for number, slide in enumerate(json.loads(Path(f"slides/{scene}.json").read_text())["slides"], 1):
         cap = cv2.VideoCapture(slide["file"])
@@ -43,7 +53,21 @@ def export(scene, root):
         contact.paste(frame, (x, y))
         draw.text((x + 10, y + 365), f"Slide {i + 1}", fill="white")
     contact.save(dest / "qa-contact.jpg")
-    subprocess.run(["manim-slides", "convert", "--folder", "slides", "--offline", scene, str(dest / "index.html")], check=True)
+    # Isolated scene renders can reuse Manim's basename across different folders.
+    # The HTML converter flattens those folders, so disambiguate BEFORE copying.
+    with tempfile.TemporaryDirectory(prefix="manim-web-export-") as staging:
+        staging = Path(staging)
+        config = json.loads(Path(f"slides/{scene}.json").read_text())
+        for slide in config["slides"]:
+            for key in ("file", "rev_file"):
+                source = Path(slide[key])
+                digest = hashlib.sha256(source.read_bytes()).hexdigest()
+                target = staging / (digest + ".mp4")
+                if not target.exists():
+                    shutil.copyfile(source, target)
+                slide[key] = str(target)
+        (staging / f"{scene}.json").write_text(json.dumps(config))
+        subprocess.run(["manim-slides", "convert", "--folder", str(staging), "--offline", scene, str(dest / "index.html")], check=True)
     page = (dest / "index.html").read_text().replace("<title>Manim Slides</title>", f"<title>{title}</title>")
     for media in (dest / "index_assets").glob("*.mp4"):
         new_name = hashlib.sha256(media.read_bytes()).hexdigest()[:20] + ".mp4"
