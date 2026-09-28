@@ -446,32 +446,34 @@ class FriisVoyager(Slide):
         center = LEFT * 3.3 + UP * 0.35
         aperture = Line(center + DOWN * 1.35, center + UP * 1.35,
                         color=APERTURE, stroke_width=8)
-        brace = Brace(aperture, LEFT, color=APERTURE)
-        length = MathTex(r"L\ [\mathrm m]", font_size=32, color=APERTURE).next_to(brace, LEFT)
-        normal = DashedLine(center + LEFT * 2.5, center + RIGHT * 1.4, color=MUTED)
+        dimension = DoubleArrow(center + RIGHT*.55 + DOWN*1.35,
+                                center + RIGHT*.55 + UP*1.35,
+                                buff=0,color=APERTURE,stroke_width=2,tip_length=.12)
+        length = MathTex(r"L\ [\mathrm m]", font_size=29, color=APERTURE).next_to(dimension, RIGHT,buff=.18)
+        normal = DashedLine(center + LEFT * 1.2, center, color=MUTED,stroke_width=2)
         theta = 25 * DEGREES
         direction = np.array([np.cos(theta), np.sin(theta), 0])
         tangent = np.array([-np.sin(theta), np.cos(theta), 0])
         fronts = VGroup(*[
-            Line(center - direction * d - tangent * 1.30,
-                 center - direction * d + tangent * 1.30,
+            Line(center - direction * d - tangent * 1.05,
+                 center - direction * d + tangent * 1.05,
                  color=SIGNAL, stroke_width=2)
-            for d in (0.5, 1.15, 1.8)
+            for d in (1.45, 2.05, 2.65)
         ])
-        arrival = Arrow(center - 2.4 * direction, center, buff=0,
-                        color=GOLD, stroke_width=4)
-        angle = Arc(radius=0.80, start_angle=PI, angle=theta,
+        arrival = Arrow(center - 2.8 * direction, center-direction*.1, buff=0,
+                        color=GOLD, stroke_width=3,tip_length=.16)
+        angle = Arc(radius=0.62, start_angle=PI, angle=theta,
                     arc_center=center, color=GOLD)
         theta_label = MathTex(r"\theta", font_size=30, color=GOLD).move_to(
-            center + np.array([-1.02, -0.20, 0]))
+            center + np.array([-.87, -.18, 0]))
         x_label = MathTex(r"x", font_size=32, color=APERTURE).next_to(aperture, UP)
         caption = Text("Receive with equal weights and equal cable delays",
                        font_size=25, color=MUTED).to_edge(DOWN, buff=0.48)
-        self.play(FadeIn(title), Create(aperture), GrowFromCenter(brace),
+        self.play(FadeIn(title), Create(aperture), Create(dimension),
                   FadeIn(length), Create(normal), FadeIn(x_label))
         self.play(LaggedStart(*[Create(f) for f in fronts], lag_ratio=0.20),
                   GrowArrow(arrival), Create(angle), FadeIn(theta_label))
-        self.play(fronts.animate.shift(0.35 * direction), run_time=1.2)
+        self.play(fronts.animate.shift(0.25 * direction).set_opacity(.55), run_time=1.2)
         self.aperture_equations([
             r"k=\frac{2\pi}{\lambda}\quad[\mathrm{rad\,m^{-1}}]",
             r"\widetilde E(x,\theta)=E_0e^{ikx\sin\theta}",
