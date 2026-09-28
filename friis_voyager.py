@@ -427,6 +427,20 @@ class FriisVoyager(Slide):
         return group
 
     def lambda_over_d(self):
+        self.start_slide("A short detour on antenna theory")
+        detour_title = self.title("And now, a short detour on antenna theory")
+        purpose = Text("To show how antenna gain is connected to aperture size.",
+                       font_size=32,color=FG).move_to(UP*.8)
+        invitation = Text("Feel free to skip to the Friis transmission equation\n"
+                          "if this is too much at the moment.",
+                          font_size=30,color=GOLD).move_to(DOWN*1.1)
+        for label in (purpose,invitation):
+            if label.width>12.5:
+                label.scale_to_fit_width(12.5)
+        self.play(FadeIn(detour_title),FadeIn(purpose))
+        self.play(FadeIn(invitation))
+        self.wait(2.5)
+        self.clear_slide()
         self.start_slide("Plane wave across a linear aperture")
         title = self.title("An oblique plane wave arrives with a phase gradient")
         center = LEFT * 3.3 + UP * 0.35
