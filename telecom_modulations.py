@@ -270,7 +270,7 @@ class TelecomModulations(Slide):
         definitions = VGroup(
             VGroup(
                 MathTex(r"E(t)", font_size=36, color=FG),
-                Text("instantaneous electric field radiated by the antenna", font_size=24, color=FG),
+                Text("instantaneous incoming electric field at the antenna", font_size=24, color=FG),
                 MathTex(r"[\mathrm{V\,m^{-1}}]", font_size=27, color=MUTED),
             ).arrange(RIGHT, buff=0.24),
             VGroup(
@@ -299,7 +299,41 @@ class TelecomModulations(Slide):
             MathTex(r"\phi(t)", font_size=29, color=PURPLE),
         ).arrange(RIGHT, buff=0.24).to_edge(DOWN, buff=0.48)
 
-        self.play(FadeIn(title), Write(eq))
+        equation_target = eq.copy()
+        eq.scale(.53).move_to([3.25,.8,0])
+        antenna = VGroup(
+            Line([-3.6,.9,0],[-3.6,1.65,0],color=FG,stroke_width=6),
+            Line([-3.6,.7,0],[-3.6,-.05,0],color=FG,stroke_width=6),
+            Dot([-3.6,.8,0],radius=.07,color=BLUE),
+        )
+        cable = Arrow([-3.6,.8,0],eq.get_left()+LEFT*.12,buff=0,
+                      color=MUTED,stroke_width=3)
+        phase = ValueTracker(0)
+        incoming = always_redraw(lambda: FunctionGraph(
+            lambda x: .8+(.24+.09*np.cos(2*x-phase.get_value()/3))*np.sin(10*x-phase.get_value()),
+            x_range=[-6.3,-3.8,.025],color=BLUE,stroke_width=3))
+        cable_signal = always_redraw(lambda: FunctionGraph(
+            lambda x: .8+(.10+.04*np.cos(2*x-phase.get_value()/3))*np.sin(10*x-phase.get_value()),
+            x_range=[-3.4,-.35,.025],color=ORANGE,stroke_width=2))
+        field_label = MathTex(r"\text{Incoming }E(t)",font_size=26,color=BLUE).move_to([-5.1,1.9,0])
+        antenna_label = Text("Receiving antenna",font_size=21,color=FG).move_to([-3.6,-.5,0])
+        cable_label = Text("Cable: received voltage",font_size=21,color=ORANGE).move_to([-1.75,1.5,0])
+        explanation = Text("The incoming electric field induces a voltage carrying the same modulation.",
+                           font_size=25,color=FG).move_to(DOWN*1.7)
+        clarification = Text("E(t) describes the incident field; the cable carries its electrical signal.",
+                             font_size=23,color=MUTED).move_to(DOWN*2.45)
+        self.play(FadeIn(title),Create(antenna),FadeIn(antenna_label),FadeIn(field_label))
+        self.add(incoming)
+        self.play(phase.animate.set_value(4*PI),run_time=2,rate_func=linear)
+        self.play(GrowArrow(cable),FadeIn(cable_label),Write(eq))
+        self.add(cable_signal)
+        self.play(FadeIn(explanation),FadeIn(clarification),
+                  phase.animate.set_value(12*PI),run_time=4,rate_func=linear)
+        incoming.clear_updaters()
+        cable_signal.clear_updaters()
+        self.play(*[FadeOut(m) for m in (incoming,cable_signal,antenna,cable,field_label,
+                                       antenna_label,cable_label,explanation,clarification)],
+                  Transform(eq,equation_target),run_time=1.5)
         self.play(LaggedStart(*[FadeIn(row, shift=RIGHT * 0.10) for row in definitions], lag_ratio=0.14))
         self.play(FadeIn(modulation_note))
         self.wait(1.1)
@@ -623,13 +657,13 @@ class TelecomModulations(Slide):
             Text("The far field carries energy away", font_size=28, color=YELLOW),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.40).shift(RIGHT * 3.0 + UP * 0.35)
         equations = VGroup(
-            MathTex(r"\mathbf{S}=\mathbf{E}\times\mathbf{H}", font_size=38, color=CYAN),
+            MathTex(r"\mathbf{S}=\frac{1}{\mu_0}\,\mathbf{E}\times\mathbf{B}", font_size=38, color=CYAN),
             MathTex(r"c=\frac{1}{\sqrt{\mu_0\varepsilon_0}}", font_size=36, color=BLUE),
         ).arrange(DOWN, buff=0.34).next_to(physics, DOWN, buff=0.48)
         field_units = MathTex(
             r"\mathbf{E}\ [\mathrm{V\,m^{-1}}]"
             r"\qquad"
-            r"\mathbf{H}\ [\mathrm{A\,m^{-1}}]"
+            r"\mathbf{B}\ [\mathrm T]"
             r"\qquad"
             r"\mathbf{S}\ [\mathrm{W\,m^{-2}}]",
             font_size=28,

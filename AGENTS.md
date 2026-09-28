@@ -42,6 +42,13 @@ deck there by default, unless the user explicitly asks to hold rendering or
 deployment. A source-only edit or local preview is not the completed delivery.
 Do not edit the user's Keynote deck.
 
+## Shared presentation fonts
+
+All teaching decks, including new slides, must use the TeX-backed `Text`
+renderer from `planck_to_ktb`, imported after `from manim import *`.
+Do not fall back to Manim/Pango `Text`. Use `MathTex` for mathematics and
+check that prose has no unsupported Unicode mathematical characters.
+
 This regression affected all slides across all three decks and cost the user
 roughly an hour of creative work. Treat correct pause behavior as a fundamental
 requirement of every future slide change.
