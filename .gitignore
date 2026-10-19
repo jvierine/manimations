@@ -1,6 +1,9 @@
 __pycache__/
 media/
 slides/
+/web/
+meteor_rcs/plots/target/
+meteor_rcs/plots/.latex-cache/
 qa*/
 qa*.png
 *.mp4

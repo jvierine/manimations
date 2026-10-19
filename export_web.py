@@ -9,13 +9,14 @@ import tempfile
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageColor
 
 DECKS = {
     "LinkBudget": ("link-budget", "Satellite link budget and bit error rate"),
     "PlanckToKTB": ("planck-to-ktb", "Planck law to radio noise"),
     "FriisVoyager": ("friis-voyager", "Friis transmission and Voyager"),
     "TelecomModulations": ("telecom-modulations", "Digital modulation"),
+    "MeteorHeadRCS": ("meteor-head-rcs", "Meteor head echo: comet dust to radar cross section"),
 }
 
 
@@ -24,6 +25,7 @@ def export(scene, root):
     dest = root / slug
     dest.mkdir(parents=True, exist_ok=True)
     slide_config = json.loads(Path(f"slides/{scene}.json").read_text())
+    background_bgr = list(ImageColor.getrgb(slide_config.get("background_color", "#07111f")))[::-1]
     render_folders = {Path(slide["file"]).resolve().parent for slide in slide_config["slides"]}
     if len(render_folders) != 1:
         raise RuntimeError(
@@ -39,7 +41,7 @@ def export(scene, root):
         cap.release()
         if not ok:
             raise RuntimeError(f"Unreadable slide: {scene} {number}")
-        fraction = (np.max(np.abs(frame.astype(np.int16) - [31, 17, 7]), axis=2) > 18).mean()
+        fraction = (np.max(np.abs(frame.astype(np.int16) - background_bgr), axis=2) > 18).mean()
         if fraction < 0.01:
             raise RuntimeError(f"Blank slide ending: {scene} {number}")
         picture = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -69,6 +71,8 @@ def export(scene, root):
         (staging / f"{scene}.json").write_text(json.dumps(config))
         subprocess.run(["manim-slides", "convert", "--folder", str(staging), "--offline", scene, str(dest / "index.html")], check=True)
     page = (dest / "index.html").read_text().replace("<title>Manim Slides</title>", f"<title>{title}</title>")
+    if background_bgr == [255, 255, 255]:
+        page = page.replace("</head>", '<style>body,.reveal{background:#fff;color:#172333}.reveal .controls{color:#245774}</style>\n</head>')
     for media in (dest / "index_assets").glob("*.mp4"):
         new_name = hashlib.sha256(media.read_bytes()).hexdigest()[:20] + ".mp4"
         page = page.replace("index_assets/" + media.name, "index_assets/" + new_name)

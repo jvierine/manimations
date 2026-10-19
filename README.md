@@ -1,4 +1,25 @@
-# Planck to \(P=k_BTB\)
+# Manim Slides teaching decks
+
+## Meteor head echo: comet dust to RCS
+
+[`meteor_head_rcs.py`](meteor_head_rcs.py) follows a 100-micrometre grain from
+55P/Tempel--Tuttle to atmospheric entry, sputtering, Langmuir evaporation,
+ionization, and detection by MAARSY. It derives the complete
+ablation → line density → Dimant--Oppenheim → FDTD → polarized RCS calculation,
+then explains parameter inference. See [build commands, data and assumptions](meteor_rcs/README.md).
+All quantitative figures use native [Rustplotlib](https://github.com/jvierine/rustplotlib)
+exports; the scientific arrays and their provenance are bundled in HDF5.
+
+```bash
+conda run -n base python -m meteor_rcs.prepare_assets
+conda run -n base manim-slides render -r 1920,1080 --fps 30 meteor_head_rcs.py MeteorHeadRCS
+conda run -n base python export_web.py web MeteorHeadRCS
+```
+
+Live browser deck: <https://juha.no/space/meteor-head-rcs/>.
+Script provenance stays in code comments and HDF5 metadata; it is never rendered.
+
+## Planck law to radio noise
 
 This Manim presentation derives the single-mode radio noise formula from
 Planck spectral radiance. The bridge uses the throughput of one spatial mode,
@@ -30,12 +51,8 @@ conda run -n base manim -pql planck_to_ktb.py PlanckToKTB
 conda run -n base manim -pqh planck_to_ktb.py PlanckToKTB
 ```
 
-The presentation omits the source-script footer by default. Show it when
-needed with:
-
-```bash
-SHOW_PROVENANCE=1 conda run -n base manim -pqh planck_to_ktb.py PlanckToKTB
-```
+Keep source-script provenance in code comments and data metadata, never in
+rendered slides or figures.
 
 ## Web presentations
 
@@ -100,5 +117,4 @@ conda run -n base manim -pql telecom_modulations.py TelecomModulations
 conda run -n base manim -pqh telecom_modulations.py TelecomModulations
 ```
 
-The source-script footer is hidden by default. Show it with
-`SHOW_PROVENANCE=1` when script provenance is required in the video.
+Keep source-script provenance in code comments and data metadata, never in the video.

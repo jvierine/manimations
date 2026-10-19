@@ -3,6 +3,15 @@
 Use the base conda environment for Python commands (`conda run -n base python ...`).
 Use HDF5 rather than CSV for scientific data products.
 
+## Keep provenance out of rendered material
+
+Keep script names, file paths, generator credits, and build/source provenance
+in code comments or scientific-data metadata only. Never display these
+annotations in presentations or publications, including slide footers, figure
+captions, and nearby text. Do not add a display toggle. This applies to new
+decks and revisions of existing decks. Ordinary scientific citations and a
+references slide are appropriate; source-code credits are not.
+
 ## Manim slides: preserve the completed slide at every pause
 
 These presentations are delivered as HTML pages with video segments. Every
