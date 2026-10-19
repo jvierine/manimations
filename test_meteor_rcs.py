@@ -5,7 +5,7 @@ from scipy.constants import atomic_mass
 
 from meteor_rcs.prepare_assets import ROOT, source_quantities, collision_lengths
 from meteor_rcs.do_density import electron_density
-from meteor_head_rcs import MeteorHeadRCS
+from meteor_head_rcs import MeteorHeadRCS, boost_photon
 
 
 def test_source_units_and_line_density():
@@ -51,3 +51,18 @@ def test_density_rescaling_preserves_shape_and_changes_amplitude():
     base=density(.3,.15,1e12,.1)
     np.testing.assert_allclose(density(.3,.15,2e12,.1),2*base)
     np.testing.assert_allclose(density(.6,.3,1e12,.2),base/4)
+
+
+def test_isotropic_photons_carry_forward_momentum_in_sun_frame():
+    # Six equal-energy photons in opposite directions have zero momentum in
+    # the grain frame. Their boosted total must obey p_x*c / E = v/c.
+    beta=.3
+    rays=[boost_photon(sign*axis,beta) for axis in np.eye(3) for sign in [-1,1]]
+    energies=np.array([energy for _,energy in rays])
+    directions=np.array([direction for direction,_ in rays])
+    np.testing.assert_allclose(np.linalg.norm(directions,axis=1),1.)
+    np.testing.assert_allclose((energies[:,None]*directions).sum(axis=0)/energies.sum(),[beta,0,0],atol=1e-15)
+    for direction,energy in rays:
+        restored,ratio=boost_photon(direction,-beta)
+        assert np.isclose(np.linalg.norm(restored),1.)
+        np.testing.assert_allclose(energy*ratio,1.)

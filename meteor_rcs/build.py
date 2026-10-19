@@ -23,7 +23,7 @@ def main():
 def package():
     destination=ROOT/'web/meteor-head-rcs'
     names=['AGENTS.md','meteor_head_rcs.py','test_meteor_rcs.py','meteor_rcs/README.md',
-           'meteor_rcs/inputs.h5','meteor_rcs/data.h5','meteor_rcs/prepare_assets.py',
+           'meteor_rcs/inputs.h5','meteor_rcs/data.h5','meteor_rcs/maarsy_array.h5','meteor_rcs/prepare_assets.py',
            'meteor_rcs/do_density.py','meteor_rcs/__init__.py','meteor_rcs/build.py',
            'meteor_rcs/inspect_slides.py','planck_to_ktb.py','rayleigh_jeans_accuracy.py',
            'export_web.py','final_slide_guard.js','manim.cfg']

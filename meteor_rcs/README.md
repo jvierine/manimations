@@ -4,6 +4,21 @@
 follows a roughly 100-micrometre grain from 55P/Tempel--Tuttle, through long-term
 orbital evolution and an illustrative Earth encounter, to sputtering, heating,
 Langmuir evaporation, hyperthermal ionization, and the plasma cloud seen by MAARSY.
+An animated two-frame photon diagram spells out Poynting--Robertson drag:
+thermal emission is isotropic in the grain frame, but carries forward momentum
+in the Sun frame. Its deliberately exaggerated aberration illustrates the
+tangential recoil, not a relativistic meteoroid speed.
+The evaporation cartoon shrinks the solid grain as successive neutral-atom
+shells leave. The radar illustration uses all 433 actual antenna positions
+from the meteor repository, bundled in `maarsy_array.h5`, and labels the cloud's
+effective radar-scattering diameter as `D_eff`. That schematic size is not a
+physical boundary or a density-support cutoff.
+
+The thermal derivation builds from projected grain area and atmospheric mass
+flux to heating power, then adds radiation and latent-heat loss at separate
+presenter-controlled steps. Equations use mathematical symbols throughout;
+their definitions and units accompany the relevant term. Langmuir evaporation
+and the coupled trajectory equations have separate graphical explanations.
 
 The derivation then connects the thermal ablation equations to Si primary
 electron production, production line density, Dimant--Oppenheim normalization

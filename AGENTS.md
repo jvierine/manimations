@@ -12,6 +12,14 @@ captions, and nearby text. Do not add a display toggle. This applies to new
 decks and revisions of existing decks. Ordinary scientific citations and a
 references slide are appropriate; source-code credits are not.
 
+## Explain equations visually
+
+Define every symbol and its units on first use, including temperatures,
+coefficients, and physical constants. Use MathTex for symbols such as
+T_M, chi, and Gamma; do not substitute their literal names in rendered prose.
+Build physical balances term by term, link each term to a graphical process,
+and provide presenter-controlled pauses between the explanations.
+
 ## Manim slides: preserve the completed slide at every pause
 
 These presentations are delivered as HTML pages with video segments. Every

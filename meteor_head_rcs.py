@@ -17,6 +17,19 @@ BG, FG, MUTED = '#FFFFFF', '#172333', '#596779'
 BLUE, GOLD, GREEN, RED = '#245774', '#9B4825', '#267369', '#B33C3C'
 
 
+def boost_photon(direction, speed_over_c):
+    """Photon direction and energy ratio after a Lorentz boost along +x.
+
+    Used only for the explanatory diagram. Its deliberately enlarged v/c
+    makes aberration and Doppler shifts visible; it is not an orbital speed.
+    """
+    direction=np.asarray(direction,dtype=float)
+    gamma=1/np.sqrt(1-speed_over_c**2)
+    factor=1+speed_over_c*direction[0]
+    return np.array([(direction[0]+speed_over_c)/factor,
+                     direction[1]/(gamma*factor),direction[2]/(gamma*factor)]),gamma*factor
+
+
 class MeteorHeadRCS(Slide):
     skip_reversing = True
 
@@ -82,6 +95,7 @@ class MeteorHeadRCS(Slide):
 
     def construct(self):
         self.story_release()
+        self.story_pr_drag()
         self.story_orbits()
         self.story_final_laps()
         self.story_entry()
@@ -90,8 +104,12 @@ class MeteorHeadRCS(Slide):
         self.story_cloud()
         self.opening()
         self.geometry()
+        self.grain_geometry()
+        self.atmospheric_heating()
+        self.cooling_terms()
         self.energy()
         self.mass_loss()
+        self.trajectory_equations()
         self.trajectory()
         self.ionization()
         self.line_density()
@@ -155,6 +173,78 @@ class MeteorHeadRCS(Slide):
             eccentric-=(eccentric-e*np.sin(eccentric)-mean_anomaly)/(1-e*np.cos(eccentric))
         return np.array([a*(np.cos(eccentric)-e),a*np.sqrt(1-e*e)*np.sin(eccentric),np.zeros_like(eccentric)])
 
+    def radiation_wave(self, start, end, color, wavelength=.26):
+        """Code-native wavy photon arrow; no imported artwork or plot backend."""
+        start,end=np.asarray(start),np.asarray(end)
+        direction=(end-start)/np.linalg.norm(end-start)
+        normal=np.array([-direction[1],direction[0],0])
+        t=np.linspace(0,1,100)
+        points=start+t[:,None]*(end-start)
+        points+=.055*np.sin(2*PI*t*np.linalg.norm(end-start)/wavelength)[:,None]*np.sin(PI*t)[:,None]*normal
+        wave=VMobject(color=color,stroke_width=2.6).set_points_as_corners(points)
+        tip=Arrow(end-.22*direction,end,buff=0,color=color,stroke_width=2.6,
+                  max_tip_length_to_length_ratio=.65)
+        return VGroup(wave,tip)
+
+    def story_pr_drag(self):
+        # Source: Fitzpatrick, Effect of solar radiation on interplanetary dust
+        # grains, Eqs. 10.160--10.178:
+        # https://farside.ph.utexas.edu/teaching/celestial/Celestial/node95.html
+        # Original two-frame schematic inspired by the user's reference image.
+        # Absorbing spherical grain, thermal steady state, locally tangential
+        # velocity. Isotropic emission is assumed in the instantaneous grain
+        # frame. A toy v/c=0.30 exaggerates the directional effects.
+        self.start_slide('Poynting--Robertson drag',
+            'P-R means Poynting-Robertson. Compare the same radiation in two frames. '
+            'In the grain frame sunlight is aberrated, while thermal emission is isotropic. '
+            'In the Sun frame sunlight is radial and the moving grain emits radiation carrying net forward momentum. '
+            'The recoil opposes tangential motion. The diagram exaggerates v/c; '
+            'an actual meteor grain is highly nonrelativistic. This is distinct from a thermal-lag Yarkovsky force.')
+        panels=VGroup(*[Rectangle(width=6.25,height=4.65,color=MUTED,stroke_width=1.2).move_to([x,.15,0]) for x in [-3.3,3.3]])
+        self.play(Create(panels),run_time=.5)
+        incoming=VGroup();emission=VGroup();grains=VGroup();labels=VGroup()
+        for x,beta,title,caption in [
+            (-3.3,0.,'(a) Grain rest frame','Thermal emission is isotropic.'),
+            (3.3,.30,'(b) Sun rest frame','Emission carries forward momentum.'),
+        ]:
+            center=np.array([x,-.5,0])
+            grain=Circle(.43,color=FG,fill_color='#D5DADD',fill_opacity=1,stroke_width=1.7).move_to(center)
+            grains.add(grain)
+            labels.add(self.prose(title,25,FG).move_to([x,2.12,0]),
+                self.prose('Sunlight',20,GOLD).move_to([x+1.55,1.52,0]),
+                self.prose(caption,22,FG).move_to([x,-1.99,0]))
+            for offset in [-.48,-.16,.16,.48]:
+                end=np.array([x+offset,.18,0])
+                start=end+np.array([.43 if beta==0 else 0,1.52,0])
+                incoming.add(self.radiation_wave(start,end,GOLD))
+            for direction in [RIGHT,LEFT,UP,DOWN]:
+                transformed,energy=boost_photon(direction,beta)
+                normal=np.array([-transformed[1],transformed[0],0])
+                for offset in [-.09,.09]:
+                    start=center+.48*transformed+offset*normal
+                    end=center+1.34*transformed+offset*normal
+                    emission.add(self.radiation_wave(start,end,RED,wavelength=.27/energy))
+            if beta:
+                # A faint previous position identifies the moving grain;
+                # motion and force arrows are separate from photon arrows.
+                ghost=Circle(.43,color=MUTED,stroke_opacity=.25,fill_opacity=.05).move_to(center-.14*RIGHT)
+                self.add(ghost)
+                arrow=Arrow(center-.27*RIGHT,center+.27*RIGHT,buff=0,color=FG,stroke_width=2.5)
+                grains.add(arrow)
+                labels.add(self.equation(r'\mathbf v',23).next_to(arrow,UP,buff=.05))
+            else:
+                labels.add(self.equation(r'\mathbf v^{\prime}=0',20).move_to(center))
+        self.play(FadeIn(grains),FadeIn(labels),run_time=.5)
+        self.play(LaggedStart(*[Create(ray) for ray in incoming],lag_ratio=.06),run_time=1.1)
+        self.play(LaggedStart(*[Create(ray) for ray in emission],lag_ratio=.025),run_time=1.6)
+        force=self.equation(r'\mathbf F_{\rm drag}=-\frac{P_{\rm abs}}{c^2}\,\mathbf v_{t}',36,BLUE).move_to([-3.0,-2.77,0])
+        meaning=VGroup(self.equation(r'P_{\rm abs}:\ \text{absorbed solar power [W]}',21,MUTED),
+            self.equation(r'\mathbf v_t:\ \text{tangential grain velocity [m/s]}',21,MUTED),
+            self.equation(r'c:\ \text{speed of light};\quad\mathbf F_{\rm drag}:\ \text{tangential force}',21,MUTED)).arrange(DOWN,buff=.14).move_to([3.0,-2.87,0])
+        self.play(Write(force),FadeIn(meaning))
+        self.play(FadeIn(self.prose('Tangential recoil removes angular momentum; aberration is exaggerated.',20).shift(DOWN*3.68)))
+        self.finish()
+
     def story_orbits(self):
         # Source: Evolution data: juha.no/55p | Fitzpatrick P--R equations and Jupiter-averaged
         # perturbations
@@ -182,7 +272,7 @@ class MeteorHeadRCS(Slide):
             next_curve=VMobject(color=GREEN).set_points_as_corners(points(i))
             next_label=self.prose('Later secular orbit',25,GREEN).move_to(label)
             self.play(Transform(curve,next_curve),Transform(label,next_label),run_time=1.1)
-        self.play(FadeIn(self.prose('P--R drag removes angular momentum; planetary gravity perturbs the orbit.',25,FG).shift(DOWN*2.8)))
+        self.play(FadeIn(self.prose('Poynting--Robertson drag removes angular momentum; Jupiter perturbs the orbit.',25,FG).shift(DOWN*2.8)))
         self.finish()
 
     def story_final_laps(self):
@@ -234,16 +324,23 @@ class MeteorHeadRCS(Slide):
         self.start_slide('A hot surface undergoes Langmuir evaporation',
             'Zoom into the grain rest frame. The hot surface emits neutral atoms with thermal velocity relative to the grain. '
             'Vapor pressure grows strongly with temperature; the full thermal model balances heating, radiation and latent heat.')
-        grain=self.grain(np.array([-1.5,0,0]),.65).set_color(RED)
+        grain=self.grain(np.array([-1.5,0,0]),.8).set_color(RED)
+        initial=grain.copy().set_fill(opacity=0).set_stroke(MUTED,width=1.5,opacity=.45)
+        self.add(initial)
         self.play(FadeIn(grain),FadeIn(self.prose('Grain rest frame',25).move_to([-4,2,0])))
         directions=np.linspace(-PI,PI,16,endpoint=False)
-        atoms=VGroup(*[Dot(grain.get_center()+.65*np.array([np.cos(a),np.sin(a),0]),radius=.045,color=GOLD) for a in directions])
-        self.add(atoms)
-        self.play(*[atom.animate.shift(1.4*np.array([np.cos(a),np.sin(a),0])) for atom,a in zip(atoms,directions)],
-                  grain.animate.scale(.85),run_time=1.8)
+        for pulse in range(3):
+            radius=.8*.92**pulse
+            atoms=VGroup(*[Dot(grain.get_center()+radius*np.array([np.cos(a),np.sin(a),0]),radius=.045,color=GOLD) for a in directions])
+            self.add(atoms)
+            self.play(*[atom.animate.shift(1.05*np.array([np.cos(a),np.sin(a),0])).set_opacity(.45) for atom,a in zip(atoms,directions)],
+                      grain.animate.scale(.92),run_time=1.15)
+        self.add(self.prose('Initial size',22).move_to([-1.5,-1.28,0]))
         self.play(FadeIn(self.prose('Hot solid or melt',28,RED).move_to([3,1,0])),
                   FadeIn(self.prose('Neutral vapour',28,GOLD).move_to([3,.2,0])))
-        self.play(FadeIn(self.prose('A hotter surface releases atoms much faster.',31,FG).shift(DOWN*2.5)))
+        self.play(Write(self.equation(r'm\downarrow\quad\Longrightarrow\quad D_{\rm grain}\propto m^{1/3}\downarrow',36,RED).move_to([2.5,-1.2,0])))
+        self.play(FadeIn(self.equation(r'm:\ \text{mass};\quad D_{\rm grain}:\ \text{diameter}\quad\text{(fixed bulk density)}',21,MUTED).scale_to_fit_width(5.8).move_to([2.5,-1.82,0])))
+        self.play(FadeIn(self.prose('Atoms carry mass away; the remaining grain becomes smaller.',29,FG).shift(DOWN*2.5)))
         self.finish()
 
     def story_collision(self):
@@ -268,24 +365,39 @@ class MeteorHeadRCS(Slide):
         self.finish()
 
     def story_cloud(self):
-        # Source: Schematic head plasma and radar: meteor_head_rcs.py | MAARSY carrier 53.5 MHz
+        # Source: actual 433-element layout from meteor/cal/maarsy_antenna_positions.txt,
+        # preserved with source hash in meteor_rcs/maarsy_array.h5. Perspective
+        # schematic of an antenna array, not a photograph or beam calculation.
         self.start_slide('MAARSY sees the plasma surrounding the grain',
             'The ion/electron cloud is much larger than the solid particle. A high-power large-aperture radar probes the '
             'induced plasma current, provided the echo exceeds its detection threshold. The cloud drawing is schematic; '
-            'its quantitative kinetic shape is derived later.')
+            'its quantitative kinetic shape is derived later. D_eff is an effective projected diameter of the scattering '
+            'region, not a sharp plasma boundary, FDTD cutoff, or a value inferred from this cartoon. '
+            'It depends on radar wavelength, plasma response, polarization and viewing direction.')
         rng=np.random.default_rng(2017)
         center=np.array([-2.,.35,0])
         grain=Dot(center,radius=.035,color=GOLD)
         electrons=VGroup(*[Dot(center+np.array([rng.normal(.45,.75),rng.normal(0,.55),0]),radius=.018,color=GREEN,fill_opacity=.6) for _ in range(140)])
-        radar=VGroup(Arc(radius=.55,start_angle=-PI*.1,angle=PI*1.2,color=FG),Line([0,-.2,0],[0,-.9,0],color=FG)).move_to([4,-1,0])
+        with h5py.File(ROOT/'maarsy_array.h5') as f:
+            positions=f['east_north_m'][:]
+        radar=VGroup()
+        for east,north in positions:
+            p=np.array([4+.034*east+.012*north,-1+.018*north,0])
+            top=p+UP*.075
+            radar.add(Line(p,top,color=MUTED,stroke_width=.8),
+                Line(top+np.array([-.043,-.016,0]),top+np.array([.043,.016,0]),color=FG,stroke_width=1.1),
+                Line(top+np.array([-.018,.024,0]),top+np.array([.018,-.024,0]),color=BLUE,stroke_width=1.1))
         self.play(FadeIn(grain),LaggedStart(*[FadeIn(p) for p in electrons],lag_ratio=.006),FadeIn(radar))
-        beam=Polygon(radar.get_center(),[-3,1.9,0],[-3,-1.1,0],color=BLUE,fill_opacity=.07,stroke_width=1)
+        beam=Polygon([4,-.6,0],[-3.6,1.9,0],[-3.6,-1.1,0],color=BLUE,fill_opacity=.05,stroke_width=1)
         self.play(FadeIn(beam))
         self.play(GrowArrow(Arrow([3.4,-.7,0],[-.5,.1,0],color=BLUE)),
                   GrowArrow(Arrow([-.4,.5,0],[3.4,-.3,0],color=GOLD)))
-        self.add(self.prose('MAARSY',27,FG).move_to([4,-2,0]),self.prose('Incident wave',23,BLUE).move_to([1.6,1.5,0]),
+        self.add(self.prose('MAARSY phased array',25,FG).move_to([4,-2.15,0]),self.prose('Incident wave',23,BLUE).move_to([1.6,1.5,0]),
                  self.prose('Head echo',23,GOLD).move_to([1.7,.7,0]))
-        self.play(Write(self.equation(r'D_{\rm grain}\sim100\ \mu\mathrm m\qquad\ll\qquad\text{plasma scale}',35,GREEN).shift(DOWN*2.65)))
+        diameter=DoubleArrow([-4.4,-1.05,0],[-4.4,1.65,0],buff=0,color=GREEN,stroke_width=2.5)
+        self.play(GrowArrow(diameter),Write(self.equation(r'D_{\rm eff}',31,GREEN).next_to(diameter,LEFT)))
+        self.play(Write(self.equation(r'D_{\rm grain}\sim100\ \mu\mathrm m\qquad\ll\qquad D_{\rm eff}',35,GREEN).shift(DOWN*2.65)))
+        self.play(FadeIn(self.equation(r'D_{\rm eff}:\ \text{effective diameter of the radar-scattering region}',24,MUTED).shift(DOWN*3.18)))
         self.finish()
 
     def opening(self):
@@ -318,33 +430,197 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(grain),LaggedStart(*[FadeIn(d) for d in tail],lag_ratio=.08),GrowArrow(velocity),GrowArrow(axis))
         self.add(MathTex(r'\mathbf v',color=GOLD,font_size=35).next_to(velocity,UP),
                  MathTex(r'z_{\rm DO}>0\quad\text{behind}',font_size=30).next_to(axis,DOWN))
-        definitions=self.equation(r'h\ [\mathrm m],\quad v\ [\mathrm{m\,s^{-1}}],\quad m\ [\mathrm{kg}],\quad T_M\ [\mathrm K]',31).shift(UP*2)
+        definitions=self.equation(r'h:\ \text{altitude [m]};\quad v:\ \text{speed [m/s]};\quad m:\ \text{mass [kg]};\quad T_M:\ \text{grain temperature [K]}',27).shift(UP*2)
         frequency=self.equation(r'f_0=53.5\ \mathrm{MHz},\quad \lambda_0=c/f_0=5.60\ \mathrm m,\quad T_0=18.7\ \mathrm{ns}',29).shift(DOWN*2.35)
         self.play(Write(definitions),Write(frequency));self.finish()
 
+    def term_definitions(self, entries, position, size=23, width=6.):
+        rows=VGroup(*[self.equation(tex,size,MUTED) for tex in entries]).arrange(DOWN,buff=.22,aligned_edge=LEFT)
+        if rows.width>width:rows.scale_to_fit_width(width)
+        return rows.move_to(position)
+
+    def grain_geometry(self):
+        # Spherical isothermal approximation; A always denotes projected area.
+        self.start_slide('Mass sets the radius and the intercepted area',
+            'Assume a spherical grain with constant bulk density. Its projected area intercepts atmospheric particles. '
+            'The whole surface, four times this area, radiates and evaporates.')
+        grain=Circle(.95,color=RED,fill_opacity=.12).move_to([-3.2,.2,0])
+        radius=Arrow(grain.get_center(),grain.get_center()+.95*RIGHT,buff=0,color=RED)
+        self.play(Create(grain),GrowArrow(radius))
+        self.add(self.equation(r'a',30,RED).next_to(radius,UP))
+        first=MathTex('m','=',r'\rho_M',r'\frac{4\pi}{3}','a^3',font_size=39,color=FG).move_to([-3.2,1.95,0])
+        self.play(Write(first));self.play(Indicate(grain,color=RED))
+        solved=self.equation(r'a=\left(\frac{3m}{4\pi\rho_M}\right)^{1/3}',39,RED).move_to(first)
+        self.play(TransformMatchingTex(first,solved))
+        disk=Circle(.95,color=GOLD,fill_opacity=.2).move_to([3.2,.2,0])
+        self.play(TransformFromCopy(grain,disk))
+        self.play(Write(self.equation(r'A=\pi a^2',39,GOLD).move_to([3.2,1.95,0])))
+        self.play(FadeIn(self.prose('Projected area',27,GOLD).move_to([3.2,-1.1,0])))
+        definitions=self.term_definitions([
+            r'm:\ \text{grain mass [kg]}',r'\rho_M:\ \text{grain bulk density [kg/m}^3\text{]}',
+            r'a:\ \text{grain radius [m]}'],[-3.2,-2.25,0],24)
+        area=self.term_definitions([r'A:\ \text{projected area [m}^2\text{]}',
+            r'4A=4\pi a^2:\ \text{whole surface area [m}^2\text{]}'],[3.2,-2.25,0],24)
+        self.play(FadeIn(definitions),FadeIn(area))
+        self.finish()
+
+    def atmospheric_heating(self):
+        # Source: kinetic-energy flux and the Hill / MetAblate thermal model.
+        # Lambda is defined with the displayed factor 1/2; Gamma in the drag
+        # equation below uses F_drag=Gamma*rho_A*A*v^2 with no factor 1/2.
+        self.start_slide('Atmospheric collisions supply the heating power',
+            'In the grain frame the atmosphere streams into projected area A at speed v. '
+            'Mass intercepted per second is rho_A v A. Each kilogram brings v squared over two joules. '
+            'Lambda is the effective heat-transfer coefficient in this convention; the remaining energy need not heat the grain.')
+        grain=Circle(.55,color=RED,fill_opacity=.15).move_to([3.1,1.35,0])
+        tube=Rectangle(width=6.2,height=1.1,color=BLUE,fill_opacity=.035,stroke_width=1).move_to([-.55,1.35,0])
+        area=Ellipse(width=.3,height=1.1,color=GOLD).move_to([2.55,1.35,0])
+        gas=VGroup(*[Dot([-3.7+.4*(j%4),1.05+.2*(j//4),0],radius=.045,color=BLUE) for j in range(12)])
+        velocity=Arrow([-2.7,2.23,0],[.2,2.23,0],color=BLUE,buff=0)
+        self.play(FadeIn(tube),Create(grain),Create(area),FadeIn(gas),GrowArrow(velocity))
+        self.add(self.equation(r'v',27,BLUE).next_to(velocity,UP,buff=.05),self.equation(r'A',28,GOLD).next_to(area,UP))
+        flux=self.equation(r'\dot M_{\rm air}=\rho_AvA\quad[\mathrm{kg\,s^{-1}}]',34,BLUE).move_to([0,.15,0])
+        self.play(gas.animate.shift(RIGHT*5.8),Write(flux),run_time=1.25)
+        energy=self.equation(r'\text{Kinetic energy per intercepted kilogram: }\frac{v^2}{2}\quad[\mathrm{J\,kg^{-1}}]',29).move_to([0,-.7,0])
+        self.play(Write(energy))
+        power=self.equation(r'\boxed{P_{\rm heat}=\Lambda(\rho_AvA)\frac{v^2}{2}=\frac12\Lambda A\rho_Av^3}\quad[\mathrm W]',38,GOLD).move_to([0,-1.7,0])
+        self.play(TransformFromCopy(flux,power),Indicate(grain,color=GOLD))
+        definitions=self.term_definitions([
+            r'\rho_A:\ \text{atmospheric mass density [kg/m}^3\text{]};\quad v:\ \text{relative speed [m/s]}',
+            r'A:\ \text{projected area [m}^2\text{]};\quad\Lambda:\ \text{heat-transfer coefficient [dimensionless]}'],[0,-2.75,0],24,12.4)
+        self.play(FadeIn(definitions))
+        self.play(FadeIn(self.equation(r'\Lambda\ \text{sets heating};\quad\Gamma\ \text{sets drag. They are separate coefficients.}',22,MUTED).shift(DOWN*3.42)))
+        self.finish()
+
+    def cooling_terms(self):
+        # Source: Stefan--Boltzmann radiation and latent-heat energy balance.
+        self.start_slide('Radiation and escaping material remove energy',
+            'Radiation is the net exchange between the whole hot surface and the effective ambient radiation temperature, '
+            'approximated by atmospheric T_A here. Evaporation carries latent heat L for each kilogram lost. '
+            'These are distinct energy sinks. Positive P_rad denotes net cooling when T_M exceeds T_A.')
+        left=np.array([-3.3,1.3,0]);right=np.array([3.3,1.3,0])
+        radiation_grain=Circle(.38,color=RED,fill_opacity=.15).move_to(left)
+        evaporation_grain=Circle(.38,color=RED,fill_opacity=.15).move_to(right)
+        self.play(Create(radiation_grain),Create(evaporation_grain))
+        photons=VGroup(*[self.radiation_wave(left+.46*d,left+1.1*d,RED) for d in [LEFT,RIGHT,UP,DOWN]])
+        atoms=VGroup(*[Dot(right+.43*np.array([np.cos(t),np.sin(t),0]),radius=.045,color=GREEN) for t in np.linspace(0,TAU,8,endpoint=False)])
+        rad=self.equation(r'P_{\rm rad}=4A\epsilon\sigma_{\rm SB}(T_M^4-T_A^4)',30,RED).move_to([-3.3,-.35,0])
+        evap=self.equation(r'P_{\rm evap}=L(-\dot m)',34,GREEN).move_to([3.3,-.35,0])
+        self.play(LaggedStart(*[Create(p) for p in photons],lag_ratio=.1),Write(rad))
+        self.add(atoms)
+        self.play(*[atom.animate.shift((atom.get_center()-right)*1.3) for atom in atoms],evaporation_grain.animate.scale(.86),Write(evap))
+        d1=self.term_definitions([
+            r'T_M:\ \text{grain temperature [K]}',r'T_A:\ \text{ambient temperature [K]}',
+            r'\epsilon:\ \text{emissivity [dimensionless]}',
+            r'\sigma_{\rm SB}:\ \text{Stefan--Boltzmann constant}',
+            r'\sigma_{\rm SB}=5.6704\times10^{-8}\ \mathrm{W\,m^{-2}\,K^{-4}}'],[-3.3,-2.05,0],23)
+        d2=self.term_definitions([
+            r'L:\ \text{specific latent heat [J/kg]}',r'-\dot m:\ \text{positive mass-loss rate [kg/s]}',
+            r'4A:\ \text{radiating and evaporating surface [m}^2\text{]}'],[3.3,-2.05,0],23)
+        self.play(FadeIn(d1),FadeIn(d2));self.finish()
+
     def energy(self):
-        # Source: Hill et al. (2005), doi:10.1051/0004-6361:20053053; fdtd/src/bin/meteor-
-        # ablation.rs
-        self.start_slide('Heating competes with radiation and evaporation',
-            'A spherical isothermal grain has area A=pi a squared. Introduce all energy terms before using the mass-loss history.')
-        self.stack(self.equation(r'a=\left(\frac{3m}{4\pi\rho_M}\right)^{1/3},\qquad A=\pi a^2',34),
-            self.equation(r'a:\ \text{grain radius};\quad\rho_M:\ \text{bulk density};\quad\rho_A:\ \text{atmospheric mass density}',25,MUTED),
-            self.equation(r'mc_p\dot T_M=\tfrac12\Lambda A\rho_Av^3-4A\epsilon\sigma_{\rm SB}(T_M^4-T_A^4)-L(-\dot m)',34),
-            self.prose('Heating  |  radiative cooling  |  latent heat carried away',27,GOLD),
-            self.equation(r'c_p:\ \text{heat capacity};\quad\Lambda:\ \text{heat transfer};\quad\epsilon:\ \text{emissivity};\quad L:\ \text{latent heat}',23,MUTED))
+        # Source: Hill et al. (2005), doi:10.1051/0004-6361:20053053;
+        # native implementation: fdtd/src/bin/meteor-ablation.rs.
+        self.start_slide('Build the grain energy balance',
+            'Click through the three power terms. The left side is energy stored as changing grain temperature. '
+            'All powers are in watts. The spherical isothermal approximation assigns one T_M to the grain.')
+        top=self.equation(r'T_M:\ \text{grain temperature [K]};\quad m:\ \text{mass [kg]};\quad c_p:\ \text{specific heat [J/(kg K)]}',23,MUTED).shift(UP*2.6)
+        equation=MathTex(r'mc_p\dot T_M','=',r'P_{\rm heat}','-',r'P_{\rm rad}','-',r'P_{\rm evap}',font_size=40,color=FG).shift(UP*1.8)
+        for i,color in [(2,GOLD),(4,RED),(6,GREEN)]:equation[i].set_color(color)
+        self.play(FadeIn(top),Write(equation[0]),Write(equation[1]))
+        self.play(FadeIn(self.equation(r'\dot T_M=dT_M/dt:\ \text{temperature change per second [K/s]}',22,MUTED).shift(DOWN*3.32)))
+        for x,index,color,kind in [(-4.3,2,GOLD,'heat'),(0,4,RED,'radiation'),(4.3,6,GREEN,'evaporation')]:
+            center=np.array([x,.3,0])
+            grain=Circle(.25,color=RED,fill_opacity=.13).move_to(center)
+            additions=[Write(equation[index])] if index==2 else [Write(equation[index-1]),Write(equation[index])]
+            self.play(Create(grain),*additions)
+            if kind=='heat':
+                particles=VGroup(*[Dot(center+[-1,.18*j,0],radius=.04,color=GOLD) for j in [-1,0,1]])
+                self.add(particles);self.play(particles.animate.shift(RIGHT*.75),Indicate(equation[index],color=GOLD))
+                defs=[r'P_{\rm heat}=\frac12\Lambda A\rho_Av^3',r'\Lambda:\ \text{heat transfer [dimensionless]}',
+                    r'A:\ \text{projected area [m}^2\text{]}',r'\rho_A:\ \text{air mass density [kg/m}^3\text{]}',r'v:\ \text{relative speed [m/s]}']
+            elif kind=='radiation':
+                rays=VGroup(*[self.radiation_wave(center+.3*d,center+.8*d,RED) for d in [LEFT,RIGHT,UP,DOWN]])
+                self.play(Create(rays),Indicate(equation[index],color=RED))
+                defs=[r'P_{\rm rad}=4A\epsilon\sigma_{\rm SB}(T_M^4-T_A^4)',r'4A:\ \text{whole surface area [m}^2\text{]}',
+                    r'\epsilon:\ \text{emissivity [dimensionless]}',r'\sigma_{\rm SB}:\ \text{Stefan--Boltzmann constant}',
+                    r'[\sigma_{\rm SB}]=\mathrm{W\,m^{-2}\,K^{-4}}',r'T_A:\ \text{ambient temperature [K]}']
+            else:
+                atoms=VGroup(*[Dot(center+.3*d,radius=.045,color=GREEN) for d in [LEFT,RIGHT,UP,DOWN]])
+                self.add(atoms);self.play(*[a.animate.shift((a.get_center()-center)*1.5) for a in atoms],grain.animate.scale(.88),Indicate(equation[index],color=GREEN))
+                defs=[r'P_{\rm evap}=L(-\dot m)',r'L:\ \text{specific latent heat [J/kg]}',
+                    r'-\dot m:\ \text{mass lost per second [kg/s]}']
+            definitions=self.term_definitions(defs,[x,0,0],21,4.)
+            definitions.arrange(DOWN,buff=.16,aligned_edge=LEFT).next_to(np.array([x,-.75,0]),DOWN,buff=0)
+            for definition in definitions:self.play(FadeIn(definition),run_time=.23)
+            self.wait(.5)
+            if kind!='evaporation':
+                self.next_slide('Add radiative cooling' if kind=='heat' else 'Add evaporative cooling',
+                    notes='Add the next physical power term while retaining the previous terms and definitions.')
+        self.next_slide('Expand the energy terms',notes='Substitute all three powers. Their colors retain the graphical interpretation; every symbol is defined on this frame.')
+        expanded=MathTex(r'mc_p\dot T_M','=',r'\tfrac12\Lambda A\rho_Av^3','-',
+            r'4A\epsilon\sigma_{\rm SB}(T_M^4-T_A^4)','-',r'L(-\dot m)',font_size=34,color=FG)
+        if expanded.width>12.7:expanded.scale_to_fit_width(12.7)
+        expanded.move_to(equation)
+        for i,color in [(2,GOLD),(4,RED),(6,GREEN)]:expanded[i].set_color(color)
+        self.remove(*equation)
+        self.add(equation)
+        self.play(TransformMatchingTex(equation,expanded),run_time=1.2)
+        for index,color in [(2,GOLD),(4,RED),(6,GREEN)]:self.play(Indicate(expanded[index],color=color),run_time=.55)
         self.finish()
 
     def mass_loss(self):
-        # Source: Thermal model: MetAblate material law; independent Rust integration in fdtd
-        self.start_slide('Langmuir evaporation closes the ablation equations',
-            'Evaporation uses the vapor pressure law. The 50-u effective vapor mass in the thermal model is distinct from '
-            'the 28.085-u Si proxy introduced for electron production. Entry chi is measured from vertical.')
-        self.stack(self.equation(r'-\dot m=4A\,p_{\rm vap}(T_M)\sqrt{\frac{m_{\rm vap}}{2\pi k_BT_M}}',41,GOLD),
-            self.equation(r'p_{\rm vap}=0.1\,10^{10.6-13500\,\mathrm K/T_M}\ \mathrm{Pa},\qquad m_{\rm vap}=50\,u',29),
-            self.equation(r'\dot h=-v\cos\chi,\qquad \dot v=-\Gamma A\rho_Av^2/m+g\cos\chi',35),
-            self.prose('chi: entry zenith angle; Gamma: drag coefficient; g: gravity',24),
-            self.equation(r'\text{Integrate }h,v,m,T_M\text{ through an MSIS atmosphere.}',29))
+        # Source: MetAblate material vapor-pressure law. The effective vapor
+        # mass is 50 u; it is distinct from the later Si ionization proxy.
+        self.start_slide('Langmuir evaporation gives the mass-loss rate',
+            'Build mass loss as whole surface area times vapor pressure times the kinetic conversion factor. '
+            'All atoms are represented by an effective 50-u vapor species in this thermal model. '
+            'The formula assumes free evaporation with the adopted effective material law; it is not a species-resolved calculation.')
+        eq=MathTex(r'-\dot m','=',r'4A',r'p_{\rm vap}(T_M)',r'\sqrt{\frac{m_{\rm vap}}{2\pi k_BT_M}}',font_size=42,color=FG).shift(UP*1.92)
+        eq[2].set_color(BLUE);eq[3].set_color(RED);eq[4].set_color(GOLD)
+        self.play(Write(eq[:2]))
+        grain=Circle(.52,color=RED,fill_opacity=.15).move_to([-4.5,.38,0])
+        shell=Circle(.62,color=BLUE,stroke_width=3).move_to(grain)
+        self.play(Create(grain),Create(shell),Write(eq[2]),run_time=.8)
+        self.play(Write(self.equation(r'4A=4\pi a^2:\ \text{whole evaporating surface [m}^2\text{]}',24,BLUE).move_to([1.5,.75,0])))
+        self.play(Write(eq[3]),Indicate(grain,color=RED))
+        self.play(FadeIn(self.equation(r'p_{\rm vap}(T_M):\ \text{equilibrium vapor pressure [Pa]}',24,RED).move_to([1.5,.15,0])))
+        atoms=VGroup(*[Dot(grain.get_center()+.65*np.array([np.cos(t),np.sin(t),0]),radius=.045,color=GOLD) for t in np.linspace(0,TAU,10,endpoint=False)])
+        self.add(atoms);self.play(Write(eq[4]),*[a.animate.shift((a.get_center()-grain.get_center())*.7) for a in atoms],grain.animate.scale(.9))
+        self.play(FadeIn(self.equation(r'-\dot m:\ \text{positive mass-loss rate [kg/s]}',24,GREEN).move_to([1.5,-.45,0])))
+        left=self.term_definitions([r'T_M:\ \text{grain temperature [K]}',r'm_{\rm vap}:\ \text{mass of one effective vapor atom}',
+            r'm_{\rm vap}=50u;\quad u=1.66054\times10^{-27}\ \mathrm{kg}'],[-3.3,-1.8,0],23)
+        right=self.term_definitions([r'k_B:\ \text{Boltzmann constant}',r'k_B=1.380649\times10^{-23}\ \mathrm{J\,K^{-1}}',
+            r'A=\pi a^2:\ \text{projected grain area [m}^2\text{]}',r'a:\ \text{grain radius [m]}'],[3.3,-1.8,0],23)
+        self.play(FadeIn(left),FadeIn(right))
+        self.play(Write(self.equation(r'\text{Material fit: }p_{\rm vap}(T_M)=0.1\times10^{10.6-(13500\,\mathrm K)/T_M}\ \mathrm{Pa}',29).shift(DOWN*3.12)))
         self.finish()
+
+    def trajectory_equations(self):
+        # Source: native trajectory ODEs in fdtd/src/bin/meteor-ablation.rs.
+        self.start_slide('Close the trajectory and thermal evolution together',
+            'The state is altitude h, speed v, mass m and grain temperature T_M. '
+            'Chi is zenith angle, measured from the local vertical. This drag coefficient convention has no factor one half: '
+            'F_drag=Gamma A rho_A v squared. The heating efficiency Lambda is separate.')
+        grain=Dot([-3.8,1.1,0],radius=.13,color=GOLD)
+        down=Arrow([-3.8,1.5,0],[-3.8,-.6,0],buff=0,color=MUTED)
+        motion=Arrow([-3.8,1.1,0],[-2.35,-.35,0],buff=0,color=GOLD)
+        drag=Arrow([-3.8,1.1,0],[-4.7,2.,0],buff=0,color=BLUE)
+        self.play(FadeIn(grain),GrowArrow(down),GrowArrow(motion),GrowArrow(drag))
+        angle=Angle(down,motion,radius=.6,other_angle=False,color=GREEN)
+        self.play(Create(angle))
+        self.add(self.equation(r'\chi',27,GREEN).move_to([-3.36,.3,0]),self.equation(r'v',27,GOLD).next_to(motion,RIGHT),
+            self.equation(r'F_{\rm drag}',26,BLUE).next_to(drag,LEFT),self.prose('Vertical',21).move_to([-4.45,-.75,0]))
+        eqs=VGroup(self.equation(r'\dot h=-v\cos\chi',35),self.equation(r'\dot v=-\frac{\Gamma A\rho_Av^2}{m}+g\cos\chi',35),
+            self.equation(r'\dot m:\ \text{Langmuir evaporation};\quad\dot T_M:\ \text{energy balance}',24)).arrange(DOWN,buff=.4).move_to([2.3,1.05,0])
+        for eq in eqs:self.play(Write(eq))
+        left=self.term_definitions([r'h:\ \text{altitude [m]};\quad\dot h:\ \text{vertical rate [m/s]}',
+            r'v:\ \text{speed [m/s]};\quad\dot v:\ \text{acceleration [m/s}^2\text{]}',
+            r'\chi:\ \text{entry zenith angle from vertical}',r'g:\ \text{gravitational acceleration [m/s}^2\text{]}'],[-3.3,-2.,0],23)
+        right=self.term_definitions([r'\Gamma:\ \text{drag coefficient [dimensionless]}',r'A:\ \text{projected area [m}^2\text{]};\quad m:\ \text{grain mass [kg]}',
+            r'\rho_A(h):\ \text{atmospheric mass density [kg/m}^3\text{]}',r'T_M:\ \text{grain temperature [K]}'],[3.3,-2.,0],23)
+        self.play(FadeIn(left),FadeIn(right));self.finish()
 
     def trajectory(self):
         # Source: Archived native trajectory: meteor_rcs/inputs.h5; native plots: rustplotlib
