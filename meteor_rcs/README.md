@@ -8,6 +8,12 @@ An animated two-frame photon diagram spells out Poynting--Robertson drag:
 thermal emission is isotropic in the grain frame, but carries forward momentum
 in the Sun frame. Its deliberately exaggerated aberration illustrates the
 tangential recoil, not a relativistic meteoroid speed.
+The radiation-pressure sequence distinguishes the radial force from P--R drag,
+defines the force ratio `beta_rad`, and derives the release-energy criterion
+`beta_rad >= r_release/(2*a_parent)` for negligible ejection speed. The familiar
+one-half threshold applies to a circular parent orbit. Optical efficiency is
+size and composition dependent; ever-smaller grains are not automatically
+easier to eject. No new dust-orbit calculation is presented.
 The evaporation cartoon shrinks the solid grain as successive neutral-atom
 shells leave. The radar illustration uses all 433 actual antenna positions
 from the meteor repository, bundled in `maarsy_array.h5`, and labels the cloud's
@@ -19,6 +25,16 @@ flux to heating power, then adds radiation and latent-heat loss at separate
 presenter-controlled steps. Equations use mathematical symbols throughout;
 their definitions and units accompany the relevant term. Langmuir evaporation
 and the coupled trajectory equations have separate graphical explanations.
+The free molecular discussion defines `Kn = lambda_nn/D` and the molecular
+speed ratio, distinguishing the ambient air--air mean free path from the DO
+collision lengths. Momentum and energy balances separately derive
+`F_drag = Gamma*rho_A*A*v^2` and `P_heat = Lambda*rho_A*A*v^3/2`.
+The drag convention is `Gamma = C_D/2`; an unshielded hypersonic sphere has
+approximately `Gamma = 1`, or `C_D = 2`, when reemission speeds are small
+relative to the incoming stream. Surface reflection, thermal accommodation,
+and vapour shielding can change these coefficients. This explanation does not
+change the archived solver or its results. The introductory radar parameters
+give frequency and wavelength; the wave period is omitted there.
 
 The derivation then connects the thermal ablation equations to Si primary
 electron production, production line density, Dimant--Oppenheim normalization
@@ -47,6 +63,10 @@ conda run -n base python -m meteor_rcs.inspect_slides
 Open `web/meteor-head-rcs/index.html` through an HTTP server. Arrow keys advance;
 each video holds its completed frame. Source filenames and provenance footers
 are never rendered; they are retained in code comments and data metadata.
+Scientific citations on the radiation-pressure and free molecular slides, and
+all bibliography entries, are clickable in the HTML deck after each animation
+finishes. Links open the papers in a new tab. The exporter aligns accessible
+link areas with the rendered citations, including letterboxing when resized.
 Equations use MathTex and prose uses the
 shared TeX-backed `Text` renderer. The web export includes the repository's
 final-slide navigation guard. No separate PPTX is required.
@@ -114,6 +134,9 @@ section, and an RHCP channel is not the sum over receive polarizations.
 - [55P/Tempel--Tuttle, NASA Science](https://science.nasa.gov/solar-system/comets/55p-tempel-tuttle/).
 - [Fitzpatrick, solar radiation and interplanetary dust](https://farside.ph.utexas.edu/teaching/celestial/Celestial/node95.html),
   used by the author's [55P secular orbit demo](https://github.com/jvierine/55p-tempel-tuttle-animation).
+- [Burns, Lamy and Soter (1979), solar radiation forces](https://doi.org/10.1016/0019-1035(79)90050-2).
+- [Bariselli et al. (2020), rarefied meteor entry](https://doi.org/10.1093/mnras/stz3559).
+- [Loth et al. (2021), sphere drag and its free molecular limit](https://doi.org/10.2514/1.J060153).
 - [Vondrak et al. (2008), chemical ablation](https://doi.org/10.5194/acp-8-7015-2008),
   with its [corrigendum](https://acp.copernicus.org/articles/8/7015/2008/acp-8-7015-2008-corrigendum.pdf).
 - [Hill et al. (2005), thermal grain model](https://doi.org/10.1051/0004-6361:20053053).

@@ -12,6 +12,13 @@ captions, and nearby text. Do not add a display toggle. This applies to new
 decks and revisions of existing decks. Ordinary scientific citations and a
 references slide are appropriate; source-code credits are not.
 
+## Keep labels clear of graphics
+
+Place labels with visible clearance from curves, lines, arrows, symbols, other
+labels, and moving objects by default. Check the entire animation, including
+intermediate positions and the completed slide. Prefer space outside the
+graphic or a clear leader line; do not place a curve through text.
+
 ## Explain equations visually
 
 Define every symbol and its units on first use, including temperatures,

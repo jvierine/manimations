@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import shutil
 import tempfile
+import re
 
 import cv2
 import numpy as np
@@ -60,7 +61,16 @@ def export(scene, root):
     with tempfile.TemporaryDirectory(prefix="manim-web-export-") as staging:
         staging = Path(staging)
         config = json.loads(Path(f"slides/{scene}.json").read_text())
+        paper_links=[]
         for slide in config["slides"]:
+            note=slide.get("notes", "")
+            match=re.search(r'\n<!-- paper-links: (.*?) -->',note)
+            links=json.loads(match[1]) if match else []
+            for link in links:
+                if not link['url'].startswith('https://'):
+                    raise ValueError('Paper links must use HTTPS')
+            paper_links.append(links)
+            slide['notes']=re.sub(r'\n<!-- paper-links: .*? -->','',note)
             for key in ("file", "rev_file"):
                 source = Path(slide[key])
                 digest = hashlib.sha256(source.read_bytes()).hexdigest()
@@ -81,6 +91,13 @@ def export(scene, root):
     guard_name = "navigation-" + hashlib.sha256(guard).hexdigest()[:12] + ".js"
     (dest / "index_assets" / guard_name).write_bytes(guard)
     page = page.replace("</body>", f'<script src="index_assets/{guard_name}"></script>\n</body>')
+    if any(paper_links):
+        script=Path('paper_links.js').read_bytes()
+        name='paper-links-'+hashlib.sha256(script).hexdigest()[:12]+'.js'
+        (dest/'index_assets'/name).write_bytes(script)
+        data=json.dumps(paper_links).replace('<',r'\u003c')
+        page=page.replace('</body>',f'<script type="application/json" id="paper-link-data">{data}</script>\n'
+            f'<script src="index_assets/{name}"></script>\n</body>')
     (dest / "index.html").write_text(page)
     print(f"{scene}: {len(frames)} nonblank slide endings; exported to {dest}", flush=True)
 

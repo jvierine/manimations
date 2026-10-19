@@ -5,6 +5,7 @@ conda run -n base manim-slides render -r 1920,1080 --fps 30 meteor_head_rcs.py M
 Plot provenance is kept in code comments and HDF5 metadata only.
 """
 from pathlib import Path
+import json
 
 import h5py
 import numpy as np
@@ -90,12 +91,28 @@ class MeteorHeadRCS(Slide):
             item.scale_to_fit_width(12.4)
         return item
 
+    def paper_links(self, references):
+        """Render scientific citations and record their clickable web bounds."""
+        links=[]
+        for label,url,item in references:
+            links.append(dict(label=label,url=url,
+                x=.5+item.get_left()[0]/config.frame_width,
+                y=.5-item.get_top()[1]/config.frame_height,
+                width=item.width/config.frame_width,height=item.height/config.frame_height))
+        self._base_slide_config.notes+='\n<!-- paper-links: '+json.dumps(links)+' -->'
+
+    def citation(self, label, url):
+        text=self.prose(label,18,BLUE).move_to([0,-3.78,0])
+        self.play(FadeIn(text),run_time=.25)
+        self.paper_links([(label,url,text)])
+
     def image(self, name, width=9.5):
         return ImageMobject(ROOT/'assets'/name).set(width=width)
 
     def construct(self):
         self.story_release()
         self.story_pr_drag()
+        self.solar_radiation_pressure()
         self.story_orbits()
         self.story_final_laps()
         self.story_entry()
@@ -106,6 +123,7 @@ class MeteorHeadRCS(Slide):
         self.geometry()
         self.grain_geometry()
         self.atmospheric_heating()
+        self.free_molecular_drag()
         self.cooling_terms()
         self.energy()
         self.mass_loss()
@@ -240,9 +258,82 @@ class MeteorHeadRCS(Slide):
         force=self.equation(r'\mathbf F_{\rm drag}=-\frac{P_{\rm abs}}{c^2}\,\mathbf v_{t}',36,BLUE).move_to([-3.0,-2.77,0])
         meaning=VGroup(self.equation(r'P_{\rm abs}:\ \text{absorbed solar power [W]}',21,MUTED),
             self.equation(r'\mathbf v_t:\ \text{tangential grain velocity [m/s]}',21,MUTED),
-            self.equation(r'c:\ \text{speed of light};\quad\mathbf F_{\rm drag}:\ \text{tangential force}',21,MUTED)).arrange(DOWN,buff=.14).move_to([3.0,-2.87,0])
+            self.equation(r'c:\ \text{speed of light [m/s]};\quad\mathbf F_{\rm drag}:\ \text{tangential force [N]}',21,MUTED)).arrange(DOWN,buff=.14).move_to([3.0,-2.87,0])
         self.play(Write(force),FadeIn(meaning))
-        self.play(FadeIn(self.prose('Tangential recoil removes angular momentum; aberration is exaggerated.',20).shift(DOWN*3.68)))
+        self.play(FadeIn(self.prose('Tangential recoil removes angular momentum; aberration is exaggerated.',20).shift(DOWN*3.52)))
+        self.citation('Burns, Lamy and Soter (1979)','https://doi.org/10.1016/0019-1035(79)90050-2')
+        self.finish()
+
+    def solar_radiation_pressure(self):
+        # Source: Burns, Lamy & Soter (1979), doi:10.1016/0019-1035(79)90050-2.
+        # Solar-spectrum-averaged Q_pr includes absorption and scattering.
+        # beta_rad is distinct from the later Si ionization efficiency beta_Si.
+        self.start_slide('Sunlight pushes outward and brakes orbital motion',
+            'Radiation pressure is the leading radial force. Poynting--Robertson drag is its much smaller '
+            'velocity-dependent component. The force arrows are schematic and not to scale. For a sphere, '
+            'radiation pressure scales with projected area and gravity with mass. The inverse-radius scaling '
+            'only holds while the radiation-pressure efficiency Q_pr remains comparable.')
+        center=np.array([-3.1,1.25,0])
+        sun=Dot([-5.8,1.25,0],radius=.18,color=GOLD)
+        grain=self.grain(center,.17)
+        self.play(FadeIn(sun),FadeIn(grain))
+        self.add(self.prose('Sun',23,GOLD).next_to(sun,DOWN,buff=.2))
+        pressure=Arrow(center+.22*RIGHT,center+1.75*RIGHT,buff=0,color=GOLD)
+        gravity=Arrow(center+.22*LEFT,center+1.75*LEFT,buff=0,color=FG)
+        velocity=Arrow(center+.22*UP,center+1.25*UP,buff=0,color=BLUE)
+        drag=Arrow(center+.22*DOWN,center+.95*DOWN,buff=0,color=RED)
+        self.play(GrowArrow(pressure),GrowArrow(gravity),GrowArrow(velocity),GrowArrow(drag))
+        self.add(self.equation(r'F_{\rm rad}',25,GOLD).next_to(pressure,UP,buff=.15),
+            self.equation(r'F_g',25).next_to(gravity,DOWN,buff=.15),
+            self.equation(r'v_t',25,BLUE).next_to(velocity,LEFT,buff=.15),
+            self.prose('P--R drag',22,RED).next_to(drag,RIGHT,buff=.18))
+        force_ratio=self.term_definitions([
+            r'F_{\rm rad}\propto Q_{\rm pr}a^2,\qquad F_g\propto\rho_Ma^3',
+            r'\frac{|F_{\mathrm{PR},t}|}{F_{\rm rad}}=\frac{v_t}{c}\ll1'],[3.,1.4,0],32,6.2)
+        self.play(Write(force_ratio))
+        ratio=self.equation(r'\boxed{\beta_{\rm rad}\equiv\frac{F_{\rm rad}}{F_g}='
+            r'\frac{3L_\odot Q_{\rm pr}}{16\pi c\mu_\odot\rho_Ma}}',39,GOLD).shift(DOWN*.8)
+        self.play(Write(ratio))
+        defs=self.term_definitions([
+            r'a:\ \text{grain radius [m]};\quad\rho_M:\ \text{bulk density [kg/m}^3\text{]}',
+            r'L_\odot:\ \text{solar luminosity [W]};\quad\mu_\odot:\ \text{solar gravity parameter [m}^3\mathrm{s}^{-2}\text{]}',
+            r'Q_{\rm pr}:\ \text{solar radiation-pressure efficiency [dimensionless]};\quad c:\ \text{speed of light [m/s]}'],[0,-2.3,0],23,12.4)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('Smaller radius increases the force ratio when optical efficiency stays comparable.',25).shift(DOWN*3.28)))
+        self.citation('Burns, Lamy and Soter (1979)','https://doi.org/10.1016/0019-1035(79)90050-2')
+        self.finish()
+
+        self.start_slide('When does radiation pressure eject the grain?',
+            'Neglect ejection velocity, P--R drag and planetary perturbations at the instant of release. '
+            'The grain inherits the parent velocity, while radial radiation pressure changes its effective '
+            'solar gravity to mu_sun times one minus beta_rad. For constant beta_rad the displayed specific '
+            'orbital energy determines whether the grain is bound. A circular parent gives the familiar '
+            'one-half threshold; an eccentric comet has a release-position-dependent threshold. '
+            'Q_pr is size- and composition-dependent, and can fall for grains much smaller than optical wavelengths.')
+        sun=Dot([-4.8,1.1,0],radius=.18,color=GOLD)
+        grain=self.grain(np.array([-2.1,1.1,0]),.16)
+        radius=DoubleArrow([-4.65,.45,0],[-2.25,.45,0],buff=0,color=MUTED)
+        velocity=Arrow([-2.1,1.35,0],[-2.1,2.35,0],buff=0,color=BLUE)
+        self.play(FadeIn(sun),FadeIn(grain),GrowArrow(radius),GrowArrow(velocity))
+        self.add(self.prose('Sun',23,GOLD).next_to(sun,LEFT,buff=.22),
+            self.equation(r'r_{\rm rel}',27).next_to(radius,DOWN,buff=.14),
+            self.equation(r'v_{\rm rel}',27,BLUE).next_to(velocity,RIGHT,buff=.18))
+        self.play(FadeIn(self.prose('Same release velocity; weaker inward force.',24).move_to([-3.6,-.45,0])))
+        energy=self.term_definitions([
+            r'\mu_{\rm eff}=\mu_\odot(1-\beta_{\rm rad})',
+            r'\mathcal E=\frac{v_{\rm rel}^2}{2}-\frac{\mu_{\rm eff}}{r_{\rm rel}}',
+            r'\mathcal E=\mu_\odot\!\left(\frac{\beta_{\rm rad}}{r_{\rm rel}}-\frac{1}{2a_p}\right)'],[3.1,1.2,0],33,6.1)
+        for row in energy:self.play(Write(row))
+        escape=self.equation(r'\mathcal E\geq0\quad\Longleftrightarrow\quad\beta_{\rm rad}\geq\frac{r_{\rm rel}}{2a_p}'
+            r'\qquad\left[\text{circular parent: }\beta_{\rm rad}\geq\tfrac12\right]',34,GOLD).shift(DOWN*1.2)
+        self.play(Write(escape))
+        defs=self.term_definitions([
+            r'a_p:\ \text{parent semimajor axis [m]};\quad r_{\rm rel}:\ \text{distance from Sun at release [m]}',
+            r'v_{\rm rel}:\ \text{inherited speed [m/s]};\quad\mathcal E:\ \text{specific orbital energy [J/kg]}',
+            r'\mu_{\rm eff}:\ \text{effective gravity parameter [m}^3\mathrm{s}^{-2}\text{]};\quad\beta_{\rm rad}:\ \text{radiation/gravity force ratio}'],[0,-2.35,0],23,12.4)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('At very small sizes optical coupling can weaken: blowout is material dependent.',24,RED).shift(DOWN*3.3)))
+        self.citation('Burns, Lamy and Soter (1979)','https://doi.org/10.1016/0019-1035(79)90050-2')
         self.finish()
 
     def story_orbits(self):
@@ -290,7 +381,8 @@ class MeteorHeadRCS(Slide):
         dust=always_redraw(lambda:Dot(origin+scale*self.kepler_position(-phase.get_value(),a,e),radius=.055,color=GOLD))
         earth=always_redraw(lambda:Dot(origin+scale*np.array([np.cos((phase.get_value()-6*PI)*a**1.5),np.sin((phase.get_value()-6*PI)*a**1.5),0]),radius=.12,color=BLUE))
         self.play(Create(path),Create(earth_path),FadeIn(sun));self.add(dust,earth)
-        self.add(self.prose('Meteoroid',25,GREEN).move_to([-3.6,1.5,0]),self.prose('Earth',25,BLUE).move_to([3.2,-1.2,0]))
+        meteoroid_label=self.prose('Meteoroid',25,GREEN).next_to(path,LEFT,buff=.4).set_y(1.5)
+        self.add(meteoroid_label,self.prose('Earth',25,BLUE).move_to([3.2,-1.2,0]))
         self.play(phase.animate.set_value(6*PI),run_time=5.,rate_func=linear)
         dust.clear_updaters();earth.clear_updaters()
         self.play(Flash(dust.get_center(),color=GOLD,flash_radius=.35))
@@ -368,7 +460,7 @@ class MeteorHeadRCS(Slide):
         # Source: actual 433-element layout from meteor/cal/maarsy_antenna_positions.txt,
         # preserved with source hash in meteor_rcs/maarsy_array.h5. Perspective
         # schematic of an antenna array, not a photograph or beam calculation.
-        self.start_slide('MAARSY sees the plasma surrounding the grain',
+        self.start_slide('A radar sees the plasma surrounding the grain',
             'The ion/electron cloud is much larger than the solid particle. A high-power large-aperture radar probes the '
             'induced plasma current, provided the echo exceeds its detection threshold. The cloud drawing is schematic; '
             'its quantitative kinetic shape is derived later. D_eff is an effective projected diameter of the scattering '
@@ -431,7 +523,7 @@ class MeteorHeadRCS(Slide):
         self.add(MathTex(r'\mathbf v',color=GOLD,font_size=35).next_to(velocity,UP),
                  MathTex(r'z_{\rm DO}>0\quad\text{behind}',font_size=30).next_to(axis,DOWN))
         definitions=self.equation(r'h:\ \text{altitude [m]};\quad v:\ \text{speed [m/s]};\quad m:\ \text{mass [kg]};\quad T_M:\ \text{grain temperature [K]}',27).shift(UP*2)
-        frequency=self.equation(r'f_0=53.5\ \mathrm{MHz},\quad \lambda_0=c/f_0=5.60\ \mathrm m,\quad T_0=18.7\ \mathrm{ns}',29).shift(DOWN*2.35)
+        frequency=self.equation(r'f_0=53.5\ \mathrm{MHz},\quad \lambda_0=c/f_0=5.60\ \mathrm m',29).shift(DOWN*2.35)
         self.play(Write(definitions),Write(frequency));self.finish()
 
     def term_definitions(self, entries, position, size=23, width=6.):
@@ -489,7 +581,71 @@ class MeteorHeadRCS(Slide):
             r'\rho_A:\ \text{atmospheric mass density [kg/m}^3\text{]};\quad v:\ \text{relative speed [m/s]}',
             r'A:\ \text{projected area [m}^2\text{]};\quad\Lambda:\ \text{heat-transfer coefficient [dimensionless]}'],[0,-2.75,0],24,12.4)
         self.play(FadeIn(definitions))
-        self.play(FadeIn(self.equation(r'\Lambda\ \text{sets heating};\quad\Gamma\ \text{sets drag. They are separate coefficients.}',22,MUTED).shift(DOWN*3.42)))
+        self.finish()
+
+    def free_molecular_drag(self):
+        # Source: Bariselli et al. (2020), doi:10.1093/mnras/stz3559;
+        # Loth et al. (2021), doi:10.2514/1.J060153, free-molecular sphere limit.
+        # The archived model uses Gamma*rho*A*v^2, not 1/2*Gamma*rho*A*v^2.
+        self.start_slide('A small grain meets individual atmospheric molecules',
+            'Knudsen number compares the undisturbed air--air mean free path to grain diameter. '
+            'In free molecular flow, molecules usually reach the grain without colliding with another gas '
+            'molecule over the grain scale. Use molecular momentum and energy transfer, rather than a continuum '
+            'sphere drag coefficient. A dense ablation vapour can invalidate the unshielded-grain approximation. '
+            'This air--air mean free path is distinct from the ablated-neutral collision lengths in the DO model.')
+        grain=Circle(.22,color=RED,fill_opacity=.16).move_to([-3.,1.,0])
+        diameter=DoubleArrow([-3.22,.48,0],[-2.78,.48,0],buff=0,color=RED,
+                             max_tip_length_to_length_ratio=.2)
+        gas=VGroup(*[Dot([-5.7+.25*(j%3),.4+.5*(j//3),0],radius=.04,color=BLUE) for j in range(9)])
+        tracks=VGroup(*[Line([-5.8,y,0],[-3.4,y,0],color=BLUE,stroke_opacity=.25) for y in [.4,1.,1.6]])
+        self.play(Create(grain),Create(tracks),FadeIn(gas),GrowArrow(diameter))
+        self.add(self.equation(r'D=2a',26,RED).next_to(diameter,DOWN,buff=.15),
+            self.prose('Individual molecular impacts',25,BLUE).move_to([-3.8,2.25,0]))
+        self.play(gas.animate.shift(RIGHT*1.9),Indicate(grain,color=GOLD),run_time=1.1)
+        kn=self.equation(r'\mathrm{Kn}=\frac{\lambda_{nn}}{D}\gg1',43,BLUE).move_to([3.1,1.55,0])
+        speed=self.equation(r's\equiv\frac{v}{\sqrt{2k_BT_A/m_A}}\gg1',36,GOLD).move_to([3.1,.25,0])
+        self.play(Write(kn),Write(speed))
+        defs=self.term_definitions([
+            r'\lambda_{nn}:\ \text{ambient air--air mean free path [m]};\quad D:\ \text{grain diameter [m]}',
+            r's:\ \text{molecular speed ratio [dimensionless]};\quad v:\ \text{grain--air relative speed [m/s]}',
+            r'T_A:\ \text{air temperature [K]};\quad m_A:\ \text{air-particle mass [kg]};\quad k_B:\ \text{Boltzmann constant [J/K]}'],[0,-1.55,0],24,12.4)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('Free molecular hypersonic flow: momentum transfer is set by gas--surface collisions.',26).shift(DOWN*2.85)))
+        self.play(FadeIn(self.prose('An ablation-vapour shield can change the transfer coefficients.',24,RED).shift(DOWN*3.35)))
+        self.citation('Bariselli et al. (2020)','https://doi.org/10.1093/mnras/stz3559')
+        self.finish()
+
+        self.start_slide('The same impacts transfer momentum and energy',
+            'The intercepted atmospheric mass flux is rho_A v A. Multiplying by transferred momentum per kilogram '
+            'gives drag; multiplying by deposited kinetic energy per kilogram gives grain heating. '
+            'Gamma and Lambda are distinct dimensionless coefficients. The aerodynamic coefficient C_D is '
+            'defined with dynamic pressure rho v squared over two, so C_D equals two Gamma. '
+            'For an unshielded sphere at high molecular speed ratio, with outgoing molecular speeds small '
+            'compared with incident speed, Gamma is approximately one and C_D approximately two. '
+            'A low-speed continuum value around 0.47 is not appropriate here. '
+            'At low molecular speed ratio free molecular Epstein drag is instead proportional to v; '
+            'the present meteor-entry limit is hypersonic. The numerical solver is unchanged.')
+        flux=self.equation(r'\dot M_{\rm air}=\rho_AvA\qquad[\mathrm{kg\,s^{-1}}]',35,BLUE).shift(UP*2.4)
+        self.play(Write(flux))
+        momentum=self.term_definitions([
+            r'\frac{\text{transferred momentum}}{\text{incident mass}}=\Gamma v\quad[\mathrm{m/s}]',
+            r'F_D=\Gamma\dot M_{\rm air}v=\Gamma\rho_AAv^2\quad[\mathrm N]',
+            r'\dot v_{\rm drag}=-\frac{\Gamma\rho_AAv^2}{m}'],[-3.4,.9,0],30,6.3)
+        energy=self.term_definitions([
+            r'\frac{\text{deposited energy}}{\text{incident mass}}=\Lambda\frac{v^2}{2}\quad[\mathrm{J/kg}]',
+            r'P_{\rm heat}=\frac12\Lambda\dot M_{\rm air}v^2',
+            r'P_{\rm heat}=\frac12\Lambda\rho_AAv^3\quad[\mathrm W]'],[3.4,.9,0],30,6.3)
+        for left,right in zip(momentum,energy):self.play(Write(left),Write(right))
+        convention=self.equation(r'F_D\equiv\frac12C_D\rho_AAv^2\quad\Longrightarrow\quad\boxed{\Gamma=C_D/2}'
+            r'\quad\xrightarrow[\text{hypersonic sphere}]{\text{free molecular}}\quad\Gamma\simeq1\ (C_D\simeq2)',30,GOLD).shift(DOWN*1.05)
+        self.play(Write(convention))
+        defs=self.term_definitions([
+            r'F_D:\ \text{drag magnitude [N], opposite grain motion};\quad m:\ \text{grain mass [kg]}',
+            r'\Gamma,\ C_D:\ \text{drag coefficients};\quad\Lambda:\ \text{heat-transfer coefficient (all dimensionless)}',
+            r'\rho_A:\ \text{air mass density [kg/m}^3\text{]};\quad A=\pi a^2:\ \text{projected grain area [m}^2\text{]}'],[0,-2.25,0],23,12.4)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('Reflection and thermal accommodation affect momentum and heating differently.',25,RED).shift(DOWN*3.25)))
+        self.citation('Loth et al. (2021)','https://doi.org/10.2514/1.J060153')
         self.finish()
 
     def cooling_terms(self):
@@ -1033,12 +1189,23 @@ class MeteorHeadRCS(Slide):
         self.start_slide('References',
             'Equations are drawn from the cited primary sources. The chained calculation is an independent implementation '
             'with stated one-species assumptions and unresolved cutoff convergence. All figure inputs are bundled as HDF5.')
-        entries=[('Thermal ablation: Hill et al. (2005)','doi:10.1051/0004-6361:20053053'),
+        entries=[('Solar radiation: Burns, Lamy and Soter (1979)','doi:10.1016/0019-1035(79)90050-2'),
+                 ('Rarefied entry: Bariselli et al. (2020)','doi:10.1093/mnras/stz3559'),
+                 ('Free molecular sphere drag: Loth et al. (2021)','doi:10.2514/1.J060153'),
+                 ('Thermal ablation: Hill et al. (2005)','doi:10.1051/0004-6361:20053053'),
                  ('Primary Si ionization: Jones (1997)','doi:10.1093/mnras/288.4.995'),
                  ('Kinetics / density: Dimant and Oppenheim (2017)','doi:10.1002/2017JA023960 and 10.1002/2017JA023963'),
                  ('Plasma FDTD: Marshall and Close (2015)','doi:10.1002/2015JA021238'),
                  ('Head-plasma profiles: Marshall, Brown and Close (2017)','doi:10.1016/j.pss.2016.12.011')]
-        rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose(doi,21,BLUE)).arrange(DOWN,buff=.08,aligned_edge=LEFT)
-                      for title,doi in entries]).arrange(DOWN,buff=.28,aligned_edge=LEFT).move_to(ORIGIN)
+        rows=VGroup(*[VGroup(self.prose(title,22,FG),self.prose(doi,18,BLUE)).arrange(DOWN,buff=.08,aligned_edge=LEFT)
+                      for title,doi in entries]).arrange(DOWN,buff=.2,aligned_edge=LEFT).move_to(ORIGIN)
         for row in rows:self.play(FadeIn(row),run_time=.35)
+        links=[]
+        for (title,doi),row in zip(entries,rows):
+            dois=doi.removeprefix('doi:').split(' and ')
+            for index,value in enumerate(dois):
+                target=row if len(dois)==1 else row.copy().stretch(.5,0).move_to(
+                    row.get_left()+row.width*(.25+.5*index)*RIGHT)
+                links.append((title+(' Part '+str(index+1) if len(dois)>1 else ''),'https://doi.org/'+value,target))
+        self.paper_links(links)
         self.wait(1.)

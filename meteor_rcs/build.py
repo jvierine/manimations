@@ -26,7 +26,7 @@ def package():
            'meteor_rcs/inputs.h5','meteor_rcs/data.h5','meteor_rcs/maarsy_array.h5','meteor_rcs/prepare_assets.py',
            'meteor_rcs/do_density.py','meteor_rcs/__init__.py','meteor_rcs/build.py',
            'meteor_rcs/inspect_slides.py','planck_to_ktb.py','rayleigh_jeans_accuracy.py',
-           'export_web.py','final_slide_guard.js','manim.cfg']
+           'export_web.py','final_slide_guard.js','paper_links.js','manim.cfg']
     names += ['meteor_rcs/plots/Cargo.toml','meteor_rcs/plots/Cargo.lock',
               'meteor_rcs/plots/src/main.rs']
     names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/assets').glob('*')]
