@@ -23,13 +23,14 @@ def main():
 def package():
     destination=ROOT/'web/meteor-head-rcs'
     names=['AGENTS.md','meteor_head_rcs.py','test_meteor_rcs.py','meteor_rcs/README.md',
-           'meteor_rcs/inputs.h5','meteor_rcs/data.h5','meteor_rcs/maarsy_array.h5','meteor_rcs/prepare_assets.py',
+           'meteor_rcs/ablation_profiles.h5','meteor_rcs/inputs.h5','meteor_rcs/data.h5','meteor_rcs/maarsy_array.h5','meteor_rcs/prepare_assets.py',
            'meteor_rcs/do_density.py','meteor_rcs/__init__.py','meteor_rcs/build.py',
            'meteor_rcs/inspect_slides.py','planck_to_ktb.py','rayleigh_jeans_accuracy.py',
            'export_web.py','final_slide_guard.js','paper_links.js','manim.cfg']
     names += ['meteor_rcs/plots/Cargo.toml','meteor_rcs/plots/Cargo.lock',
               'meteor_rcs/plots/src/main.rs']
-    names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/assets').glob('*')]
+    names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/plots/src').rglob('*') if p.is_file() and p.name!='main.rs']
+    names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/assets').rglob('*') if p.is_file()]
     with zipfile.ZipFile(destination/'source.zip','w',zipfile.ZIP_DEFLATED) as archive:
         for name in names:archive.write(ROOT/name,arcname=name)
     print('Complete browser deck:',destination/'index.html')

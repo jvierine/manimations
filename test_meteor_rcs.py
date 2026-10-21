@@ -66,3 +66,31 @@ def test_isotropic_photons_carry_forward_momentum_in_sun_frame():
         restored,ratio=boost_photon(direction,-beta)
         assert np.isclose(np.linalg.norm(restored),1.)
         np.testing.assert_allclose(energy*ratio,1.)
+
+
+def test_surface_flux_and_published_do_prefactor_reduce_to_q_normalization():
+    # Part 1 Eq. 18 uses the OUTGOING surface density n0. Its half-normal
+    # mean speed is sqrt(2/pi)*VT; using full-Maxwellian effusion gives a factor 2 error.
+    from scipy.integrate import quad
+    from scipy.constants import Boltzmann
+    for temperature,speed,air_density,radius,beta in [(1800.,2e4,1e19,5e-5,.2),(2500.,7e4,4e18,5e-4,.7)]:
+        vt=np.sqrt(Boltzmann*temperature/(28.085*atomic_mass))
+        mean=quad(lambda x:x*np.sqrt(2/np.pi)*np.exp(-x*x/2),0,np.inf)[0]*vt
+        np.testing.assert_allclose(mean,np.sqrt(2/np.pi)*vt)
+        n0=1e20; sigma=5.61e-19*(speed/1000)**(-.8)
+        length=vt/(air_density*sigma*speed);ma=29*atomic_mass;ms=28.085*atomic_mass
+        rate=4*np.pi*radius**2*n0*mean
+        # Dimant--Oppenheim Part 2 Eq. 45, with F=H/(R/lambda_T).
+        published=8*np.pi*radius**2*n0*air_density*(beta*sigma/(4*np.pi))*(1+ms/ma)/(np.sqrt(3)*length)
+        np.testing.assert_allclose(source_quantities(rate*ms,speed,beta,length,ma)[2],published,rtol=1e-12)
+
+
+def test_native_gallery_matches_python_and_physical_surface_level():
+    with h5py.File(ROOT/'data.h5') as f:
+        for z,r,value in f['gallery/checks'][:]:
+            np.testing.assert_allclose(value,electron_density(z,r),rtol=2e-7)
+        for t,r in zip(f['gallery/theta'][::8],f['gallery/radius'][::8]):
+            np.testing.assert_allclose(electron_density(r*np.cos(t),r*np.sin(t)),.05,rtol=2e-7)
+        length=f.attrs['density_100km_lambda_m']
+        n=f.attrs['density_100km_number_density']
+        np.testing.assert_allclose(length,collision_lengths(50000.,2000.,n)[1])

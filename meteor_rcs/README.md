@@ -77,7 +77,7 @@ accents to match the native Rustplotlib figures.
 
 All quantitative plots are constructed and rendered by
 [`jvierine/rustplotlib`](https://github.com/jvierine/rustplotlib), pinned to
-`6c41f00ffcafc76d7850c885f63afd29ad097556` in `plots/Cargo.toml`.
+`2da4af7f2a2274b875608bf435e4fa3b368ab98d` in `plots/Cargo.toml`.
 `plots/src/main.rs` owns axes, labels, layout, colors, and SVG/PNG exports.
 Manim imports the PNGs; the matching SVGs remain available for vector reuse.
 Python prepares numerical arrays and passes them over stdin to the small Rust
@@ -150,3 +150,72 @@ section, and an RHCP channel is not the sum over receive polarizations.
 The Maxwell solver follows the cold-plasma scattering framework of Marshall and
 Close, using an independent Rust implementation with analytic incident fields
 and an induced-current far-field integral.
+
+## Expanded density and electromagnetic derivations
+
+The deck introduces the Dimant--Oppenheim kinetic model before its function.
+The normalization sequence starts with the outgoing half-Maxwellian surface
+flux, eliminates `a^2 n0` using the atom production rate, and follows Part 2
+Eq. 45 through `Gion = beta*sigma_c/(4*pi)` and `q = beta*Ndot/v` to `nstar`.
+The ion-to-air mass factor is traced through the recoil speed and the
+velocity-space integral in Part 2 Eqs. 3 and 10--11. The kinetic transport
+picture makes clear why ions born along earlier trajectories contribute to a
+local density. The numerical prefactor belongs to that published kinetic
+solution; it is not a geometric cloud-volume estimate.
+
+The rotating log-height surface reproduces the Rustplotlib gallery's density
+function, sampling domain and colormap. Plot height is explicitly log density.
+A separate rotating physical isodensity surface (`ne/nstar = 0.05`) is obtained
+by solving the same function for radius at each polar angle and revolving it
+about the trajectory axis. It is an illustrative density level, not a plasma
+edge or FDTD cutoff. `Figure::check_annotations` checks captions against the
+projected geometry in all 48 frames of each animation. Camera-independent
+caption space avoids labels moving through the plotted surface.
+
+The 2D density map retains dimensionless axes and adds metre axes. Their
+calibration uses archived MSIS neutral density at **100 km altitude**, a
+50 km/s meteoroid and a 2000 K grain. The corresponding thermal collision
+length is about 0.1045 m; the fast atom's atmospheric path is about 6.790 m.
+Altitude alone cannot determine the DO thermal collision length.
+
+The Yee-grid animation explains field staggering in space and time. CPML is
+spelled out as convolutional perfectly matched layer, with an outgoing-pulse
+schematic and its derivative-memory update. The electron response is derived
+from the Lorentz force and linear collisional momentum loss, then converted
+to current using `J = -ne*e*ue`. A separate restoring-field animation explains
+the plasma-frequency scale. The dielectric follows from `exp(-i*omega*t)`,
+`J = sigma*E`, `J = dP/dt`, and `D = epsilon0*E + P`. The constant collision
+frequency in the archived example is identified as an assumption.
+
+Additional references:
+
+- [Bronshten (1983), Physics of Meteoric Phenomena](https://doi.org/10.1007/978-94-009-7222-3).
+- [Sugar et al. (2018), section 5.3](https://doi.org/10.1002/2018JA025265), adoption of the empirical collision law.
+- [Yee (1966)](https://doi.org/10.1109/TAP.1966.1138693), staggered Maxwell discretization.
+- [Roden and Gedney (2000)](https://doi.org/10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A), convolution PML.
+
+## Lecture structure
+
+Four sections follow the grain's journey: orbital evolution, atmospheric
+entry and ablation, ionization and plasma morphology, then radar scattering
+and received power. Three presenter-controlled interludes separate them.
+The MAARSY illustration opens the plasma section. The ablation section ends
+with four altitude-profile panels using six saved 45-degree MetAblate cases
+from sabmod, bundled in ablation_profiles.h5. These 1e-8 kg cometary cases
+are labelled separately from the 100-micrometre stony Rust-chain example.
+No Matplotlib images or new ablation integrations are used.
+
+The Maxwell sequence states why field feedback matters, then derives the
+leapfrog updates from Faraday and Ampere-Maxwell laws. It defines the discrete
+curl, time index, fields and constants before discussing time-step limits.
+The factor 0.7 is identified as a solver margin. The radar equation is built
+from incident flux, return flux, and effective aperture, with a clickable
+MIT Lincoln Laboratory radar-course reference.
+
+The Poynting--Robertson section now also derives its tangential force: zero
+net emitted photon momentum in the grain frame transforms to outgoing
+momentum P_emit*v_t/c^2 per second in the Sun frame. For an ideal absorbing
+grain in radiative equilibrium, P_emit is approximately P_abs to the order
+retained. Incoming radial sunlight supplies no tangential momentum, leaving
+the negative recoil. This states the assumptions behind the displayed drag
+formula rather than presenting it as a universal optical-scattering law.

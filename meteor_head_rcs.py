@@ -110,17 +110,20 @@ class MeteorHeadRCS(Slide):
         return ImageMobject(ROOT/'assets'/name).set(width=width)
 
     def construct(self):
+        self.title_slide()
+        self.lecture_map()
+        self.section_card('1. The journey to Earth','How does comet dust reach an Earth-crossing orbit?')
         self.story_release()
         self.story_pr_drag()
+        self.pr_drag_derivation()
         self.solar_radiation_pressure()
         self.story_orbits()
         self.story_final_laps()
+        self.interlude('The grain has a long commute. You get a short break.',
+            ['Drink some water.','Call your mom.','Next: what happens when the atmosphere gets in the way.'])
+        self.section_card('2. Atmospheric entry and ablation','Where do the heat and evaporated atoms come from?')
         self.story_entry()
         self.story_evaporation()
-        self.story_collision()
-        self.story_cloud()
-        self.opening()
-        self.geometry()
         self.grain_geometry()
         self.atmospheric_heating()
         self.free_molecular_drag()
@@ -128,12 +131,22 @@ class MeteorHeadRCS(Slide):
         self.energy()
         self.mass_loss()
         self.trajectory_equations()
+        self.ablation_profiles()
         self.trajectory()
+        self.interlude('The meteor is losing mass. You can gain a snack.',
+            ['Go for a short run.','Eat a Snickers bar.','Next: why the escaped atoms become visible to radar.'])
+        self.section_card('3. The plasma around the meteoroid','How do evaporated atoms make a three-dimensional electron cloud?')
+        self.story_cloud()
+        self.story_collision()
+        self.geometry()
         self.ionization()
         self.line_density()
         self.source_terms()
+        self.do_introduction()
+        self.do_gallery_animation()
         self.do_parameters()
         self.collision_length()
+        self.collision_cross_section()
         self.collision_frames()
         self.velocity_dependence()
         self.mean_free_path_coordinates()
@@ -143,6 +156,12 @@ class MeteorHeadRCS(Slide):
         self.shape_terms()
         self.density_3d()
         self.worked_example()
+        self.interlude('The plasma has a shape. The radar still wants a number.',
+            ['Stretch your legs.','Tickle somebody who consents.','Next: turn the electron cloud into a measurable echo.'])
+        self.section_card('4. From plasma to a radar measurement','How much power returns, and what can it tell us about the grain?')
+        self.opening()
+        self.yee_mesh()
+        self.cpml_boundary()
         self.mesh()
         self.plasma_response()
         self.maxwell()
@@ -152,10 +171,51 @@ class MeteorHeadRCS(Slide):
         self.polarization()
         self.limits()
         self.convergence()
+        self.radar_equation()
         self.detection()
         self.inference()
         self.references()
-        # No cleanup: the completed references remain on the final slide.
+
+    def lecture_map(self):
+        self.start_slide('One grain, four physical questions',
+            'Roadmap: dynamics brings dust to Earth; atmospheric entry supplies evaporated atoms; '
+            'ionization and kinetic transport make plasma; electromagnetic scattering and the radar equation make an observation.')
+        entries=[('1. Space','Poynting--Robertson drag and planetary perturbations',GOLD),
+            ('2. Atmosphere','Heating, evaporation, and the evolving grain',RED),
+            ('3. Plasma','Ionization, collision lengths, and electron density',GREEN),
+            ('4. Radar','Induced current, scattering, and received echo power',BLUE)]
+        blocks=VGroup(*[VGroup(self.prose(title,31,color),self.prose(desc,26,FG)).arrange(DOWN,buff=.13,aligned_edge=LEFT)
+            for title,desc,color in entries]).arrange(DOWN,buff=.38,aligned_edge=LEFT).move_to(ORIGIN)
+        for block in blocks:self.play(FadeIn(block))
+        self.finish()
+
+    def section_card(self,title,question):
+        self.start_slide(title,question)
+        self.play(FadeIn(self.prose(question,34,FG).shift(UP*.6)))
+        line=Line(LEFT*4.8,RIGHT*4.8,color=BLUE).shift(DOWN*.7)
+        self.play(Create(line));self.finish()
+
+    def interlude(self,title,lines):
+        self.start_slide('Interlude',title)
+        self.play(FadeIn(self.prose(title,32,BLUE).shift(UP*1.8)))
+        group=VGroup(*[self.prose(line,29,FG if i<2 else MUTED) for i,line in enumerate(lines)]).arrange(DOWN,buff=.55).shift(DOWN*.2)
+        for item in group:self.play(FadeIn(item))
+        self.finish()
+
+    def title_slide(self):
+        self.start_slide('Meteor head echo radar cross section',
+            'Juha Vierinen. Ablation, formation of the near-meteoroid plasma, and electromagnetic scattering.')
+        subtitle=self.prose('Ablation, plasma formation, and electromagnetic scattering',30,FG).shift(UP*1.8)
+        author=self.prose('Juha Vierinen',36,BLUE).shift(UP*.85)
+        self.play(FadeIn(subtitle),FadeIn(author))
+        rng=np.random.default_rng(13)
+        center=np.array([0,-1.25,0])
+        plasma=VGroup(*[Dot(center+[rng.normal(.3,.9),rng.normal(0,.45),0],
+            radius=.025,color=GREEN,fill_opacity=.65) for _ in range(100)])
+        grain=self.grain(center,.08)
+        self.play(FadeIn(plasma),FadeIn(grain))
+        self.play(FadeIn(self.prose('The solid grain creates the plasma that scatters the radar wave.',27).shift(DOWN*2.8)))
+        self.finish()
 
     def grain(self, center=ORIGIN, scale=.4):
         angles=np.linspace(0,TAU,10,endpoint=False)
@@ -262,6 +322,21 @@ class MeteorHeadRCS(Slide):
         self.play(Write(force),FadeIn(meaning))
         self.play(FadeIn(self.prose('Tangential recoil removes angular momentum; aberration is exaggerated.',20).shift(DOWN*3.52)))
         self.citation('Burns, Lamy and Soter (1979)','https://doi.org/10.1016/0019-1035(79)90050-2')
+        self.finish()
+
+    def pr_drag_derivation(self):
+        self.start_slide('Why is the Poynting--Robertson drag proportional to velocity?',
+            'Ideal absorbing grain, isotropic thermal emission in its rest frame, and radiative equilibrium. '
+            'For tangential motion, incident sunlight has no tangential momentum in the Sun frame. '
+            'A Lorentz boost of the total emitted photon momentum gives outgoing tangential momentum per unit time. '
+            'At first order in v/c, rest-frame emitted power equals absorbed power in this balance.')
+        self.play(FadeIn(self.prose('Isotropic emission has zero net momentum in the grain frame.',28,FG).shift(UP*2.35)))
+        self.play(Write(self.equation(r'\sum p_t^\prime=0,\qquad E^\prime=P_{\rm em}^\prime\,dt^\prime',36).shift(UP*1.3)))
+        self.play(Write(self.equation(r'\text{Sun frame: }\quad\sum p_t=\gamma\frac{E^\prime v_t}{c^2},\qquad dt=\gamma\,dt^\prime',35,BLUE).shift(UP*.1)))
+        self.play(Write(self.equation(r'\dot p_{t,\rm out}=\frac{P_{\rm em}^\prime v_t}{c^2}\simeq\frac{P_{\rm abs}v_t}{c^2}',35,GREEN).shift(DOWN*1.05)))
+        self.play(Write(self.equation(r'\boxed{\mathbf F_{\mathrm{PR},t}=-\frac{P_{\rm abs}}{c^2}\mathbf v_t}',40,GOLD).shift(DOWN*2.2)))
+        self.play(FadeIn(self.equation(r'P_{\rm em}^\prime,P_{\rm abs}:\ \mathrm W;\quad\gamma=(1-v^2/c^2)^{-1/2};\quad p_t:\ \text{tangential photon momentum}',22,MUTED).shift(DOWN*3.25)))
+        self.citation('Burns, Lamy and Soter (1979), solar radiation forces','https://doi.org/10.1016/0019-1035(79)90050-2')
         self.finish()
 
     def solar_radiation_pressure(self):
@@ -778,6 +853,16 @@ class MeteorHeadRCS(Slide):
             r'\rho_A(h):\ \text{atmospheric mass density [kg/m}^3\text{]}',r'T_M:\ \text{grain temperature [K]}'],[3.3,-2.,0],23)
         self.play(FadeIn(left),FadeIn(right));self.finish()
 
+    def ablation_profiles(self):
+        self.start_slide('What the ablation model predicts along the path',
+            'Previously computed MetAblate profiles from sabmod, six speeds and 45 degree entry elevation. '
+            'Initial mass is 1e-8 kg for these cometary cases, distinct from the illustrative 100 micrometre stony chain example. '
+            'The profiles show temperature, remaining mass, speed, and physical mass loss versus altitude. No new integration is launched.')
+        self.play(FadeIn(self.image('ablation_profiles.png',11.7).shift(UP*.2)))
+        self.play(FadeIn(self.equation(r'm_0=10^{-8}\ \mathrm{kg},\quad\chi=45^\circ;\quad v_0=11,15,20,32,53,72\ \mathrm{km/s}',26,BLUE).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('Heating precedes strong evaporation; mass loss and deceleration then change the grain.',25).shift(DOWN*3.25)))
+        self.finish()
+
     def trajectory(self):
         # Source: Archived native trajectory: meteor_rcs/inputs.h5; native plots: rustplotlib
         self.start_slide('The output is a trajectory, not a single mass-loss rate',
@@ -821,16 +906,56 @@ class MeteorHeadRCS(Slide):
         self.finish()
 
     def collision_length(self):
-        # Source: Dimant--Oppenheim Part 1, primary-neutral collision rate and path; adopted sigma_c
-        # in fdtd
-        self.start_slide('The DO length is the ablated-neutral travel distance',
-            'V_T is the thermal speed of the Si proxy. Collision rate is set by atmospheric flux past the grain. '
-            'The effective velocity-dependent cross section is adopted, not a new validation of high-speed collision physics.')
-        self.stack(self.equation(r'V_T=\sqrt{k_BT_M/m_{\rm Si}},\qquad \nu_c=n_A\sigma_c(v)v',37),
-            self.equation(r'n_A:\ \text{atmospheric number density};\quad\sigma_c:\ \text{heavy-particle collision cross section}',24,MUTED),
-            self.equation(r'\boxed{\lambda_T=\frac{V_T}{\nu_c}=\frac{V_T}{v}\ell_A},\qquad \ell_A=\frac{1}{n_A\sigma_c}',43,BLUE),
-            self.equation(r'\sigma_c=5.61\times10^{-19}v_k^{-0.8}\ \mathrm{m^2}',30),
-            self.equation(r'\text{Both coordinates scale with }\lambda_T\text{; angular structure stays anisotropic.}',25,MUTED))
+        # Source: DO Part 1, Eqs. 6 and 20; Sugar et al. (2018), Eq. 1.
+        self.start_slide('Mean free paths of evaporated meteor atoms',
+            'ell_A is the fast ablated-neutral collision mean free path measured through the atmosphere. '
+            'lambda_T is the primary-neutral thermal collision length relative to the grain, used to scale the DO '
+            'near-head plasma distribution. Neither is the ambient air--air thermal mean free path. '
+            'The fast-stream approximation uses relative speed approximately equal to meteor speed.')
+        self.play(Write(self.equation(r'\nu_c=n_A\sigma_c(v)v,\qquad\tau_c=1/\nu_c',36).shift(UP*2.1)))
+        first=self.equation(r'\ell_A=\frac{v}{\nu_c}=\frac{1}{n_A\sigma_c}',43,BLUE).move_to([-3.4,.75,0])
+        second=self.equation(r'\boxed{\lambda_T=\frac{V_T}{\nu_c}=\frac{V_T}{v}\ell_A}',41,GREEN).move_to([3.4,.75,0])
+        self.play(Write(first),Write(second))
+        self.play(FadeIn(self.prose('Fast ablated-neutral mean free path',25,BLUE).move_to([-3.4,-.3,0])),
+            FadeIn(self.prose('Thermal separation from the grain',25,GREEN).move_to([3.4,-.3,0])))
+        defs=self.term_definitions([
+            r'n_A:\ \text{air number density [m}^{-3}\text{]};\quad\sigma_c:\ \text{atom--air collision cross section [m}^2\text{]}',
+            r'v:\ \text{meteor--air speed [m/s]};\quad V_T=\sqrt{k_BT_M/m_{\rm Si}}:\ \text{thermal speed [m/s]}',
+            r'\nu_c:\ \text{collision rate [s}^{-1}\text{]};\quad\tau_c:\ \text{mean time to first collision [s]}'],[0,-1.8,0],25,12.4)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('The DO plasma distribution uses distance from the grain, scaled by the thermal length.',25).shift(DOWN*3.1)))
+        self.citation('Dimant and Oppenheim (2017), Part 1','https://doi.org/10.1002/2017JA023960')
+        self.finish()
+
+    def collision_cross_section(self):
+        # Bronshten (1983) parameterization, reproduced in Sugar et al. (2018),
+        # section 5.3, Eq. 13, and Sugar et al. (2019), Eq. 9.
+        # The coefficient is inherited, not a Si-specific laboratory fit.
+        self.start_slide('The atom--air collision cross section',
+            'The adopted sigma_c is the effective heavy-particle scattering cross section governing the first '
+            'collision of an ablated atom with air. Bronshten (1983) supplies the empirical velocity law; '
+            'Sugar et al. (2018), section 5.3, Eq. 13, uses it rather than deriving an absolute cross section '
+            'from the Lennard-Jones potentials tested there. Their comparison of neutral--neutral and ion--neutral '
+            'momentum-transfer cross sections supports treating those as similar under their assumptions, not '
+            'universal species independence. This deck adopts the law for its Si proxy without a Si-specific '
+            'cross-section validation. It is separate from ionization probability and electron-neutral damping.')
+        target=Circle(.65,color=BLUE,fill_opacity=.08).move_to([-4.3,1.,0])
+        atom=Dot([-6.,1.,0],radius=.06,color=GOLD)
+        path=Arrow([-5.85,1.,0],[-4.95,1.,0],buff=0,color=GOLD)
+        self.play(Create(target),FadeIn(atom),GrowArrow(path))
+        self.add(self.equation(r'\sigma_c',31,BLUE).next_to(target,DOWN,buff=.2),
+            self.prose('Effective collision area',23).move_to([-4.3,2.1,0]))
+        law=self.equation(r'\sigma_c(v_{\rm rel})=5.61\times10^{-19}v_k^{-0.8}\ \mathrm{m^2}',38,BLUE).move_to([2.3,1.55,0])
+        speed=self.equation(r'v_k\equiv\frac{v_{\rm rel}}{1\ \mathrm{km\,s^{-1}}},\qquad v_{\rm rel}\simeq v',30).move_to([2.3,.5,0])
+        self.play(Write(law),Write(speed))
+        self.play(FadeIn(self.prose('Bronshten (1983) empirical law; used by Sugar et al. (2018), section 5.3.',26,FG).shift(DOWN*.8)))
+        self.play(Write(self.equation(r'\nu_c=n_A\sigma_c v,\qquad\ell_A=(n_A\sigma_c)^{-1},\qquad\lambda_T=V_T/\nu_c',32,GREEN).shift(DOWN*1.65)))
+        self.play(FadeIn(self.prose('This is a collision cross section. Ionization probability is a separate input.',25).shift(DOWN*2.55)))
+        self.play(FadeIn(self.prose('The same law is adopted for the Si proxy; it is not a Si-specific measurement.',25,RED).shift(DOWN*3.15)))
+        refs=[('Bronshten (1983)','https://doi.org/10.1007/978-94-009-7222-3',-2.4),
+              ('Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265',2.4)]
+        labels=[(label,url,self.prose(label,18,BLUE).move_to([x,-3.78,0])) for label,url,x in refs]
+        self.play(*[FadeIn(item) for _,_,item in labels]);self.paper_links(labels)
         self.finish()
 
     def source_terms(self):
@@ -854,6 +979,61 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Production per path: losses and later trail chemistry require additional physics.',24).shift(DOWN*2.8)))
         self.finish()
 
+    def play_density_frames(self, folder, center=ORIGIN, width=10., seconds=5.):
+        """Native Rustplotlib frames; no screen-space text moves through data."""
+        from PIL import Image
+        frames=[np.asarray(Image.open(path).convert('RGBA')) for path in sorted((ROOT/'assets'/folder).glob('*.png'))]
+        picture=ImageMobject(frames[0]).set(width=width).move_to(center)
+        frame=ValueTracker(0)
+        picture.add_updater(lambda mob: setattr(mob,'pixel_array',frames[min(len(frames)-1,int(frame.get_value()))]))
+        self.play(FadeIn(picture))
+        self.play(frame.animate.set_value(len(frames)-1),run_time=seconds,rate_func=linear)
+        picture.clear_updaters()
+        return picture
+
+    def do_introduction(self):
+        self.start_slide('What does the Dimant--Oppenheim model predict?',
+            'A kinetic model for the near-meteoroid ion population formed from evaporated atoms. '
+            'We infer electron density from quasi-neutrality. It predicts the spatial distribution, not the radar cross section. '
+            'The first-collision approximation is not a model for the mature meteor trail.')
+        grain=Dot([-4.6,.8,0],radius=.15,color=GOLD)
+        air=VGroup(*[Dot([-3.+.35*j,1.25,0],radius=.045,color=BLUE) for j in range(5)])
+        self.add(grain,air)
+        atom=Dot(grain.get_center(),radius=.055,color=GOLD);self.add(atom)
+        self.play(atom.animate.shift([1.8,.45,0]),run_time=1.)
+        electron=Dot(atom.get_center()+DOWN*.3,radius=.045,color=GREEN)
+        self.play(atom.animate.set_color(RED),FadeIn(electron))
+        self.play(electron.animate.shift(RIGHT*.4))
+        labels=VGroup(self.prose('Evaporated atom',24,GOLD),self.prose('Energetic atom--air collision',24,BLUE),
+            self.prose('Ion and electron near the grain',24,GREEN)).arrange(DOWN,buff=.45).move_to([2.,.9,0])
+        for label in labels:self.play(FadeIn(label))
+        self.play(Write(self.equation(r'\text{evaporation}\ \longrightarrow\ \text{collisions}\ \longrightarrow\ n_i(\mathbf r)\simeq n_e(\mathbf r)',32,BLUE).shift(DOWN*1.35)))
+        self.play(FadeIn(self.prose('Kinetics gives plasma morphology; Maxwell equations give the radar echo.',27,FG).shift(DOWN*2.5)))
+        self.citation('Dimant and Oppenheim (2017): Part 1, physical model; Part 2, density solution','https://doi.org/10.1002/2017JA023960')
+        self.finish()
+        self.start_slide('The assumptions behind the near-meteoroid plasma shape',
+            'A steady source in the grain frame; thermal neutral launch speeds much less than meteoroid speed; '
+            'first ionizing collisions and ballistic secondary ions; isotropic differential ionization. '
+            'Quasi-neutrality is an approximation away from microscopic charge-separation scales.')
+        self.stack(self.equation(r'V_T\ll v:\quad\text{slow thermal escape from a fast-moving grain}',32),
+            self.equation(r'\text{steady spherical neutral source}\quad+\quad\text{directed atmospheric stream}',31),
+            self.equation(r'\text{first ionizing collision}\quad\longrightarrow\quad\text{ballistic secondary ions}',31,GREEN),
+            self.equation(r'G_{\rm ion}=\mathrm{constant\ in\ scattering\ angle}',30),
+            self.equation(r'n_e\simeq n_i:\quad\text{quasi-neutral electron-density approximation}',31,BLUE),
+            self.prose('The resulting plasma is axisymmetric and strongly different ahead of and behind the grain.',25))
+        self.citation('Dimant and Oppenheim (2017), Parts 1--2','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+    def do_gallery_animation(self):
+        self.start_slide('See the predicted density before using its formula',
+            'This rotating log-height surface uses the exact density function and colormap of the requested gallery example. '
+            'The two base coordinates are a meridional slice in thermal collision lengths. Height is log density, '
+            'not a third physical spatial coordinate. Positive axial coordinate is behind the grain.')
+        self.play_density_frames('do_turntable',center=[0,.1,0],width=10.,seconds=6.)
+        self.play(Write(self.equation(r'\text{Height and colour: }\log_{10}(8\pi n_e/n_\star)',29,BLUE).shift(DOWN*3.2)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 45--48','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
     def do_parameters(self):
         # Source: DO Parts 1--2; atmospheric inputs: archived MSIS; Si source approximation
         self.start_slide('Separate the source, atmosphere, and kinetic shape',
@@ -868,54 +1048,118 @@ class MeteorHeadRCS(Slide):
             (r'm_{\rm Si}=28.085\,u', 'Ablated atom mass in this single-species proxy', GREEN),
         ]
         for y, (tex, text, color) in zip([2.05,1.1,.15,-.8,-1.75],entries):
-            a=self.equation(tex,29,color).move_to([-3.9,y,0])
+            a=self.equation(tex,29,color)
+            if a.width>4.7:a.scale_to_fit_width(4.7)
+            a.move_to([-3.9,y,0])
             b=self.prose(text,23).move_to([2.8,y,0])
-            if b.width>7:b.scale_to_fit_width(7)
+            if b.width>6.5:b.scale_to_fit_width(6.5)
             self.play(FadeIn(a),FadeIn(b),run_time=.4)
         self.play(FadeIn(self.prose('After source normalization, grain area is not another free amplitude factor.',24).shift(DOWN*2.8)))
         self.finish()
 
     def collision_frames(self):
-        # Source: DO Part 1: primary neutrals have V about V_T, much less than meteor speed
-        self.start_slide('Two frames explain two very different path lengths',
-            'Both lengths use the same fast meteor-atom / air collision cross section. '
-            'ell_A is not the ordinary air-air thermal neutral mean free path. '
-            'In the grain rest frame the evaporated atom moves at thermal speed while atmospheric targets stream past at v.')
-        headings=VGroup(self.prose('Atmosphere frame',28,FG).move_to([-3.5,2.15,0]),
-            self.prose('Grain rest frame',28,FG).move_to([3.5,2.15,0]))
-        self.play(FadeIn(headings))
-        for center,span,color in [(-3.5,2.4,GOLD),(3.5,.8,BLUE)]:
-            atom=Dot([center-span/2,.6,0],radius=.09,color=GREEN)
-            target=Circle(.13,color=MUTED).move_to([center+span/2,.6,0])
-            arrow=Arrow(atom.get_center(),target.get_center(),buff=.17,color=color)
-            self.play(FadeIn(atom),FadeIn(target),GrowArrow(arrow),run_time=.5)
-        left=VGroup(self.equation(r'v\gg V_T',30,GOLD),
-            self.equation(r'\ell_A=v/\nu_c=1/(n_A\sigma_c)',30),
-            self.prose('Fast atom travels through nearly stationary air.',22)).arrange(DOWN,buff=.35).move_to([-3.5,-1.15,0])
-        right=VGroup(self.equation(r'V_T=\sqrt{k_BT_M/m_{\rm Si}}',30,BLUE),
-            self.equation(r'\lambda_T=V_T/\nu_c=(V_T/v)\ell_A',30),
-            self.prose('Neutral separates thermally from the grain.',22)).arrange(DOWN,buff=.35).move_to([3.5,-1.15,0])
-        self.play(FadeIn(left),FadeIn(right))
-        self.play(FadeIn(self.equation(r'\text{Same collision time: }1/\nu_c.\quad\text{Different velocities give different distances.}',27).shift(DOWN*2.65)))
+        # Source: DO Part 1 Eq. 20; common bulk motion cancels in separation.
+        self.start_slide('The atom stays near the moving grain until its first collision',
+            'The animation follows one neutral with an illustrative transverse thermal velocity. '
+            'Grain and neutral share the large bulk velocity in the atmosphere frame. In one collision time '
+            'they travel a long distance together, while their separation grows only at the thermal speed. '
+            'The thermal separation is exaggerated for visibility. The DO near-head plasma scale is this '
+            'separation, not the long path measured through air.')
+        self.play(FadeIn(self.prose('Atmosphere frame',28,FG).move_to([-3.5,2.4,0])),
+            FadeIn(self.prose('Moving with the grain',28,FG).move_to([3.5,2.4,0])))
+        start=np.array([-5.5,.45,0]);end=start+3.5*RIGHT
+        grain=self.grain(start,.11);atom=Dot(start+.15*UP,radius=.06,color=GREEN)
+        fixed=self.grain(np.array([2.5,.45,0]),.11)
+        relative_atom=Dot([2.5,.6,0],radius=.06,color=GREEN)
+        self.add(grain,atom,fixed,relative_atom)
+        path=Line(start+.15*UP,end+.9*UP,color=GREEN,stroke_opacity=.35)
+        self.play(Create(path),grain.animate.move_to(end),atom.animate.move_to(end+.9*UP),
+            relative_atom.animate.move_to([2.5,1.35,0]),run_time=2.,rate_func=linear)
+        separation=DoubleArrow(end+.22*UP,end+.78*UP,buff=0,color=BLUE,
+            max_tip_length_to_length_ratio=.2)
+        relative=DoubleArrow([2.5,.67,0],[2.5,1.23,0],buff=0,color=BLUE,
+            max_tip_length_to_length_ratio=.2)
+        bulk=DoubleArrow(start+.45*DOWN,end+.45*DOWN,buff=0,color=GOLD)
+        self.play(GrowArrow(separation),GrowArrow(relative),GrowArrow(bulk))
+        self.add(self.equation(r'\lambda_T',25,BLUE).next_to(separation,RIGHT,buff=.14),
+            self.equation(r'\lambda_T',25,BLUE).next_to(relative,RIGHT,buff=.14),
+            self.equation(r'\ell_A\simeq v\tau_c',28,GOLD).next_to(bulk,DOWN,buff=.15),
+            self.prose('Grain',22,GOLD).move_to([3.75,.3,0]),
+            self.prose('Evaporated neutral',22,GREEN).move_to([4.6,1.45,0]))
+        eq=self.equation(r'\Delta\mathbf r=\mathbf r_{\rm atom}-\mathbf r_{\rm grain}'
+            r'=\mathbf v_{\rm thermal}\tau_c\quad\Longrightarrow\quad\lambda_T=V_T\tau_c',33,BLUE).shift(DOWN*1.3)
+        self.play(Write(eq))
+        v=self.sample['sample_speed_kms'];vt=np.sqrt(1.380649e-23*self.sample['sample_temperature_k']/(28.085*1.66053906660e-27))
+        ratio=v*1000/vt;length=self.sample['sample_lambda_m']
+        example=self.equation(rf'v={v:.1f}\ \mathrm{{km/s}},\ V_T={vt/1000:.2f}\ \mathrm{{km/s}}:'
+            rf'\quad\ell_A={ratio*length:.1f}\ \mathrm m,\quad\lambda_T={length:.2f}\ \mathrm m',29).shift(DOWN*2.25)
+        self.play(Write(example))
+        self.play(FadeIn(self.prose('Use thermal separation to scale the ionized plasma surrounding the grain.',27,FG).shift(DOWN*3.1)))
+        self.citation('Dimant and Oppenheim (2017), Part 1','https://doi.org/10.1002/2017JA023960')
         self.finish()
 
     def velocity_dependence(self):
         # Source: DO collision-length interpretation; effective sigma_c(v) adopted in fdtd
-        self.start_slide('Why does meteoroid speed change the cloud size?',
+        self.start_slide('Velocity and the plasma surrounding the meteoroid',
             'These are controlled comparisons at fixed atmospheric number density and fixed grain temperature. '
             'A faster incoming atmospheric flux increases collision frequency. The adopted cross section decreases with speed, '
             'so its speed dependence partly compensates the faster flux. Along a real trajectory n_A and T_M also vary.')
-        self.stack(self.equation(r'\lambda_T=\frac{\sqrt{k_BT_M/m_{\rm Si}}}{n_A\sigma_c(v)v}',43,BLUE),
-            self.prose('Hold atmosphere and temperature fixed:',27,FG),
-            self.equation(r'\sigma_c=\mathrm{constant}:\qquad\lambda_T\propto v^{-1}',34),
-            self.equation(r'\sigma_c\propto v^{-0.8}:\quad\nu_c\propto v^{0.2},\quad\lambda_T\propto v^{-0.2},\quad\ell_A\propto v^{0.8}',31,GOLD),
-            self.equation(r'\text{Both coordinates use }\lambda_T\text{; front/back asymmetry comes from the shape.}',25,MUTED),
-            self.prose('A real entry also changes density, temperature, mass loss, and ionization.',24))
+        center=np.array([-4.,.3,0]);rng=np.random.default_rng(17)
+        grain=self.grain(center,.075)
+        plasma=VGroup(*[Dot(center+[rng.normal(.25,.75),rng.normal(0,.4),0],radius=.026,
+            color=GREEN,fill_opacity=.7) for _ in range(90)])
+        self.play(FadeIn(plasma),FadeIn(grain))
+        self.add(self.prose('Electrons and ions',26,GREEN).move_to([-4,2.2,0]),
+            self.prose('around the solid grain',24,FG).move_to([-4,1.65,0]))
+        fixed=self.equation(r'\text{Hold }n_A,\ T_M\text{ fixed}\quad\Rightarrow\quad V_T\text{ fixed}',28).move_to([2.65,2.05,0])
+        rate=self.equation(r'\nu_c=n_A\sigma_c(v)v',38,BLUE).move_to([2.65,1.1,0])
+        length=self.equation(r'\lambda_T=\frac{V_T}{\nu_c}',39,GREEN).move_to([2.65,-.05,0])
+        self.play(Write(fixed),Write(rate),Write(length))
+        self.play(FadeIn(self.prose('A faster atmospheric flux shortens the time to collision.',26).shift(DOWN*1.5)))
+        self.play(FadeIn(self.prose('The distance an evaporated atom separates from the grain sets the DO plasma scale.',25).shift(DOWN*2.4)))
+        self.finish()
+
+        self.start_slide('Derive the velocity scaling of the plasma length',
+            'Keep n_A and T_M fixed. First multiply the empirical cross-section power by v in the collision rate. '
+            'Then invert the rate to obtain the thermal collision length. The faster flux and falling cross section '
+            'partly offset one another. These are controlled scalings, not the full changing ablation trajectory.')
+        self.play(Write(self.equation(r'\sigma_c(v)\propto v^{-0.8}',38,GOLD).shift(UP*2.3)))
+        rate=MathTex(r'\nu_c','=',r'n_A',r'\sigma_c(v)',r'v',font_size=40,color=FG).shift(UP*1.2)
+        rate[3].set_color(GOLD);rate[4].set_color(BLUE)
+        self.play(Write(rate))
+        self.play(Indicate(rate[3],color=GOLD),Indicate(rate[4],color=BLUE))
+        expanded=self.equation(r'\nu_c\propto v^{-0.8}\,v^1=v^{-0.8+1}=v^{0.2}',40,BLUE).move_to(rate)
+        self.play(TransformMatchingTex(rate,expanded))
+        thermal=self.equation(r'\lambda_T=\frac{V_T}{\nu_c}\propto\frac{1}{v^{0.2}}=v^{-0.2}',40,GREEN).shift(DOWN*.15)
+        self.play(Write(thermal))
+        fast=self.equation(r'\ell_A=\frac{v}{\nu_c}\propto\frac{v^1}{v^{0.2}}=v^{0.8}',37,GOLD).shift(DOWN*1.5)
+        self.play(Write(fast))
+        self.play(FadeIn(self.prose('These lengths differ because the atom and grain share the large bulk motion.',25).shift(DOWN*2.75)))
+        self.citation('Collision law: Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265')
+        self.finish()
+
+        self.start_slide('What the scaling changes in the meteor head plasma',
+            'Illustrate the adopted spatial scaling from 20 to 70 km/s, holding atmospheric density, temperature, '
+            'and production line density fixed. The cartoon is schematic and only scales the near-head coordinates. '
+            'The full DO shape is not a Gaussian cloud or a sharp boundary. Real trajectories also change q, n_A and T_M.')
+        center=np.array([-3.8,.35,0]);rng=np.random.default_rng(17)
+        plasma=VGroup(*[Dot(center+[rng.normal(.25,.75),rng.normal(0,.4),0],radius=.025,
+            color=GREEN,fill_opacity=.65) for _ in range(90)])
+        grain=self.grain(center,.07)
+        self.add(plasma,grain,self.prose('Ionized plasma around the grain',24,GREEN).move_to([-3.8,2.1,0]))
+        initial=self.equation(r'v=20\ \mathrm{km/s}',31,BLUE).move_to([-3.8,-1.35,0])
+        self.play(Write(initial))
+        final=self.equation(r'v=70\ \mathrm{km/s}',31,BLUE).move_to(initial)
+        self.play(plasma.animate.scale((70/20)**(-.2),about_point=center),TransformMatchingTex(initial,final),run_time=1.5)
+        self.play(Write(self.equation(r'\frac{\lambda_T(70)}{\lambda_T(20)}=\left(\frac{70}{20}\right)^{-0.2}\simeq0.78',37,GREEN).move_to([3.,1.,0])))
+        self.play(Write(self.equation(r'n_e(\mathbf r)=n_\star F_{\rm DO}(\mathbf r/\lambda_T)',31,BLUE).move_to([3.,-.4,0])))
+        self.play(FadeIn(self.prose('Fixed atmosphere, temperature, and line density.',25).shift(DOWN*2.35)))
+        self.play(FadeIn(self.prose('The rescaled electron-density field is what the electromagnetic solver receives.',25,FG).shift(DOWN*3.05)))
         self.finish()
 
     def mean_free_path_coordinates(self):
         # Source: Dimant--Oppenheim Part 2, axis and dimensionless-coordinate conventions
-        self.start_slide('Measure every cloud coordinate in thermal collision lengths',
+        self.start_slide('Measure the plasma coordinates in thermal collision lengths',
             'DO is axisymmetric about the meteor trajectory but not spherically symmetric. '
             'Positive z points behind the grain. The radial coordinate is nonnegative; signed radial values only draw a slice. '
             'One lambda_T scales both longitudinal and transverse coordinates.')
@@ -936,17 +1180,28 @@ class MeteorHeadRCS(Slide):
         self.finish()
 
     def normalization_meaning(self):
-        # Source: DO Eqs. 45--48, rewritten using source production q
-        self.start_slide('Normalization gives an amplitude and a length scale',
-            'n_star is a reference amplitude. F is the specified kinetic solution, not a unit-integral probability density. '
-            'Consequently q is not determined by integrating this near-head density over a transverse plane. '
-            'A change in lambda changes both sampled dimensionless coordinates and the prefactor.')
-        self.stack(self.equation(r'n_e=n_\star F_{\rm DO}(\zeta,\eta),\qquad n_\star=\frac{q(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\lambda_T^2}',38,BLUE),
-            self.equation(r'\frac{q}{\lambda_T^2}:\quad\frac{\mathrm{m^{-1}}}{\mathrm{m^2}}=\mathrm{m^{-3}}',32),
-            self.equation(r'n_\star:\ \text{reference density, not maximum};\quad F:\ \text{not normalized to integrate to one}',25,MUTED),
-            self.equation(r'q\to2q,\ \lambda_T\ \mathrm{fixed}:\quad n_e(\mathbf r)\to2n_e(\mathbf r)',31,GREEN),
-            self.equation(r'\lambda_T\to2\lambda_T,\ q\ \mathrm{fixed}:\quad n_e^{\rm new}(\mathbf r)=\tfrac14 n_e^{\rm old}(\mathbf r/2)',31,GOLD),
-            self.prose('Twice the length scale: twice the width and length, one quarter the reference amplitude.',24))
+        self.start_slide('Change electron production while keeping the plasma size fixed',
+            'At fixed atmosphere, temperature and speed, lambda_T is fixed. Doubling q doubles n_star, '
+            'and doubles the electron density at every fixed spatial coordinate. The dots are a schematic density reminder.')
+        center=np.array([-3.6,.3,0]);rng=np.random.default_rng(9)
+        cloud=VGroup(*[Dot(center+np.r_[rng.normal(size=2)*[.9,.6],0.],radius=.035,color=GREEN) for _ in range(65)])
+        self.play(FadeIn(cloud),FadeIn(Dot(center,color=GOLD,radius=.1)))
+        self.play(Write(self.equation(r'n_e(\mathbf r)=n_\star F_{\rm DO}(\mathbf r/\lambda_T)',33,BLUE).move_to([2.7,1.6,0])))
+        first=self.equation(r'n_\star\propto q',39,GREEN).move_to([2.7,.45,0]);self.play(Write(first))
+        self.play(FadeIn(cloud.copy().shift([.05,.08,0])),TransformMatchingTex(first,self.equation(r'q\to2q\quad\Rightarrow\quad n_e\to2n_e',35,GREEN).move_to([2.7,.45,0])))
+        self.play(FadeIn(self.prose('The shape and spatial scale stay the same.',28).shift(DOWN*1.9)))
+        self.play(FadeIn(self.prose('The reference density is an amplitude; the ideal point-source maximum is singular.',25).shift(DOWN*2.8)))
+        self.finish()
+        self.start_slide('Change the collision length at fixed electron line density',
+            'Changing lambda_T stretches all coordinates and also changes the density prefactor. '
+            'Twice the spatial scale means a quarter of the reference amplitude for fixed q and mass ratio. '
+            'This is not a probability distribution normalized to contain a fixed total electron number.')
+        cloud=Ellipse(width=2.,height=1.1,color=GREEN,fill_opacity=.22).move_to([-3.4,.35,0]);self.play(FadeIn(cloud))
+        self.play(Write(self.equation(r'n_\star\propto\lambda_T^{-2}',39,BLUE).move_to([2.7,1.5,0])))
+        self.play(cloud.animate.scale(2.).set_fill(opacity=.07),run_time=1.5)
+        self.play(Write(self.equation(r'\lambda_T\to2\lambda_T:\quad n_e^{\rm new}(\mathbf r)=\tfrac14n_e^{\rm old}(\mathbf r/2)',31,GOLD).move_to([2.5,.2,0])))
+        self.play(FadeIn(self.prose('Both width and length double; the reference density drops by four.',27,FG).shift(DOWN*1.8)))
+        self.play(FadeIn(self.prose('The DO function fixes the kinetic shape; it is not a unit-integral probability density.',25).shift(DOWN*2.7)))
         self.finish()
 
     def shape_terms(self):
@@ -964,57 +1219,200 @@ class MeteorHeadRCS(Slide):
         self.finish()
 
     def density_3d(self):
-        # Source: Axisymmetric reconstruction of the DO solution; ring is schematic geometry
-        self.start_slide('Rotate the axisymmetric shape to reconstruct 3D density',
-            'The meridional slice supplies the density at any point by its axial distance z and transverse distance r_perp. '
-            'Rotation about the DO z axis changes azimuth, not density. This geometric reconstruction adds no fit parameter. '
-            'The illustrated ring is a set of evaluation points, not a plasma boundary or an isodensity contour.')
-        center=np.array([2.1,-.15,0]);r=1.2
-        axis=Arrow([-1.2,-.15,0],[5.6,-.15,0],buff=0,color=MUTED)
-        ring=Ellipse(width=.85,height=2*r,color=BLUE).move_to(center)
+        self.start_slide('The plasma density in three physical dimensions',
+            'The rotating surface is the actual DO isodensity F_DO=0.05, reconstructed by axisymmetry. '
+            'It is one illustrative density level, not a material boundary or the numerical support cutoff. '
+            'All three spatial directions have the same scale; colour is only surface shading.')
+        self.play_density_frames('do_physical',center=[0,.2,0],width=9.5,seconds=6.)
+        self.play(FadeIn(self.prose('One isodensity surface; plasma also exists outside it.',26,FG).shift(DOWN*3.1)))
+        self.finish()
+        self.start_slide('Use axial distance and distance from the trajectory axis',
+            'A ring of equal z and transverse radius has the same density at every azimuth. '
+            'The ring is a set of evaluation points, not the plasma edge. Labels are outside the swept geometry.')
+        center=np.array([1.8,-.3,0]);r=1.15
+        axis=Arrow([-.7,-.3,0],[5.3,-.3,0],buff=0,color=MUTED)
+        ring=Ellipse(width=.9,height=2*r,color=BLUE).move_to(center)
         meridian=Line(center,center+UP*r,color=GREEN)
-        grain=Dot([-.8,-.15,0],color=GOLD,radius=.1)
-        self.play(GrowArrow(axis),FadeIn(grain),Create(meridian),Create(ring))
-        dots=VGroup(*[Dot(center+np.array([.425*np.sin(phi),r*np.cos(phi),0]),color=GREEN,radius=.055)
-            for phi in np.linspace(0,TAU,12,endpoint=False)])
-        self.play(LaggedStart(*[FadeIn(p) for p in dots],lag_ratio=.08))
-        self.add(self.equation(r'z',28).next_to(axis,RIGHT),self.equation(r'r_\perp',28,GREEN).next_to(meridian,LEFT),
-            self.prose('Equal density at every azimuth',24).move_to([2.2,-1.8,0]))
-        formula=self.equation(r'\boxed{n_e(x,y,z)=n_\star F_{\rm DO}\!\left(\frac{z}{\lambda_T},\frac{\sqrt{x^2+y^2}}{\lambda_T}\right)}',41,BLUE).shift(UP*2.25)
-        self.play(Write(formula))
-        items=VGroup(self.equation(r'q\text{ sets production}',24,GREEN),self.equation(r'\lambda_T\text{ sets size}',24,BLUE),
-            self.equation(r'F_{\rm DO}\text{ sets morphology}',24)).arrange(DOWN,buff=.4).move_to([-3.8,.1,0])
-        self.play(FadeIn(items))
-        self.play(FadeIn(self.prose('Rotate this 3D distribution to the radar aspect before sampling the FDTD mesh.',25).shift(DOWN*2.55)))
+        self.play(GrowArrow(axis),Create(ring),Create(meridian))
+        self.play(FadeIn(Dot([-.6,-.3,0],color=GOLD,radius=.1)))
+        dots=VGroup(*[Dot(center+np.array([.45*np.sin(phi),r*np.cos(phi),0]),color=GREEN,radius=.045) for phi in np.linspace(0,TAU,12,endpoint=False)])
+        self.play(LaggedStart(*[FadeIn(p) for p in dots],lag_ratio=.04))
+        label=self.equation(r'r_\perp',29,GREEN).move_to([-.1,1.,0])
+        leader=Line(label.get_right()+RIGHT*.12,center+UP*.65,stroke_width=1.5,color=GREEN)
+        self.play(FadeIn(label),Create(leader))
+        self.add(self.equation(r'z',28).next_to(axis,RIGHT,buff=.18),self.prose('Equal density at every azimuth',24).move_to([2.2,-1.9,0]))
+        self.play(Write(self.equation(r'n_e(x,y,z)=n_\star F_{\rm DO}\!\left(\frac{z}{\lambda_T},\frac{\sqrt{x^2+y^2}}{\lambda_T}\right)',39,BLUE).shift(UP*2.15)))
+        self.play(FadeIn(self.prose('Rotate this distribution to the radar aspect, then sample the solver grid.',26).shift(DOWN*2.9)))
         self.finish()
 
     def normalization(self):
-        # Source: DO Part 1 surface flux; DO Part 2 Eqs. 45--48; derivation in
-        # fdtd/memos/ablation_to_rcs.tex
-        self.start_slide('Eliminate the unknown surface neutral density',
-            'Let n0 denote the surface ablated-neutral density and m_A the mean atmospheric particle mass. '
-            'Use the isotropic differential ionization cross section and DO surface flux, then substitute production per path.')
-        self.stack(self.equation(r'J_{R0}=\sqrt{2/\pi}\,n_0V_T,\qquad \dot N_{\rm vap}=4\pi a^2J_{R0}',32),
-            self.equation(r'G_{\rm ion}=\frac{\beta_{\rm Si}\sigma_c}{4\pi},\qquad m_A=\rho_A/n_A',32),
-            self.equation(r'n_\star=\frac{\dot N_{\rm vap}n_A\sigma_c\beta_{\rm Si}(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\,V_T\lambda_T}',34),
-            self.equation(r'\boxed{n_\star=\frac{q(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\,\lambda_T^2}}\qquad[\mathrm{m^{-3}}]',42,BLUE),
-            self.equation(r'q\text{ supplies source amplitude};\quad\lambda_T\text{ supplies spatial scale}',25,MUTED))
+        # DO Part 1 Eq. 18 outgoing half-Maxwellian and surface flux; Part 2
+        # Eq. 45. Keep its n0 convention, including sqrt(2/pi), throughout.
+        self.start_slide('Count the neutral atoms leaving the hot surface',
+            'n0 is the outgoing ablated-neutral number density at the surface in the DO boundary condition. '
+            'Its normal velocity follows a half-Maxwellian. J_R0 is a flux per square metre, not a volume density. '
+            'The coefficient sqrt(2/pi) comes from the mean positive normal speed with this outgoing-density convention.')
+        center=np.array([-4.,.6,0]);grain=Circle(.7,color=GOLD,fill_opacity=.15).move_to(center)
+        self.play(Create(grain))
+        directions=[np.array([np.cos(a),np.sin(a),0]) for a in np.linspace(-PI,PI,10,endpoint=False)]
+        particles=VGroup(*[Dot(center+.75*d,radius=.045,color=GREEN) for d in directions])
+        self.add(particles)
+        self.play(*[p.animate.shift(.65*d) for p,d in zip(particles,directions)],run_time=1.3)
+        normal=Arrow(center+.7*RIGHT,center+1.5*RIGHT,buff=0,color=BLUE)
+        self.play(GrowArrow(normal));self.add(self.equation(r'V_n>0',26,BLUE).next_to(normal,DOWN,buff=.2))
+        rows=self.term_definitions([
+            r'J_{R0}=n_0\langle V_n\rangle\quad[\mathrm{m^{-2}s^{-1}}]',
+            r'p(V_n)=\frac{\sqrt{2/\pi}}{V_T}e^{-V_n^2/(2V_T^2)},\quad V_n>0',
+            r'\langle V_n\rangle=\int_0^\infty V_n p(V_n)\,dV_n=\sqrt{2/\pi}\,V_T'],[2.8,.65,0],31,7.2)
+        for row in rows:self.play(Write(row))
+        self.play(Write(self.equation(r'\boxed{J_{R0}=\sqrt{2/\pi}\,n_0V_T}',39,GREEN).shift(DOWN*1.5)))
+        defs=self.term_definitions([
+            r'n_0:\ \text{outgoing surface neutral density [m}^{-3}\text{]};\quad V_n:\ \text{outward normal speed [m/s]}',
+            r'V_T=\sqrt{k_BT_M/m_{\rm Si}};\quad p(V_n):\ \text{normal-speed probability density [s/m]}'],[0,-2.7,0],23,12.4)
+        self.play(FadeIn(defs));self.citation('Dimant and Oppenheim (2017), Part 1, surface boundary condition','https://doi.org/10.1002/2017JA023960')
+        self.finish()
+
+        self.start_slide('The ablation model fixes the total neutral source',
+            'Assume uniform evaporation over a spherical grain. Multiply surface flux by the entire surface area. '
+            'Independently divide mass loss by the mass of one vapor atom. Equating the two eliminates the unknown '
+            'surface density. This uses the all-Si source proxy, distinct from the thermal model effective vapor mass.')
+        grain=Circle(.65,color=GOLD,fill_opacity=.15).move_to([-4.1,.65,0])
+        self.play(Create(grain))
+        rays=VGroup(*[Arrow(grain.get_center()+.7*d,grain.get_center()+1.15*d,buff=0,color=GREEN)
+            for d in directions])
+        self.play(LaggedStart(*[GrowArrow(ray) for ray in rays],lag_ratio=.05))
+        self.add(self.equation(r'4\pi a^2',30,GOLD).move_to([-4.1,-.9,0]),self.prose('Whole evaporating surface',22).move_to([-4.1,-1.5,0]))
+        rows=self.term_definitions([
+            r'\dot N_{\rm vap}=4\pi a^2J_{R0}',
+            r'\dot N_{\rm vap}=\frac{-\dot m}{m_{\rm Si}}',
+            r'\dot N_{\rm vap}=4\pi a^2\sqrt{2/\pi}\,n_0V_T'],[2.8,.8,0],36,7.)
+        for row in rows:self.play(Write(row))
+        solved=self.equation(r'\boxed{a^2n_0=\frac{\dot N_{\rm vap}}{4\pi\sqrt{2/\pi}\,V_T}}',39,BLUE).shift(DOWN*1.8)
+        self.play(Write(solved))
+        self.play(FadeIn(self.equation(r'\dot N_{\rm vap}:\ \text{neutral atoms/s};\quad-\dot m:\ \mathrm{kg/s};\quad m_{\rm Si}:\ \mathrm{kg/atom};\quad a:\ \mathrm m',24,MUTED).shift(DOWN*3.05)))
+        self.finish()
+
+        self.start_slide('Which collisions create ions and electrons?',
+            'sigma_c counts effective scattering collisions. The primary Si probability beta_Si selects the ionizing '
+            'fraction in this model. DO assumes isotropic differential ionization in the collision centre-of-mass '
+            'frame. The integral of a constant over all solid angles is 4pi times that constant. This assumption '
+            'about individual collisions does not make the meteor plasma spatially spherical.')
+        atom=Dot([-5.,.65,0],radius=.09,color=GOLD)
+        air=VGroup(Dot([-3.7,.65,0],radius=.09,color=BLUE),Dot([-3.52,.65,0],radius=.09,color=BLUE))
+        self.add(atom,air);self.play(atom.animate.shift(RIGHT*1.1),run_time=.7)
+        electron=Dot([-3.5,1.25,0],radius=.05,color=GREEN)
+        self.play(FadeIn(electron),air.animate.shift(RIGHT*.4),atom.animate.set_color(RED))
+        self.add(self.prose('Ion',23,RED).move_to([-4.,-.1,0]),self.equation(r'e^-',25,GREEN).next_to(electron,UP,buff=.15))
+        rows=self.term_definitions([
+            r'\sigma_{\rm ion}=\beta_{\rm Si}\sigma_c',
+            r'G_{\rm ion}\equiv\frac{d\sigma_{\rm ion}}{d\Omega}',
+            r'\sigma_{\rm ion}=\int_{4\pi}G_{\rm ion}\,d\Omega=4\pi G_{\rm ion}',
+            r'\boxed{G_{\rm ion}=\frac{\beta_{\rm Si}\sigma_c}{4\pi}}'],[2.8,.4,0],34,7.2)
+        for row in rows:self.play(Write(row))
+        self.play(FadeIn(self.equation(r'\Omega:\ \text{scattering solid angle [sr]};\quad G_{\rm ion}:\ \mathrm{m^2/sr};\quad\beta_{\rm Si}:\ \text{probability}',24,MUTED).shift(DOWN*2.35)))
+        self.play(FadeIn(self.prose('Isotropic scattering is a collision assumption; the spatial plasma density remains asymmetric.',25).shift(DOWN*3.1)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, isotropic ionization assumption','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('From individual collisions to a plasma density field',
+            'DO first derives the ion velocity distribution from the neutral source and ionizing collision kinematics. '
+            'Ballistic ions reaching a point may have been born at many earlier points. Integrate their source '
+            'backward along trajectories, then integrate over velocity to count ions per unit volume. '
+            'This schematic transport expression omits subsequent collisions and forces, as in the near-head approximation.')
+        point=np.array([-2.4,.45,0]);births=[[-5.2,1.6,0],[-5.2,.45,0],[-5.2,-.7,0]]
+        self.add(Dot(point,color=GREEN,radius=.11))
+        for birth in births:
+            self.play(FadeIn(Dot(birth,color=RED,radius=.06)),GrowArrow(Arrow(birth,point,buff=.18,color=BLUE)),run_time=.35)
+        self.add(self.prose('Ions born along earlier paths',22).move_to([-4.,-1.35,0]))
+        rows=self.term_definitions([r'\mathbf v_i\cdot\nabla f_i=S_{\rm ion}',
+            r'f_i(\mathbf r,\mathbf v_i)=\int_0^\infty S_{\rm ion}(\mathbf r-\mathbf v_i t,\mathbf v_i)\,dt',
+            r'n_i(\mathbf r)=\int f_i\,d^3v_i=\int f_i V^2\,dV\,d\Omega'],[2.6,.65,0],30,7.1)
+        for row in rows:self.play(Write(row))
+        self.play(FadeIn(self.equation(r'f_i:\ \text{ion phase-space density};\quad S_{\rm ion}:\ \text{ion source per unit phase space per second}',23,MUTED).shift(DOWN*2.35)))
+        self.play(FadeIn(self.equation(r'\mathbf v_i:\ \text{ion velocity};\quad V=|\mathbf v_i|;\quad d\Omega:\ \text{velocity solid angle}',24,MUTED).shift(DOWN*3.05)))
+        self.citation('Dimant and Oppenheim (2017), Part 1 kinetic equation; Part 2, equations 3 and 10','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Where does the ion-to-air mass ratio enter?',
+            'Two-body collision kinematics gives the recoil speed of a nearly stationary meteor atom struck by an '
+            'air particle in the grain frame. DO Part 2 Eq. 3 contains a delta-function shell in ion speed. '
+            'The V squared velocity-volume factor in Eq. 10 removes two of the three mass-ratio powers, leaving '
+            'the first power in Eq. 11 and hence Eq. 45. Here vartheta is the ion direction relative to the air stream, '
+            'not the spatial position angle theta.')
+        self.play(FadeIn(self.prose('An incoming air particle transfers momentum to the evaporated atom.',26).shift(UP*2.35)))
+        self.play(Write(self.equation(r'V=\frac{2m_A}{m_{\rm Si}+m_A}\,v\cos\vartheta',39,BLUE).shift(UP*1.25)))
+        self.play(Write(self.equation(r'f_i\ \propto\ \left(1+\frac{m_{\rm Si}}{m_A}\right)^3\delta\!\left(V-\frac{2v\cos\vartheta}{1+m_{\rm Si}/m_A}\right)',34).shift(DOWN*.05)))
+        self.play(Write(self.equation(r'\int f_i V^2\,dV\ \propto\ \left(1+\frac{m_{\rm Si}}{m_A}\right)^3\left(1+\frac{m_{\rm Si}}{m_A}\right)^{-2}=1+\frac{m_{\rm Si}}{m_A}',33,GREEN).shift(DOWN*1.45)))
+        self.play(FadeIn(self.equation(r'\vartheta:\ \text{ion recoil angle};\quad\delta:\ \text{Dirac delta in speed};\quad m_A:\ \text{mean air-particle mass}',24,MUTED).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('The remaining trajectory and angle integrals give the published density expression.',24).shift(DOWN*3.25)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 3, 10--11 and 45','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Separate the DO kinetic shape from its density scale',
+            'Start from DO Part 2 Eq. 45, rather than a dimensional guess. H denotes the dimensionless angular/radial '
+            'combination of f1, f2 and f3. Write R=lambda_T*s and absorb H/s into F_DO. The mass ratio is from '
+            'the two-body collision kinematics in the DO solution. It is not a fitted coefficient. The numerical '
+            'coefficient follows the published isotropic kinetic solution and the stated surface-density convention.')
+        self.play(FadeIn(self.prose('Dimant--Oppenheim, Part 2, equation 45',27,BLUE).shift(UP*2.4)))
+        original=self.equation(r'n_i(R,\theta)=\frac{8\pi a^2n_0n_AG_{\rm ion}}{\sqrt3\,R}'
+            r'\left(1+\frac{m_{\rm Si}}{m_A}\right)H(R/\lambda_T,\cos\theta)',35).shift(UP*1.35)
+        self.play(Write(original))
+        definitions=self.equation(r's=R/\lambda_T,\quad H=|\mu|f_1+\mu f_2+f_3,\quad F_{\rm DO}=H/s,\quad\mu=\cos\theta',28,MUTED).shift(UP*.25)
+        self.play(Write(definitions))
+        self.play(Write(self.equation(r'\frac{H}{R}=\frac{1}{\lambda_T}\frac{H}{s}=\frac{F_{\rm DO}}{\lambda_T}',35,GREEN).shift(DOWN*.7)))
+        self.play(Write(self.equation(r'n_e\simeq n_i=n_\star F_{\rm DO},\qquad'
+            r'\boxed{n_\star=\frac{8\pi a^2n_0n_AG_{\rm ion}}{\sqrt3\lambda_T}\left(1+\frac{m_{\rm Si}}{m_A}\right)}',34,BLUE).shift(DOWN*1.85)))
+        self.play(FadeIn(self.equation(r'm_A=\rho_A/n_A:\ \text{mean air-particle mass [kg]};\quad R:\ \text{distance from grain [m]}',23,MUTED).shift(DOWN*2.9)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 45--48','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Replace the surface density with the evaporated atom rate',
+            'Substitute a squared n0 from the whole-surface flux balance and G_ion from the primary ionization '
+            'probability. Color carries the same factor across the substitutions. pi and grain area cancel; '
+            'the remaining numerical coefficient is shown explicitly. No additional grain area is applied afterward.')
+        substitutions=self.equation(r'a^2n_0=\frac{\dot N_{\rm vap}}{4\pi\sqrt{2/\pi}V_T},\qquad'
+            r' G_{\rm ion}=\frac{\beta_{\rm Si}\sigma_c}{4\pi}',34,GREEN).shift(UP*2.15)
+        self.play(Write(substitutions))
+        first=self.equation(r'n_\star=\frac{8\pi}{\sqrt3\lambda_T}'
+            r'\frac{\dot N_{\rm vap}}{4\pi\sqrt{2/\pi}V_T}'
+            r'n_A\frac{\beta_{\rm Si}\sigma_c}{4\pi}'
+            r'\left(1+\frac{m_{\rm Si}}{m_A}\right)',34).shift(UP*.55)
+        self.play(Write(first))
+        coefficient=self.equation(r'\frac{8\pi}{\sqrt3\,(4\pi)\sqrt{2/\pi}\,(4\pi)}=\frac{1}{2\sqrt{6\pi}}',32,GOLD).shift(DOWN*.8)
+        self.play(Write(coefficient))
+        result=self.equation(r'\boxed{n_\star=\frac{\beta_{\rm Si}\dot N_{\rm vap}\,n_A\sigma_c}'
+            r'{2\sqrt{6\pi}V_T\lambda_T}\left(1+\frac{m_{\rm Si}}{m_A}\right)}',37,BLUE).shift(DOWN*2.15)
+        self.play(TransformFromCopy(first,result))
+        self.play(FadeIn(self.prose('The source is now the atom production rate supplied by the ablation model.',25).shift(DOWN*3.15)))
+        self.finish()
+
+        self.start_slide('Replace atom production with electron line density',
+            'Use q=beta_Si dotN_vap/v from the earlier mass-to-ionization conversion. Then use '
+            'lambda_T=V_T/(n_A sigma_c v). The explicit cross section and speed combine into the same lambda_T '
+            'that already sets the spatial coordinates. They are not absent from the physics. The final result '
+            'gives a volume-density scale from production per travelled metre divided by a squared collision length.')
+        self.play(Write(self.equation(r'q=\frac{\beta_{\rm Si}\dot N_{\rm vap}}{v}\quad\Rightarrow\quad'
+            r'\beta_{\rm Si}\dot N_{\rm vap}=qv',38,GREEN).shift(UP*2.3)))
+        first=self.equation(r'n_\star=\frac{q\,(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\lambda_T}'
+            r'\frac{n_A\sigma_c v}{V_T}',39).shift(UP*.9)
+        self.play(Write(first))
+        identity=self.equation(r'\lambda_T=\frac{V_T}{n_A\sigma_c v}\quad\Rightarrow\quad'
+            r'\frac{n_A\sigma_c v}{V_T}=\frac{1}{\lambda_T}',35,GOLD).shift(DOWN*.35)
+        self.play(Write(identity))
+        result=self.equation(r'\boxed{n_\star=\frac{q(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\lambda_T^2}}',44,BLUE).shift(DOWN*1.75)
+        self.play(TransformFromCopy(first,result),Indicate(identity,color=GOLD))
+        self.play(Write(self.equation(r'[n_\star]=\frac{\mathrm{m^{-1}}}{\mathrm{m^2}}=\mathrm{m^{-3}}',29,MUTED).shift(DOWN*2.95)))
+        self.citation('Dimant and Oppenheim (2017), Parts 1--2; source-rate substitution','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
     def density(self):
-        # Source: DO Part 2, doi:10.1002/2017JA023963; meteor_rcs/do_density.py
-        self.start_slide('Dimant--Oppenheim supplies the spatial shape',
-            'F is computed from DO Eqs. 45--48. In dimensionless variables s=R/lambda_T and mu=z/R, '
-            'F=(abs(mu)f1+mu f2+f3)/s; f1 and f2 are analytic, f3 uses one-dimensional quadrature. '
-            'The quasi-neutral approximation identifies ion density with electron density.')
-        self.play(FadeIn(self.image('density.png',7.8).move_to([-2.4,.1,0])))
-        items=VGroup(self.equation(r'n_e=n_\star F_{\rm DO}',36,BLUE),
-            self.equation(r'F_{\rm DO}=F(z/\lambda_T,r_\perp/\lambda_T)',27),
-            self.equation(r'n_e\simeq n_i',30),
-            self.prose('Near grain: 1/R',25),self.prose('Far downstream: 1/R squared',23),
-            self.equation(r'n_\star:\ \text{scale, not peak density}',22,MUTED),
-            self.prose('The ideal origin is singular.',23,RED)).arrange(DOWN,buff=.33).move_to([4.15,.15,0])
-        for item in items:self.play(FadeIn(item),run_time=.3)
+        self.start_slide('The same plasma density, with distances in metres',
+            'Secondary axes convert dimensionless coordinates using the archived MSIS neutral density at 100 km. '
+            'Assumed speed is 50 km/s and grain temperature is 2000 K. These assumptions set lambda_T, '
+            'not altitude alone. The origin is the ideal point-source singularity, omitted from the colour map.')
+        self.play(FadeIn(self.image('density.png',9.0).move_to([0,.1,0])))
+        self.play(FadeIn(self.equation(r'h=100\ \mathrm{km},\ v=50\ \mathrm{km/s},\ T_M=2000\ \mathrm K:\quad\lambda_T=%.3f\ \mathrm m'%self.sample['density_100km_lambda_m'],24,BLUE).shift(DOWN*3.25)))
+        self.citation('Dimant and Oppenheim (2017), Part 2; MSIS atmosphere at 100 km','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
     def worked_example(self):
@@ -1044,37 +1442,155 @@ class MeteorHeadRCS(Slide):
         sites=VGroup(*[Dot([-5.6+.4*j,.2,0],radius=.045,color=GREEN) for j in range(9)])
         self.play(LaggedStart(*[FadeIn(d) for d in sites],lag_ratio=.08))
         items=VGroup(self.equation(r'n_{\rm input}=w_{\rm cut}\min(n_\star F,n_{\rm cap})',30),
-            self.prose('Fixed Cartesian Yee mesh',26,FG),self.prose('Green: electric-field sample edges',22,GREEN),
+            self.prose('Fixed Cartesian Yee mesh',26,FG),self.equation(r'n_{\rm cap}:\ \text{finite-grain core density}',22),
+            self.equation(r'0\leq w_{\rm cut}\leq1:\ \text{smooth outer taper}',22),self.prose('Green: electric-field sample edges',22,GREEN),
             self.prose('Red: absorbing CPML boundary',22,RED),
             self.prose('Check core cap, support, spacing, and box size.',22),
             self.prose('Density is frozen for each EM calculation.',24)).arrange(DOWN,buff=.36).move_to([2.65,0,0])
         for item in items:self.play(FadeIn(item),run_time=.3)
         self.finish()
 
+    def yee_mesh(self):
+        self.start_slide('A Yee mesh staggers electric and magnetic fields',
+            'Kane Yee (1966): electric components are sampled on cell edges, magnetic components through face centres. '
+            'Each discrete curl uses the surrounding field circulation. The cube is one schematic Cartesian cell.')
+        origin=np.array([-4.6,-.8,0]);u=np.array([2.0,0,0]);v=np.array([.75,.65,0]);w=np.array([0,1.9,0])
+        edges=VGroup()
+        for a,b in [(u,v),(u,w),(v,w)]:
+            other=w if a is u and b is v else (v if a is u and b is w else u)
+            for offset in [np.zeros(3),a,b,a+b]:edges.add(Line(origin+offset,origin+offset+other,color=MUTED,stroke_opacity=.45))
+        self.play(Create(edges))
+        e=Arrow(origin,origin+u,buff=0,color=GREEN)
+        # H_x lies at the x-normal face centre, not the volume centre.
+        face=origin+(v+w)/2
+        h=Arrow(face,face+RIGHT*.65,buff=0,color=BLUE)
+        self.play(GrowArrow(e),GrowArrow(h),FadeIn(Dot(face,color=BLUE,radius=.04)))
+        self.play(Create(Line([-5.22,.6,0],face,color=BLUE,stroke_width=1.2)))
+        self.add(self.equation(r'E_x',28,GREEN).move_to([-3.6,-1.25,0]),self.equation(r'H_x',28,BLUE).move_to([-5.6,.6,0]))
+        rows=self.term_definitions([r'E_x:\ (i+\tfrac12,j,k),\quad t=n\Delta t',
+            r'H_x:\ (i,j+\tfrac12,k+\tfrac12),\quad t=(n+\tfrac12)\Delta t',
+            r'\nabla\times\mathbf E\ \longrightarrow\ \text{differences of neighbouring edges}'],[2.7,.7,0],28,7.0)
+        for row in rows:self.play(Write(row))
+        timeline=VGroup(*[self.equation(t,28,c) for t,c in [(r'\mathbf E^n',GREEN),(r'\longrightarrow\mathbf H^{n+1/2}',BLUE),(r'\longrightarrow\mathbf E^{n+1}',GREEN)]]).arrange(RIGHT,buff=.3).shift(DOWN*2.15)
+        for item in timeline:self.play(Write(item))
+        self.play(FadeIn(self.prose('Space staggering forms the curl; time staggering gives the leapfrog update.',25).shift(DOWN*3.05)))
+        self.citation('Yee (1966), Maxwell equations on a staggered grid','https://doi.org/10.1109/TAP.1966.1138693')
+        self.finish()
+
+    def cpml_boundary(self):
+        self.start_slide('Let radiation leave the finite simulation box',
+            'CPML means convolutional perfectly matched layer: an artificial absorbing layer surrounding the physical domain. '
+            'A graded coordinate stretch damps outgoing waves while ideally matching the interior impedance. '
+            'Discrete grids still reflect weakly; thickness and absorption must be checked. The pulse is schematic.')
+        self.play(FadeIn(self.prose('CPML: convolutional perfectly matched layer',31,RED).shift(UP*2.35)))
+        box=Rectangle(width=9.,height=2.2,color=MUTED).shift(UP*.4)
+        absorber=Rectangle(width=1.8,height=2.2,color=RED,fill_opacity=.12).move_to([3.6,.4,0])
+        self.play(Create(box),FadeIn(absorber))
+        travel=ValueTracker(-3.)
+        pulse=always_redraw(lambda:ParametricFunction(lambda x:np.array([x,.4+.65*np.exp(-((x-travel.get_value())/.4)**2)*np.cos(15*(x-travel.get_value()))*np.exp(-2.5*max(0,x-2.7)),0]),t_range=[-4.5,4.5,.02],color=BLUE))
+        self.add(pulse);self.play(travel.animate.set_value(5.5),run_time=3.,rate_func=linear);pulse.clear_updaters()
+        self.play(FadeIn(self.prose('Physical domain',25).move_to([-1.,-1.15,0])),FadeIn(self.prose('Absorbing layer',25,RED).move_to([3.3,-1.15,0])))
+        self.play(Write(self.equation(r'\partial_x\ \longrightarrow\ \kappa_x^{-1}\partial_x+\psi_x,\qquad\psi_x^{n+1}=b_x\psi_x^n+a_x(\partial_x f)^n',29,BLUE).shift(DOWN*2.15)))
+        self.play(FadeIn(self.prose('A memory variable implements the time convolution of the absorbing profile.',24).shift(DOWN*2.85)))
+        self.play(Write(self.equation(r'f:\ E\text{ or }H;\quad\kappa_x,a_x,b_x:\ \text{profile/update coefficients};\quad\psi_x:\ \text{derivative memory}',21,MUTED).shift(DOWN*3.3)))
+        self.citation('Roden and Gedney (2000), convolution PML','https://doi.org/10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A')
+        self.finish()
+
     def plasma_response(self):
-        # Source: Marshall--Close (2015), doi:10.1002/2015JA021238; independent current update:
-        # fdtd/src/main.rs
-        self.start_slide('Electron inertia and collisions determine the current',
-            'Cold electron-fluid current driven by the total electric field. Ions provide a stationary neutralizing background '
-            'on the radar timescale. In the scalar B=0 limit, the dielectric uses exp(-i omega t).')
-        self.stack(self.equation(r'\omega_p^2=\frac{n_e e^2}{\epsilon_0m_e},\qquad\boldsymbol\Omega_e=\frac{e\mathbf B_0}{m_e}',36),
-            self.equation(r'\partial_t\mathbf J+\nu_{en}\mathbf J+\mathbf J\times\boldsymbol\Omega_e=\epsilon_0\omega_p^2\mathbf E_{\rm total}',37,GREEN),
-            self.equation(r'B_0=0:\quad\epsilon_r(\omega)=1-\frac{\omega_p^2}{\omega(\omega+i\nu_{en})}',36),
-            self.equation(r'\nu_{en}:\ \text{electron momentum-loss rate, distinct from heavy-particle collision rate}',24,MUTED),
-            self.equation(r'\text{Example input: }\nu_{en}=10^7\ \mathrm{s^{-1}}\text{, assumed constant}',25,MUTED))
+        self.start_slide('Start from the force on an electron',
+            'Cold electron-fluid momentum equation: electric and magnetic Lorentz forces, plus linear momentum relaxation. '
+            'Pressure gradients, nonlinear advection and ion motion are neglected in this radar-frequency response.')
+        electron=Dot([-4.,.5,0],radius=.12,color=GREEN);self.add(electron)
+        electric=Arrow([-4.,.5,0],[-5.3,.5,0],buff=.1,color=BLUE)
+        drag=Arrow([-4.,.5,0],[-3.,.5,0],buff=.1,color=RED)
+        self.play(GrowArrow(electric));self.add(self.equation(r'-e\mathbf E',27,BLUE).move_to([-5.,1.15,0]))
+        self.play(electron.animate.shift(LEFT*.3),GrowArrow(drag));self.add(self.equation(r'-m_e\nu_{en}\mathbf u_e',25,RED).move_to([-3.,-.3,0]))
+        law=self.equation(r'm_e\partial_t\mathbf u_e=-e\mathbf E-e\mathbf u_e\times\mathbf B_0-m_e\nu_{en}\mathbf u_e',36,BLUE).shift(UP*2.)
+        self.play(Write(law))
+        defs=self.term_definitions([r'\mathbf u_e:\ \text{electron mean velocity [m/s]};\quad e>0:\ \text{elementary charge [C]}',
+            r'm_e:\ \text{electron mass [kg]};\quad\mathbf E:\ \text{total electric field [V/m]};\quad\mathbf B_0:\ \text{background field [T]}',
+            r'\nu_{en}=\sum_s n_s\langle\sigma_{m,s}v_e\rangle:\ \text{electron--neutral momentum relaxation [s}^{-1}\text{]}'],[0,-1.8,0],24,12.3)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('Collision rate uses electron energies and neutral species, rather than meteoroid speed.',24).shift(DOWN*3.1)))
+        self.citation('Marshall and Close (2015), section 2: cold, collisional, magnetized response','https://doi.org/10.1002/2015JA021238')
+        self.finish()
+        self.start_slide('Convert electron motion into electric current',
+            'For fixed local electron density, multiply the momentum equation by minus n_e e/m_e. '
+            'The sign comes from the negative electron charge. Define omega_p squared and the positive-e gyrovector '
+            'to obtain the current equation used by the electromagnetic solver.')
+        self.play(Write(self.equation(r'\mathbf J=-n_e e\mathbf u_e\quad[\mathrm{A/m^2}],\qquad\partial_t n_e=0',38,GREEN).shift(UP*2.25)))
+        first=self.equation(r'\partial_t\mathbf J=\frac{n_e e^2}{m_e}\mathbf E-\frac e{m_e}\mathbf J\times\mathbf B_0-\nu_{en}\mathbf J',36).shift(UP*.9);self.play(Write(first))
+        self.play(Write(self.equation(r'\omega_p^2\equiv\frac{n_e e^2}{\epsilon_0m_e},\qquad\boldsymbol\Omega_e\equiv\frac{e\mathbf B_0}{m_e}',36,BLUE).shift(DOWN*.3)))
+        result=self.equation(r'\boxed{\partial_t\mathbf J+\nu_{en}\mathbf J+\mathbf J\times\boldsymbol\Omega_e=\epsilon_0\omega_p^2\mathbf E}',37,GREEN).shift(DOWN*1.6)
+        self.play(TransformFromCopy(first,result))
+        self.play(FadeIn(self.equation(r'\omega_p:\ \text{electron plasma angular frequency [rad/s]};\quad|\boldsymbol\Omega_e|:\ \text{gyrofrequency [rad/s]}',24,MUTED).shift(DOWN*2.65)))
+        self.play(FadeIn(self.equation(r'\epsilon_0:\ \text{vacuum permittivity [F/m]};\quad n_e:\ \text{fixed local density [m}^{-3}\text{]}',24,MUTED).shift(DOWN*3.2)))
+        self.citation('Marshall and Close (2015), equation 6','https://doi.org/10.1002/2015JA021238')
+        self.finish()
+        self.start_slide('Why does electron density define a plasma frequency?',
+            'Displace a uniform electron population by xi against fixed positive ions. Gauss law gives a restoring '
+            'electric field n_e e xi/epsilon_0. Newton law is then a harmonic oscillator with omega_p squared. '
+            'This illustrates the local frequency scale, not a finite-cloud eigenmode calculation.')
+        ions=VGroup(*[Dot([-4.8+.5*i,.8,0],color=RED,radius=.07) for i in range(7)])
+        electrons=VGroup(*[Dot([-4.8+.5*i,.35,0],color=GREEN,radius=.06) for i in range(7)])
+        self.add(ions,electrons);self.play(electrons.animate.shift(RIGHT*.3))
+        self.add(self.equation(r'\xi',27,GREEN).move_to([-2.7,-.2,0]))
+        self.play(Write(self.equation(r'E=\frac{n_e e\xi}{\epsilon_0}',36,BLUE).move_to([2.6,1.2,0])))
+        self.play(Write(self.equation(r'm_e\ddot\xi=-eE\quad\Rightarrow\quad\ddot\xi+\frac{n_e e^2}{\epsilon_0m_e}\xi=0',32).move_to([2.3,-.1,0])))
+        self.play(Write(self.equation(r'\boxed{\omega_p=\sqrt{n_e e^2/(\epsilon_0m_e)}}',39,GREEN).shift(DOWN*1.65)))
+        self.play(electrons.animate.shift(LEFT*.6),run_time=.5);self.play(electrons.animate.shift(RIGHT*.3),run_time=.5)
+        self.play(FadeIn(self.prose('More electrons per volume give a stronger restoring field and a faster response.',26).shift(DOWN*2.8)))
+        self.citation('Cold-plasma response used by Marshall and Close (2015), section 2','https://doi.org/10.1002/2015JA021238')
+        self.finish()
+        self.start_slide('Derive the collisional dielectric response',
+            'Set B0=0 and use fields proportional to exp(-i omega t), with positive real omega. '
+            'J=sigma E, J=partial_t P and D=epsilon_0 E+P give the stated dielectric. '
+            'Its positive imaginary part represents passive loss with this convention.')
+        self.play(Write(self.equation(r'\mathbf B_0=0,\quad e^{-i\omega t}:\qquad(\nu_{en}-i\omega)\mathbf J=\epsilon_0\omega_p^2\mathbf E',34).shift(UP*2.2)))
+        self.play(Write(self.equation(r'\mathbf J=\sigma\mathbf E,\quad\sigma=\frac{\epsilon_0\omega_p^2}{\nu_{en}-i\omega},\qquad\mathbf J=\partial_t\mathbf P=-i\omega\mathbf P',33,GREEN).shift(UP*.9)))
+        self.play(Write(self.equation(r'\mathbf D=\epsilon_0\mathbf E+\mathbf P=\epsilon_0\epsilon_r\mathbf E\quad\Rightarrow\quad\epsilon_r=1+\frac{i\sigma}{\epsilon_0\omega}',33).shift(DOWN*.35)))
+        self.play(Write(self.equation(r'\boxed{\epsilon_r(\omega)=1-\frac{\omega_p^2}{\omega(\omega+i\nu_{en})}}',42,BLUE).shift(DOWN*1.65)))
+        self.play(FadeIn(self.equation(r'\mathbf P:\ \text{polarization [C/m}^2\text{]};\quad\mathbf D:\ \text{electric displacement [C/m}^2\text{]};\quad\sigma:\ \text{conductivity [S/m]}',22,MUTED).shift(DOWN*2.7)))
+        self.play(FadeIn(self.equation(r'\nu_{en}=10^7\ \mathrm{s^{-1}}:\ \text{example assumption, not inferred from }\nu_c',24,RED).shift(DOWN*3.25)))
+        self.citation('Marshall and Close (2015), cold collisional plasma model','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def maxwell(self):
-        # Source: Native Rust Yee/CPML solver: fdtd/src/main.rs; MPI domain slabs and Rayon threads
-        self.start_slide('Advance scattered fields and self-consistent current',
-            'The native solver uses analytic incident fields, Yee staggered finite differences and CPML. '
-            'The total field drives the current. The current then modifies scattered fields, including field feedback.')
-        self.stack(self.equation(r'\mathbf E_{\rm total}=\mathbf E_{\rm inc}+\mathbf E_s',36,BLUE),
-            self.equation(r'\mathbf H_s^{n+1/2}=\mathbf H_s^{n-1/2}-\frac{\Delta t}{\mu_0}\nabla_h\times\mathbf E_s^n',34),
-            self.equation(r'\mathbf J^{n+1/2}\ \longleftarrow\ \text{cold-plasma response to }\mathbf E_{\rm total}^n',31,GREEN),
-            self.equation(r'\mathbf E_s^{n+1}=\mathbf E_s^n+\frac{\Delta t}{\epsilon_0}(\nabla_h\times\mathbf H_s^{n+1/2}-\mathbf J^{n+1/2})',33),
-            self.equation(r'\Delta t\leq\min\!\left[\frac{\Delta x}{2c},\frac{0.7}{\sqrt{\omega_{p,\max}^2+|\boldsymbol\Omega_e|^2}}\right]',29),
-            self.prose('Resolve vacuum wavelength and the shorter plasma response scales.',24))
+        self.start_slide('Why solve Maxwell equations after finding electron density?',
+            'The radar drives electrons; their current radiates; that field changes electron motion. '
+            'The analytic incident wave satisfies vacuum Maxwell equations. Subtract it to solve for scattered fields.')
+        self.play(FadeIn(self.prose('We need the field sent back toward the radar.',31,FG).shift(UP*2.35)))
+        blocks=VGroup(*[VGroup(RoundedRectangle(width=3.1,height=1.2,color=c),self.prose(label,24,c))
+            for label,c in [('Total electric field',BLUE),('Electron current',GREEN),('Scattered field',GOLD)]]).arrange(RIGHT,buff=.75).shift(UP*.6)
+        for block in blocks:self.play(FadeIn(block))
+        for i in range(2):self.play(GrowArrow(Arrow(blocks[i].get_right(),blocks[i+1].get_left(),buff=.08,color=MUTED)))
+        self.play(Create(CurvedArrow(blocks[2].get_bottom()+DOWN*.1,blocks[0].get_bottom()+DOWN*.1,angle=-PI/5,color=BLUE)))
+        self.play(Write(self.equation(r'\mathbf E_{\rm total}=\mathbf E_{\rm inc}+\mathbf E_s',38,BLUE).shift(DOWN*1.75)))
+        self.play(FadeIn(self.equation(r'\mathbf E_{\rm inc}:\ \text{known radar wave};\quad\mathbf E_s:\ \text{unknown scattered field}\quad[\mathrm{V/m}]',25,MUTED).shift(DOWN*2.8)))
+        self.citation('Marshall and Close (2015), section 2: self-consistent plasma scattering','https://doi.org/10.1002/2015JA021238')
+        self.finish()
+        self.start_slide('From Maxwell curls to the Yee time step',
+            'Faraday law advances H from the E curl. Ampere-Maxwell law advances E from the H curl minus plasma current. '
+            'Replace derivatives by centred differences. Superscripts are time samples, not powers.')
+        self.play(Write(self.equation(r'\mu_0\partial_t\mathbf H_s=-\nabla\times\mathbf E_s',35,BLUE).shift(UP*2.3)))
+        self.play(Write(self.equation(r'\mathbf H_s^{n+1/2}=\mathbf H_s^{n-1/2}-\frac{\Delta t}{\mu_0}\nabla_h\times\mathbf E_s^n',34,BLUE).shift(UP*1.2)))
+        self.play(Write(self.equation(r'\epsilon_0\partial_t\mathbf E_s=\nabla\times\mathbf H_s-\mathbf J',35,GREEN).shift(DOWN*.05)))
+        self.play(Write(self.equation(r'\mathbf E_s^{n+1}=\mathbf E_s^n+\frac{\Delta t}{\epsilon_0}(\nabla_h\times\mathbf H_s^{n+1/2}-\mathbf J^{n+1/2})',33,GREEN).shift(DOWN*1.15)))
+        defs=self.term_definitions([r'\mathbf H_s:\ \text{scattered magnetic field [A/m]};\quad\mathbf J:\ \text{plasma current [A/m}^2\text{]}',
+            r'n:\ \text{time-step index};\quad\Delta t:\ \text{time step [s]};\quad\nabla_h\times:\ \text{discrete spatial curl}',
+            r'\mu_0:\ \text{vacuum permeability [H/m]};\quad\epsilon_0:\ \text{vacuum permittivity [F/m]}'],[0,-2.65,0],24,12.3)
+        self.play(FadeIn(defs))
+        self.citation('Yee (1966); Marshall and Close (2015), equations 4--6','https://doi.org/10.1109/TAP.1966.1138693')
+        self.finish()
+        self.start_slide('Choose a step short enough to resolve both responses',
+            'Vacuum Courant limit on an equal-spacing 3D grid: dx/(c sqrt(3)). This solver uses dx/(2c) and '
+            'a plasma/gyrofrequency constraint. The 0.7 factor is a solver margin, not a physical constant.')
+        self.stack(self.equation(r'\Delta t_{\rm CFL}\leq\frac{1}{c\sqrt{\Delta x^{-2}+\Delta y^{-2}+\Delta z^{-2}}}',37),
+            self.equation(r'\Delta x=\Delta y=\Delta z:\quad\Delta t_{\rm CFL}\leq\frac{\Delta x}{c\sqrt3}',34,BLUE),
+            self.equation(r'\Delta t=\min\!\left[\frac{\Delta x}{2c},\frac{0.7}{\sqrt{\omega_{p,\max}^2+|\boldsymbol\Omega_e|^2}}\right]',36,GREEN),
+            self.equation(r'\Delta x:\ \text{cell spacing [m]};\quad c:\ \text{light speed [m/s]};\quad\omega_{p,\max}:\ \text{largest local plasma frequency [rad/s]}',23,MUTED),
+            self.prose('Stability still requires checks of spatial resolution, box size, and convergence.',25))
+        self.citation('Yee (1966); Marshall and Close (2015), plasma FDTD','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def response_animation(self):
@@ -1117,7 +1633,7 @@ class MeteorHeadRCS(Slide):
         self.stack(self.equation(r'\sigma_{\rm rx}=\lim_{R\to\infty}4\pi R^2\frac{|\mathbf e_{\rm rx}^{\dagger}\widehat{\mathbf E}_s|^2}{|\widehat{\mathbf E}_{\rm inc}|^2}',40),
             self.equation(r'\boxed{\sigma_{\rm rx}=\frac{k^2Z_0^2}{4\pi|\widehat{\mathbf E}_{\rm inc}|^2}|\mathbf e_{\rm rx}^{\dagger}\mathbf A|^2}',45,GOLD),
             self.equation(r'[\sigma]=\mathrm{m^2},\qquad\sigma_{\rm dBsm}=10\log_{10}(\sigma/1\ \mathrm{m^2})',34),
-            self.equation(r'\text{The solver transforms }Z_0\mathbf J\text{, so its equivalent prefactor omits }Z_0^2.',24,MUTED))
+            self.equation(r'\mathbf e_{\rm rx}:\ \text{receive polarization unit vector};\quad\dagger:\ \text{conjugate transpose}',24,MUTED))
         self.finish()
 
     def polarization(self):
@@ -1155,6 +1671,20 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('6.12 to 9.19 m support: 0.19 dB change. Universal cutoff remains unvalidated.',24,RED).shift(DOWN*2.65)))
         self.finish()
 
+    def radar_equation(self):
+        self.start_slide('Why RCS connects the plasma calculation to received power',
+            'The transmitter sends power outward, the target redirects power, and effective aperture collects it. '
+            'The two propagation legs give R to the fourth. Assume monostatic far field, matched polarization, no additional system losses.')
+        rows=[(r'S_{\rm inc}=\frac{P_tG_t}{4\pi R^2}\quad[\mathrm{W/m^2}]','Incident flux at the meteor',BLUE),
+            (r'S_{\rm back}=\frac{S_{\rm inc}\sigma_{\rm rx}}{4\pi R^2}\quad[\mathrm{W/m^2}]','Flux returning to the antenna',GOLD),
+            (r'A_{\rm eff}=\frac{G_r\lambda_0^2}{4\pi},\quad P_r=S_{\rm back}A_{\rm eff}','Receiver collects flux over an area',GREEN)]
+        for y,(eq,description,color) in zip([2.,.4,-1.2],rows):
+            self.play(Write(self.equation(eq,32,color).move_to([-2.9,y,0])),FadeIn(self.prose(description,24,FG).move_to([3.6,y,0])))
+        self.play(Write(self.equation(r'\boxed{P_r=\frac{P_tG_tG_r\lambda_0^2\sigma_{\rm rx}}{(4\pi)^3R^4}}',37,BLUE).shift(DOWN*2.35)))
+        self.play(FadeIn(self.equation(r'P_t,P_r:\ \mathrm W;\quad G_t,G_r:\ \text{power gains};\quad R:\ \text{range [m]};\quad A_{\rm eff}:\ \mathrm{m^2}',23,MUTED).shift(DOWN*3.25)))
+        self.citation('MIT Lincoln Laboratory, Introduction to Radar Systems: radar equation','https://www.ll.mit.edu/sites/default/files/outreach/doc/2018-07/lecture%201.pdf')
+        self.finish()
+
     def detection(self):
         # Source: MAARSY detection geometry: Huyghebaert et al. (2026), doi:10.5194/amt-19-4277-2026
         self.start_slide('From RCS to detection: include the radar beam',
@@ -1184,28 +1714,25 @@ class MeteorHeadRCS(Slide):
         self.finish()
 
     def references(self):
-        # Source: Source and data: github.com/jvierine/manimations | solver:
-        # github.com/jvierine/fdtd
-        self.start_slide('References',
-            'Equations are drawn from the cited primary sources. The chained calculation is an independent implementation '
-            'with stated one-species assumptions and unresolved cutoff convergence. All figure inputs are bundled as HDF5.')
-        entries=[('Solar radiation: Burns, Lamy and Soter (1979)','doi:10.1016/0019-1035(79)90050-2'),
-                 ('Rarefied entry: Bariselli et al. (2020)','doi:10.1093/mnras/stz3559'),
-                 ('Free molecular sphere drag: Loth et al. (2021)','doi:10.2514/1.J060153'),
-                 ('Thermal ablation: Hill et al. (2005)','doi:10.1051/0004-6361:20053053'),
-                 ('Primary Si ionization: Jones (1997)','doi:10.1093/mnras/288.4.995'),
-                 ('Kinetics / density: Dimant and Oppenheim (2017)','doi:10.1002/2017JA023960 and 10.1002/2017JA023963'),
-                 ('Plasma FDTD: Marshall and Close (2015)','doi:10.1002/2015JA021238'),
-                 ('Head-plasma profiles: Marshall, Brown and Close (2017)','doi:10.1016/j.pss.2016.12.011')]
-        rows=VGroup(*[VGroup(self.prose(title,22,FG),self.prose(doi,18,BLUE)).arrange(DOWN,buff=.08,aligned_edge=LEFT)
-                      for title,doi in entries]).arrange(DOWN,buff=.2,aligned_edge=LEFT).move_to(ORIGIN)
-        for row in rows:self.play(FadeIn(row),run_time=.35)
-        links=[]
-        for (title,doi),row in zip(entries,rows):
-            dois=doi.removeprefix('doi:').split(' and ')
-            for index,value in enumerate(dois):
-                target=row if len(dois)==1 else row.copy().stretch(.5,0).move_to(
-                    row.get_left()+row.width*(.25+.5*index)*RIGHT)
-                links.append((title+(' Part '+str(index+1) if len(dois)>1 else ''),'https://doi.org/'+value,target))
-        self.paper_links(links)
+        entries=[('Solar radiation: Burns, Lamy and Soter (1979)','10.1016/0019-1035(79)90050-2'),
+            ('Rarefied entry: Bariselli et al. (2020)','10.1093/mnras/stz3559'),
+            ('Free molecular sphere drag: Loth et al. (2021)','10.2514/1.J060153'),
+            ('Thermal ablation: Hill et al. (2005)','10.1051/0004-6361:20053053'),
+            ('Primary Si ionization: Jones (1997)','10.1093/mnras/288.4.995'),
+            ('Empirical collisions: Bronshten (1983)','10.1007/978-94-009-7222-3'),
+            ('Collision cross section: Sugar et al. (2018), section 5.3','10.1002/2018JA025265'),
+            ('Kinetic model: Dimant and Oppenheim (2017), Part 1','10.1002/2017JA023960'),
+            ('Density solution: Dimant and Oppenheim (2017), Part 2','10.1002/2017JA023963'),
+            ('Staggered Maxwell grid: Yee (1966)','10.1109/TAP.1966.1138693'),
+            ('Absorbing layer: Roden and Gedney (2000)','10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A'),
+            ('Plasma FDTD: Marshall and Close (2015)','10.1002/2015JA021238'),
+            ('Head-plasma profiles: Marshall, Brown and Close (2017)','10.1016/j.pss.2016.12.011')]
+        for page in range(3):
+            self.start_slide('References (%d/3)'%(page+1),'Clickable primary references for the physical derivation.')
+            subset=entries[page*5:page*5+5]
+            rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose('doi:'+doi.replace('%3C','<').replace('%3E','>'),17,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
+                for title,doi in subset]).arrange(DOWN,buff=.4,aligned_edge=LEFT).move_to(ORIGIN)
+            for row in rows:self.play(FadeIn(row),run_time=.3)
+            self.paper_links([(title,'https://doi.org/'+doi,row) for (title,doi),row in zip(subset,rows)])
+            if page<2:self.finish()
         self.wait(1.)

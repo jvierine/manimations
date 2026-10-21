@@ -378,6 +378,7 @@ name = "meteor-slide-plots"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "libm",
  "rustplotlib",
  "serde",
  "serde_json",
@@ -591,7 +592,7 @@ checksum = "6b1e7f9a428571be2dc5bc0505c13fb6bf936822b894ec87abf8a08a4e51742d"
 [[package]]
 name = "rustplotlib"
 version = "0.1.0"
-source = "git+https://github.com/jvierine/rustplotlib?rev=6c41f00ffcafc76d7850c885f63afd29ad097556#6c41f00ffcafc76d7850c885f63afd29ad097556"
+source = "git+https://github.com/jvierine/rustplotlib?rev=2da4af7f2a2274b875608bf435e4fa3b368ab98d#2da4af7f2a2274b875608bf435e4fa3b368ab98d"
 dependencies = [
  "anyhow",
  "base64",

@@ -76,3 +76,11 @@ check that prose has no unsupported Unicode mathematical characters.
 This regression affected all slides across all three decks and cost the user
 roughly an hour of creative work. Treat correct pause behavior as a fundamental
 requirement of every future slide change.
+
+Explain why each mathematical block is needed before deriving it. For new
+physical models, state the question, introduce symbols, trace the equation's
+physical origin and assumptions, and provide clickable scientific references.
+Use clear section transitions in long lectures. Keep colourbars and secondary
+axes compact: collision clearance is not a reason for large empty gutters.
+For Rustplotlib camera animations, check fixed annotations against projected
+geometry in every frame with `Figure::check_annotations`.
