@@ -118,6 +118,15 @@ class MeteorHeadRCS(Slide):
         self.pr_drag_derivation()
         self.solar_radiation_pressure()
         self.story_orbits()
+        self.dust_collision_outcomes()
+        self.dust_collision_energy()
+        self.dust_relative_velocity()
+        self.dust_collision_rate()
+        self.dust_collision_population()
+        self.dust_collision_survival()
+        self.grun_collisions()
+        self.later_collision_models()
+        self.collisional_grooming()
         self.story_final_laps()
         self.interlude('The grain has a long commute. You get a short break.',
             ['Drink some water.','Call your mom.','Next: what happens when the atmosphere gets in the way.'])
@@ -180,7 +189,7 @@ class MeteorHeadRCS(Slide):
         self.start_slide('One grain, four physical questions',
             'Roadmap: dynamics brings dust to Earth; atmospheric entry supplies evaporated atoms; '
             'ionization and kinetic transport make plasma; electromagnetic scattering and the radar equation make an observation.')
-        entries=[('1. Space','Poynting--Robertson drag and planetary perturbations',GOLD),
+        entries=[('1. Space','Radiation forces, planetary perturbations, and collisions',GOLD),
             ('2. Atmosphere','Heating, evaporation, and the evolving grain',RED),
             ('3. Plasma','Ionization, collision lengths, and electron density',GREEN),
             ('4. Radar','Induced current, scattering, and received echo power',BLUE)]
@@ -441,10 +450,300 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Poynting--Robertson drag removes angular momentum; Jupiter perturbs the orbit.',25,FG).shift(DOWN*2.8)))
         self.finish()
 
+
+    def dust_collision_outcomes(self):
+        # Solid-grain impacts in interplanetary space, not the atomic collisions
+        # used later to derive the Dimant--Oppenheim plasma distribution.
+        self.start_slide('Space is dilute. The grain can still hit another grain.',
+            'Solid meteoroid--meteoroid impacts can crater, erode or fragment a target; energetic impacts '
+            'can also melt or vaporize part of the material. These are schematic outcomes, not a computed '
+            'impact experiment. Slow collisions can stick, depending on material and speed; a hypervelocity '
+            'encounter should not be illustrated as two grains gently merging.')
+        self.play(FadeIn(self.prose('An impact can remove a little material---or destroy the original grain.',29,FG).shift(UP*2.5)))
+        rng=np.random.default_rng(833)
+        for x,title,outcome,color in [
+            (-4.3,'Small damage','A crater and some ejecta',GREEN),
+            (0,'Fragmentation','Several surviving pieces',GOLD),
+            (4.3,'Catastrophic breakup','The original grain is lost',RED)]:
+            center=np.array([x,.4,0])
+            target=self.grain(center,.46)
+            projectile=Dot(center+[-1.4,.7,0],radius=.065,color=BLUE)
+            label=self.prose(title,26,color).move_to([x,1.65,0])
+            caption=self.prose(outcome,22,FG)
+            if caption.width>3.9:caption.scale_to_fit_width(3.9)
+            caption.move_to([x,-1.,0])
+            self.play(FadeIn(label),FadeIn(target),FadeIn(projectile),run_time=.35)
+            self.play(projectile.animate.move_to(center+[-.2,.1,0]),run_time=.65)
+            self.remove(projectile)
+            if x<0:
+                chips=VGroup(*[Dot(center,radius=.027,color=GOLD) for _ in range(6)])
+                self.add(chips)
+                self.play(target.animate.scale(.93),
+                    *[d.animate.shift([-rng.uniform(.6,1),rng.uniform(-.35,.4),0]) for d in chips],run_time=.6)
+            else:
+                self.remove(target)
+                fragments=VGroup(*[self.grain(center,.13 if x==0 else .075) for _ in range(7 if x==0 else 16)])
+                self.add(fragments)
+                self.play(*[f.animate.shift([rng.uniform(-1.25,1.25),rng.uniform(-.75,.65),0])
+                    for f in fragments],run_time=.8)
+            self.play(FadeIn(caption),run_time=.3)
+        self.play(FadeIn(self.prose('Some impact energy becomes fracture, deformation, heat, and ejecta motion.',25).shift(DOWN*2.1)))
+        self.play(FadeIn(self.prose('Fragments inherit the bulk orbit plus recoil; their new sizes change radiation forces.',25,BLUE).shift(DOWN*2.85)))
+        self.citation('Grün et al. (1985): collisional balance','https://doi.org/10.1016/0019-1035(85)90121-6')
+        self.finish()
+
+    def dust_collision_energy(self):
+        self.start_slide('Can a small projectile destroy a larger grain?',
+            'Use the target-frame projectile kinetic energy per target mass, Q_t. This target-mass convention '
+            'is appropriate when the projectile is much smaller. It is not the reduced-mass energy per combined '
+            'mass. Q_D* denotes a material- and size-dependent catastrophic-disruption threshold, commonly '
+            'associated with a largest remnant containing about half the original target mass. Not all available '
+            'kinetic energy is deposited in the target. No universal micron-grain Q_D* is assumed here.')
+        target=self.grain(np.array([-4.3,1.,0]),.55)
+        projectile=Dot([-6,1,0],radius=.055,color=BLUE)
+        arrow=Arrow([-5.8,1.6,0],[-4.9,1.6,0],color=BLUE,buff=0)
+        self.play(FadeIn(target),FadeIn(projectile),GrowArrow(arrow))
+        self.add(self.equation(r'v_{\rm rel}',27,BLUE).next_to(arrow,UP,buff=.12),
+            self.equation(r'D_t',27,GOLD).next_to(target,DOWN,buff=.2),
+            self.equation(r'D_p',24,BLUE).next_to(projectile,DOWN,buff=.25))
+        energy=self.term_definitions([
+            r'E_{\rm imp}=\tfrac12 m_p v_{\rm rel}^2\quad[\mathrm J]',
+            r'Q_t=\frac{E_{\rm imp}}{m_t}=\tfrac12\frac{m_p}{m_t}v_{\rm rel}^2\quad[\mathrm{J\,kg^{-1}}]',
+            r'\rho_p=\rho_t:\qquad \frac{m_p}{m_t}=\left(\frac{D_p}{D_t}\right)^3'],
+            [2.25,1.25,0],32,7.4)
+        for row in energy:self.play(Write(row))
+        self.play(projectile.animate.move_to(target.get_center()),run_time=.75)
+        self.remove(projectile)
+        example=self.equation(r'D_t=100\,\mu{\rm m},\ D_p=10\,\mu{\rm m},\ v_{\rm rel}=10\,{\rm km\,s^{-1}}'
+            r'\quad\Rightarrow\quad Q_t=50\,{\rm kJ\,kg^{-1}}',31,BLUE).shift(DOWN*.7)
+        self.play(Write(example))
+        self.play(FadeIn(self.equation(r'Q_t\gtrsim Q_D^*,\qquad Q_D^*:\ \text{disruption threshold [J/kg]}',32,RED).shift(DOWN*1.65)))
+        defs=self.term_definitions([
+            r'm_p,m_t:\ \text{projectile and target masses [kg]};\quad D_p,D_t:\ \text{diameters [m]}',
+            r'v_{\rm rel}:\ \text{relative impact speed [m/s]};\quad \rho_p,\rho_t:\ \text{bulk densities [kg/m}^3\text{]}'],
+            [0,-2.55,0],23,12.3)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('The threshold depends on size, composition, porosity, and impact geometry.',24,GOLD).shift(DOWN*3.25)))
+        self.citation('Pokorný et al. (2024), impact-energy prescription','https://doi.org/10.3847/PSJ/ad2de8')
+        self.finish()
+
+    def dust_relative_velocity(self):
+        self.start_slide('The orbits determine how hard the grains collide',
+            'The local relative velocity is the difference of the two orbital velocity vectors. '
+            'Equal-speed streams at the same radius give the simple angle formula shown here. '
+            'The numerical example uses approximately circular 30 km/s streams at 1 AU; it is not a '
+            'calculation of the eccentric retrograde 55P stream. Inclination can increase encounter speed '
+            'while reducing time in the dense zodiacal plane. A high inclination alone does not fix a rate.')
+        self.play(Write(self.equation(r'\mathbf v_{\rm rel}=\mathbf v_t-\mathbf u_p'
+            r'\qquad v_{\rm rel}=|\mathbf v_{\rm rel}|',35,BLUE).shift(UP*2.35)))
+        self.play(FadeIn(self.prose('Target and projectile velocities are evaluated at the same location.',25).shift(UP*1.65)))
+        for x,angle,title,speed in [(-4.3,0,'Nearly parallel','0'),(0,PI/2,'Crossing','42'),(4.3,PI,'Opposite','60')]:
+            center=np.array([x,-.35,0])
+            vt=Arrow(center+[-.85,-.32,0],center+[.85,-.32,0],buff=0,color=GREEN)
+            direction=np.array([np.cos(angle),np.sin(angle),0])
+            up=Arrow(center-.85*direction+[0,.25,0],center+.85*direction+[0,.25,0],buff=0,color=GOLD)
+            caption=self.prose(title,25,FG).move_to([x,1.05,0])
+            result=self.equation(r'v_{\rm rel}\simeq '+speed+r'\ {\rm km/s}',27,BLUE).move_to([x,-1.35,0])
+            self.play(GrowArrow(vt),GrowArrow(up),FadeIn(caption),run_time=.5)
+            self.play(FadeIn(result),run_time=.3)
+        self.play(Write(self.equation(r'|\mathbf v_t|=|\mathbf u_p|=v_K:\quad '
+            r'v_{\rm rel}=2v_K\sin(\psi/2),\qquad v_K\simeq30\,{\rm km/s}\ \text{at 1 AU}',30).shift(DOWN*2.2)))
+        self.play(FadeIn(self.equation(r'\text{Green: }\mathbf v_t\ \text{(target)};\quad\text{rust: }\mathbf u_p\ \text{(projectile)};\quad\psi:\ \text{angle between them}',24).shift(DOWN*2.95)))
+        self.citation('Nesvorný et al. (2011): orbits and the meteoroid population','https://doi.org/10.1088/0004-637X/743/2/129')
+        self.finish()
+
+    def dust_collision_rate(self):
+        self.start_slide('How often is the grain hit? Count a swept volume.',
+            'For dilute uncorrelated hard spheres, a projectile center hits when it passes within the sum '
+            'of target and projectile radii. Neglect gravitational focusing for these small fast grains. '
+            'The animation uses target-rest coordinates, one projectile size and one relative speed. '
+            'A number density times swept volume gives the expected number of impacts, not necessarily destruction.')
+        center=np.array([-4.6,.6,0])
+        target=Circle(.42,color=GOLD,fill_opacity=.8).move_to(center)
+        corridor=Rectangle(width=4.8,height=1.4,color=BLUE,fill_opacity=.06).move_to([-2.3,.6,0])
+        self.play(Create(corridor),FadeIn(target))
+        radius=DoubleArrow([-4.6,.6,0],[-4.6,1.3,0],buff=0,color=GREEN)
+        self.play(GrowArrow(radius))
+        self.add(self.equation(r'a_t+a_p',26,GREEN).move_to([-5.65,.9,0]))
+        travel=DoubleArrow([-4.6,-.6,0],[.1,-.6,0],buff=0,color=BLUE)
+        self.play(GrowArrow(travel))
+        self.add(self.equation(r'v_{\rm rel}\,\Delta t',27,BLUE).next_to(travel,DOWN,buff=.12))
+        rng=np.random.default_rng(93)
+        dots=VGroup(*[Dot([rng.uniform(-4.2,-.2),rng.uniform(-.04,1.22),0],radius=.03,color=BLUE) for _ in range(23)])
+        self.play(FadeIn(dots))
+        formula=self.term_definitions([
+            r'\sigma_{\rm geom}=\pi(a_t+a_p)^2\quad[\mathrm{m^2}]',
+            r'\Delta V=\sigma_{\rm geom}v_{\rm rel}\Delta t\quad[\mathrm{m^3}]',
+            r'\langle N_{\rm hit}\rangle=n_p\Delta V',
+            r'\Gamma_{\rm hit}=n_p\sigma_{\rm geom}v_{\rm rel}\quad[\mathrm{s^{-1}}]'],
+            [3.55,.65,0],29,5.3)
+        for row in formula:self.play(Write(row))
+        self.play(dots.animate.shift(LEFT*.32),run_time=.6)
+        defs=self.term_definitions([
+            r'a_t,a_p:\ \text{target/projectile radii [m]};\quad n_p:\ \text{projectile number density [m}^{-3}\text{]}',
+            r'\Delta t:\ \text{time interval [s]};\quad \Gamma_{\rm hit}:\ \text{impact rate per target [s}^{-1}\text{]}'],
+            [0,-2.1,0],24,12.3)
+        self.play(FadeIn(defs))
+        self.play(FadeIn(self.prose('More projectiles, a larger collision area, or faster encounters increase the rate.',25,FG).shift(DOWN*3.05)))
+        self.citation('Stark and Kuchner (2009): collision rates along particle orbits','https://doi.org/10.1088/0004-637X/707/1/543')
+        self.finish()
+
+    def dust_collision_population(self):
+        self.start_slide('Add up the projectiles that can destroy this target',
+            'Generalize the swept-volume result over projectile radius and velocity. '
+            'f_p da_p d^3u is the local projectile number density in that phase-space element. '
+            'The outcome factor selects catastrophic disruption; erosion would require a separate gradual '
+            'mass-loss and size-evolution equation. The spatial distribution and velocity distribution must '
+            'be specified by an environment or dynamical model. This is not the atomic collision cross section '
+            'sigma_c used later in the plasma model.')
+        prompt=self.prose('A dust cloud contains many sizes, speeds, and crossing orbits.',28,FG).shift(UP*2.35)
+        self.play(FadeIn(prompt))
+        eq=self.equation(r'\Gamma_{\rm dest}(\mathbf r,\mathbf v_t)'
+            r'=\int f_p(a_p,\mathbf u,\mathbf r)\,\pi(a_t+a_p)^2'
+            r'|\mathbf v_t-\mathbf u|\,\mathcal P_{\rm dest}\,da_p\,d^3u',32,BLUE).shift(UP*1.25)
+        self.play(Write(eq))
+        defs=self.term_definitions([
+            r'f_p\,da_p\,d^3u:\ \text{number of projectiles per unit volume [m}^{-3}\text{]}',
+            r'\mathbf r:\ \text{target position [m]};\quad \mathbf v_t,\mathbf u:\ \text{target/projectile velocities [m/s]}',
+            r'\mathcal P_{\rm dest}:\ \text{probability that this encounter destroys the target [dimensionless]}',
+            r'\text{Simple threshold model:}\quad \mathcal P_{\rm dest}=\Theta(Q_t-Q_D^*)',
+            r'\Theta(x)=0\ (x<0),\ 1\ (x\geq0):\ \text{step function}'],
+            [0,-.35,0],25,12.1)
+        for row in defs:self.play(FadeIn(row),run_time=.4)
+        self.play(FadeIn(self.prose('The projectile size spectrum and the strength law decide which impacts count.',26,GOLD).shift(DOWN*2.45)))
+        self.play(FadeIn(self.prose('The orbit decides which densities and velocities the target encounters.',26,GREEN).shift(DOWN*3.1)))
+        self.citation('Pokorný et al. (2024): a three-dimensional collision environment','https://doi.org/10.3847/PSJ/ad2de8')
+        self.finish()
+
+    def dust_collision_survival(self):
+        self.start_slide('Survival depends on the whole journey through the dust',
+            'Assume independent destructive encounters. The probability of survival falls at the local '
+            'destruction rate, so dP/dt=-Gamma_dest P. Integrating gives the cumulative hazard expression. '
+            'For a fixed slowly evolving orbit define the collision lifetime by the orbit-averaged rate. '
+            'The forty-grain cartoon illustrates probabilities only; no collision lifetime has been '
+            'calculated here for 55P or for the secular track.')
+        self.play(Write(self.equation(r'\frac{dP_{\rm surv}}{dt}=-\Gamma_{\rm dest}(t)P_{\rm surv}'
+            r'\quad\Rightarrow\quad P_{\rm surv}(t)=e^{-H(t)}',34,BLUE).shift(UP*2.2)))
+        self.play(Write(self.equation(r'H(t)=\int_0^t\Gamma_{\rm dest}(t^\prime)\,dt^\prime,\qquad'
+            r'\tau_{\rm coll}^{-1}=\langle\Gamma_{\rm dest}\rangle_{\rm orbit}',33).shift(UP*1.15)))
+        defs=self.equation(r'P_{\rm surv}:\ \text{surviving fraction};\quad H:\ \text{cumulative exposure (dimensionless)};'
+            r'\quad\tau_{\rm coll}:\ \text{collision lifetime [s]}',23).shift(UP*.35)
+        self.play(FadeIn(defs))
+        grains=VGroup(*[self.grain(np.array([-4.7+.48*(i%20),-1.-.55*(i//20),0]),.09) for i in range(40)])
+        label=self.equation(r'H=0:\quad P_{\rm surv}=1',31,GREEN).shift(DOWN*2.25)
+        self.play(FadeIn(grains),FadeIn(label))
+        # Deterministic thinning is a visual expectation, not a Monte Carlo result.
+        self.play(*[g.animate.set_opacity(.08) for g in list(grains)[15:]],
+            Transform(label,self.equation(r'H=1:\quad P_{\rm surv}=e^{-1}\simeq37\%',31,GREEN).move_to(label)),run_time=.9)
+        self.play(*[g.animate.set_opacity(.08) for g in list(grains)[2:15]],
+            Transform(label,self.equation(r'H=3:\quad P_{\rm surv}=e^{-3}\simeq5\%',31,RED).move_to(label)),run_time=.9)
+        self.play(FadeIn(self.prose('Compare accumulated collision exposure with the time needed for P--R migration.',25,FG).shift(DOWN*3.05)))
+        self.citation('Nesvorný et al. (2011), section 2.3: stochastic collisional removal','https://doi.org/10.1088/0004-637X/743/2/129')
+        self.finish()
+
+    def grun_collisions(self):
+        self.start_slide('Grün et al. (1985): the dust population is a balance',
+            'Grün, Zook, Fechtig and Giese combined the empirical meteoroid environment near 1 AU with '
+            'collisional destruction, fragment production and radiation-related removal. Their collisional '
+            'lifetimes require an assumed projectile population and disruption strength. The diagram is a '
+            'conceptual balance, not a reproduction of a quantitative Grün lifetime curve.')
+        self.play(FadeIn(self.prose('Observed flux and size distribution constrain the collision environment.',28,FG).shift(UP*2.4)))
+        positions=[[-4.6,.65,0],[0,.65,0],[4.6,.65,0]]
+        titles=['Large grains','Impact fragments','Small dust']
+        sizes=[.5,.24,.07]
+        for i,(pos,title,size) in enumerate(zip(positions,titles,sizes)):
+            count=[1,4,12][i]
+            rng=np.random.default_rng(i+200)
+            objects=VGroup(*[self.grain(np.array(pos)+[rng.uniform(-.55,.55) if count>1 else 0,
+                rng.uniform(-.35,.35) if count>1 else 0,0],size) for _ in range(count)])
+            self.play(FadeIn(objects),FadeIn(self.prose(title,26,GOLD).move_to([pos[0],1.65,0])),run_time=.45)
+            if i<2:self.play(GrowArrow(Arrow(np.array(pos)+[1,.0,0],np.array(positions[i+1])+[-1,0,0],buff=0,color=BLUE)))
+        sink1=self.prose('P--R transport toward the Sun',25,GREEN).move_to([-3.1,-1.6,0])
+        sink2=self.prose('Radiation pressure can eject small fragments',25,RED)
+        sink2.scale_to_fit_width(5.7).move_to([3.45,-1.6,0])
+        self.play(GrowArrow(Arrow([-4.6,.05,0],[-3.1,-1.2,0],buff=0,color=GREEN)),
+            GrowArrow(Arrow([4.6,.05,0],[3.45,-1.2,0],buff=0,color=RED)))
+        self.play(FadeIn(sink1),FadeIn(sink2))
+        self.play(FadeIn(self.prose('Collisions are both a sink for targets and a source of daughter grains.',26,BLUE).shift(DOWN*2.15)))
+        self.play(FadeIn(self.prose('Lifetime estimates depend on the orbit, dust population, and assumed grain strength.',25).shift(DOWN*3.)))
+        self.citation('Grün, Zook, Fechtig and Giese (1985), Icarus 62, 244--272','https://doi.org/10.1016/0019-1035(85)90121-6')
+        self.finish()
+
+    def later_collision_models(self):
+        self.start_slide('Later models connect collisions to orbits and observations',
+            'Two examples of subsequent zodiacal-cloud models. Nesvorný et al. 2011 use numerical orbital '
+            'populations and a scaled Grün collision lifetime; destroyed grains are removed, not followed '
+            'as a full fragment cascade. Their radar comparison favors longer millimetre-grain survival '
+            'than the standard prescription. Rigley and Wyatt 2022 use comet splitting to supply a '
+            'kinetically evolved size distribution with fragment production, destruction and radiation forces. '
+            'These are different model ingredients, not one universally calibrated lifetime.')
+        n=self.prose('Nesvorný et al. (2011)',29,BLUE).move_to([-3.8,2.3,0])
+        ntext=VGroup(*[self.prose(t,25,FG) for t in [
+            'Integrate grain orbits; compare with infrared emission and meteor radars.',
+            'Scale the Grün lifetime to explore uncertain collisional removal.',
+            'Radar data favor longer survival for millimetre grains in that model.']]).arrange(DOWN,buff=.24,aligned_edge=LEFT).move_to([0,1.05,0])
+        self.play(FadeIn(n))
+        for row in ntext:self.play(FadeIn(row),run_time=.4)
+        rule=self.equation(r'\tau_{\rm coll}=S\,\tau_{\rm G85},\qquad '
+            r'S:\ \text{dimensionless lifetime scale factor}',29,GOLD).shift(DOWN*.05)
+        self.play(Write(rule))
+        r=self.prose('Rigley and Wyatt (2022)',29,GREEN).move_to([-3.5,-1.05,0])
+        rtext=VGroup(*[self.prose(t,25,FG) for t in [
+            'Comet splitting supplies dust; a kinetic model evolves the size distribution.',
+            'Fragment production and destruction compete with radiation forces.',
+            'The small grains are replenished by the breakup of larger bodies.']]).arrange(DOWN,buff=.24,aligned_edge=LEFT).move_to([0,-2.25,0])
+        self.play(FadeIn(r))
+        for row in rtext:self.play(FadeIn(row),run_time=.4)
+        links=[('Nesvorný et al. (2011)','https://doi.org/10.1088/0004-637X/743/2/129',n),
+            ('Rigley and Wyatt (2022)','https://doi.org/10.1093/mnras/stab3482',r)]
+        self.paper_links(links)
+        self.finish()
+
+    def collisional_grooming(self):
+        self.start_slide('Three-dimensional models ask where the grain spends its time',
+            'Stark and Kuchner 2009 introduced iterative collisional grooming: orbital particle streams '
+            'provide the density and velocity distribution, and collisions change their weights. '
+            'Pokorný et al. 2024 apply this to Jupiter-family comet dust and several observations, finding '
+            'greater grain resistance than older assumptions in their model. Their implementation neglects '
+            'gradual erosion and removes catastrophic daughters rather than evolving a full fragment cascade. '
+            'The illustrative circles are projected orbit crossings, not a quantitative density map. '
+            '55P is a retrograde Halley-type comet, not a Jupiter-family comet; these fits cannot simply be '
+            'assigned as its lifetime. Our following Earth encounter is conditional on a surviving grain.')
+        center=np.array([-4.3,.6,0])
+        sun=Dot(center,radius=.12,color=GOLD)
+        paths=VGroup(*[Ellipse(width=3.3,height=h,color=c,stroke_width=2).rotate(a).move_to(center)
+            for h,a,c in [(1.2,.3,GREEN),(1.7,-.35,BLUE),(2.2,.8,MUTED)]])
+        self.play(FadeIn(sun),Create(paths))
+        dust=Dot(paths[0].point_from_proportion(0),radius=.06,color=RED)
+        self.add(dust)
+        self.play(MoveAlongPath(dust,paths[0]),run_time=2.,rate_func=linear)
+        self.add(self.prose('Orbit crossings set local encounters',22).move_to([-4.3,-1.5,0]))
+        body=self.term_definitions([
+            r'\text{Orbits}\ \longrightarrow\ f_p(\mathbf r,\mathbf u,a_p)',
+            r'\text{Local impacts}\ \longrightarrow\ \text{stream survival weights}',
+            r'\text{Updated cloud}\ \longrightarrow\ \text{new collision rates}'],
+            [2.35,1.4,0],27,7.3)
+        for row in body:self.play(FadeIn(row))
+        text=VGroup(self.prose('Pokorný et al. (2024)',27,BLUE),
+            self.prose('Radar, infrared, and probe constraints favor stronger grains',24,FG),
+            self.prose('within their Jupiter-family comet dust model.',24,FG)).arrange(DOWN,buff=.17).move_to([2.35,-.3,0])
+        if text.width>7.4:text.scale_to_fit_width(7.4)
+        self.play(FadeIn(text))
+        self.play(FadeIn(self.prose('Strength, source populations, and fragment treatment remain model assumptions.',25).shift(DOWN*2.15)))
+        self.play(FadeIn(self.prose('For 55P: compute exposure along its own retrograde orbit before quoting a lifetime.',25,RED).shift(DOWN*2.85)))
+        refs=[]
+        for x,label,url in [(-3.2,'Stark and Kuchner (2009)','https://doi.org/10.1088/0004-637X/707/1/543'),
+            (3.2,'Pokorný et al. (2024)','https://doi.org/10.3847/PSJ/ad2de8')]:
+            item=self.prose(label,18,BLUE).move_to([x,-3.78,0])
+            self.play(FadeIn(item),run_time=.2)
+            refs.append((label,url,item))
+        self.paper_links(refs)
+        self.finish()
+
     def story_final_laps(self):
         # Source: Encounter animation: meteor_head_rcs.py | illustrative geometry, not an impact
         # ephemeris
-        self.start_slide('Many orbits later: the final few laps',
+        self.start_slide('Follow a surviving grain: the final few laps',
             'An illustrative Earth-crossing Kepler ellipse, not a selected trajectory from the secular model. '
             'The encounter phase is chosen to meet Earth. The dust is retrograde; Earth is prograde. '
             'Earlier orbital evolution is compressed into the preceding slide.')
@@ -461,7 +760,7 @@ class MeteorHeadRCS(Slide):
         self.play(phase.animate.set_value(6*PI),run_time=5.,rate_func=linear)
         dust.clear_updaters();earth.clear_updaters()
         self.play(Flash(dust.get_center(),color=GOLD,flash_radius=.35))
-        self.play(FadeIn(self.prose('At the right place and time, the grain meets Earth.',31,FG).shift(DOWN*2.6)))
+        self.play(FadeIn(self.prose('One surviving grain meets Earth at the right place and time.',31,FG).shift(DOWN*2.6)))
         self.finish()
 
     def story_entry(self):
@@ -1715,6 +2014,11 @@ class MeteorHeadRCS(Slide):
 
     def references(self):
         entries=[('Solar radiation: Burns, Lamy and Soter (1979)','10.1016/0019-1035(79)90050-2'),
+            ('Meteoroid collisions: Grün et al. (1985)','10.1016/0019-1035(85)90121-6'),
+            ('Orbital dust populations: Nesvorný et al. (2011)','10.1088/0004-637X/743/2/129'),
+            ('Collisional grooming: Stark and Kuchner (2009)','10.1088/0004-637X/707/1/543'),
+            ('Comet fragmentation: Rigley and Wyatt (2022)','10.1093/mnras/stab3482'),
+            ('Dust strength: Pokorný et al. (2024)','10.3847/PSJ/ad2de8'),
             ('Rarefied entry: Bariselli et al. (2020)','10.1093/mnras/stz3559'),
             ('Free molecular sphere drag: Loth et al. (2021)','10.2514/1.J060153'),
             ('Thermal ablation: Hill et al. (2005)','10.1051/0004-6361:20053053'),
@@ -1727,12 +2031,13 @@ class MeteorHeadRCS(Slide):
             ('Absorbing layer: Roden and Gedney (2000)','10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A'),
             ('Plasma FDTD: Marshall and Close (2015)','10.1002/2015JA021238'),
             ('Head-plasma profiles: Marshall, Brown and Close (2017)','10.1016/j.pss.2016.12.011')]
-        for page in range(3):
-            self.start_slide('References (%d/3)'%(page+1),'Clickable primary references for the physical derivation.')
+        pages=(len(entries)+4)//5
+        for page in range(pages):
+            self.start_slide('References (%d/%d)'%(page+1,pages),'Clickable primary references for the physical derivation.')
             subset=entries[page*5:page*5+5]
             rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose('doi:'+doi.replace('%3C','<').replace('%3E','>'),17,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
                 for title,doi in subset]).arrange(DOWN,buff=.4,aligned_edge=LEFT).move_to(ORIGIN)
             for row in rows:self.play(FadeIn(row),run_time=.3)
             self.paper_links([(title,'https://doi.org/'+doi,row) for (title,doi),row in zip(subset,rows)])
-            if page<2:self.finish()
+            if page<pages-1:self.finish()
         self.wait(1.)

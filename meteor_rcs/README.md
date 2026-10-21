@@ -14,6 +14,26 @@ defines the force ratio `beta_rad`, and derives the release-energy criterion
 one-half threshold applies to a circular parent orbit. Optical efficiency is
 size and composition dependent; ever-smaller grains are not automatically
 easier to eject. No new dust-orbit calculation is presented.
+
+Nine animated slides introduce solid-grain collisions before the surviving
+grain's final Earth encounter. They distinguish cratering and fragmentation
+from catastrophic disruption, derive impact energy per target mass, relative
+velocity, geometric swept-volume rates, a phase-space destruction-rate integral,
+and survival under cumulative collision exposure. The illustrative 100/10
+micrometre target/projectile pair at 10 km/s gives 50 kJ/kg of available
+projectile energy per target mass; no universal grain-strength threshold or
+55P collision lifetime is claimed. These solid impacts are distinct from the
+atomic collision lengths used in the later plasma section.
+
+The sequence introduces Grün et al. (1985), the scaled-lifetime dynamical
+population model of Nesvorný et al. (2011), the collision-cascade/comet-splitting
+model of Rigley and Wyatt (2022), and the three-dimensional collisional grooming
+method of Stark and Kuchner (2009) as applied to Jupiter-family comet dust by
+Pokorný et al. (2024). The latter's inferred strength is conditional
+on its source population and outcome prescription; it is not a direct 55P
+lifetime measurement. All five papers have clickable citations. Animations
+of collision outcomes, encounter geometry and ensemble survival are explanatory
+schematics, not a new collisional simulation or a digitized model curve.
 The evaporation cartoon shrinks the solid grain as successive neutral-atom
 shells leave. The radar illustration uses all 433 actual antenna positions
 from the meteor repository, bundled in `maarsy_array.h5`, and labels the cloud's
