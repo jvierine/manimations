@@ -24,3 +24,18 @@ def velocity_wedge_volume(speed, thickness, solid_angle):
     if speed < 0 or thickness < 0 or not 0 <= solid_angle <= 4*np.pi:
         raise ValueError('Invalid speed, shell thickness, or solid angle')
     return solid_angle * ((speed + thickness)**3 - speed**3) / 3.
+
+
+def cold_recoil(speed, meteor_to_air_mass, angle):
+    """Heavy-particle elastic recoil in the grain frame, in the (z, x) plane.
+
+    A stationary meteor atom is hit by air moving along +z. Angle [rad] is
+    the meteor-ion recoil angle to +z. Returned velocities are in m/s.
+    Ionization probability is separate; its small energy loss is neglected here.
+    """
+    if speed <= 0 or meteor_to_air_mass <= 0 or not 0 <= angle < np.pi/2:
+        raise ValueError('Use positive speed and masses, and forward recoil')
+    alpha = 1/(1 + meteor_to_air_mass)
+    ion = 2*alpha*speed*np.cos(angle)*np.array([np.cos(angle), np.sin(angle)])
+    air = np.array([speed, 0.]) - meteor_to_air_mass*ion
+    return ion, air

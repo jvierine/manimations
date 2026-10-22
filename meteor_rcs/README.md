@@ -87,6 +87,15 @@ residence time numerically; it is a teaching example, not a DO cloud prediction.
 Presenter-controlled steps separate counting, conservation, chain-rule
 integration, the boundary condition, and summation over velocity classes.
 
+The recoil-mass sequence derives the speed-angle relation from momentum and
+energy conservation, then animates conserving head-on collisions for three mass
+ratios. A velocity-sphere slice and a shrinking unit-area speed kernel introduce
+the delta shell. Directional birth counting supplies two inverse-speed powers;
+residence time supplies a third; integrating the velocity measure removes two.
+The uniform source slab isolates the explicit recoil mass factor at fixed birth
+rate, geometry, speed, and direction. It does not replace the full DO angular or
+spatial integrals, or predict a composition trend with other physics held free.
+
 ## Build from the repository root
 
 ```bash

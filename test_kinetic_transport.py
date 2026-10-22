@@ -28,3 +28,16 @@ def test_spherical_velocity_measure_is_the_thin_shell_limit():
     thin = speed**2 * thickness * omega
     assert np.isclose(exact, thin, rtol=2e-6)
     assert np.isclose(velocity_wedge_volume(0., speed, 4*np.pi), 4*np.pi*speed**3/3)
+
+
+def test_recoil_animation_conserves_momentum_energy_and_com_shell():
+    from meteor_rcs.kinetic_transport import cold_recoil
+    speed = 50e3
+    for ratio in [.25, 1., 3., 10.]:
+        for angle in [0., .2, .7, 1.3]:
+            ion, air = cold_recoil(speed, ratio, angle)
+            incoming = np.array([speed, 0.])
+            assert np.allclose(air + ratio*ion, incoming)
+            assert np.isclose(air@air + ratio*(ion@ion), speed**2)
+            center = incoming/(1+ratio)
+            assert np.isclose(np.linalg.norm(ion-center), np.linalg.norm(center))

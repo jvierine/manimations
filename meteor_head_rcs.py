@@ -2230,6 +2230,253 @@ class MeteorHeadRCS(Slide):
         self.citation('Dimant and Oppenheim (2017), Parts 1 and 2','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
+    def recoil_mass_derivation(self):
+        # Elastic heavy-particle kinematics and a transparent directional source
+        # slab explain the explicit mass factors of DO Part 2 Eqs. 3 and 11.
+        # The slab is not a substitute for DO's nonuniform trajectory integrals.
+        from meteor_rcs.kinetic_transport import cold_recoil
+        paper1='https://doi.org/10.1002/2017JA023960'
+        paper2='https://doi.org/10.1002/2017JA023963'
+        def place(item,xy,width=6.):
+            if item.width>width:item.scale_to_fit_width(width)
+            return item.move_to([*xy,0])
+        def words(text,xy,size=27,color=MUTED,width=6.):
+            return place(self.prose(text,size,color),xy,width)
+        def eq(tex,xy,size=35,color=FG,width=12.4):
+            return place(self.equation(tex,size,color),xy,width)
+
+        self.start_slide('Why does particle mass affect the plasma density?',
+            'The preceding transport calculation needs the newborn ion velocities. Collision mechanics supplies '
+            'them. Work in the grain frame: atmospheric particles stream past, and the freshly evaporated '
+            'meteor atom has only a small thermal velocity. Set that initial velocity to zero to derive the '
+            'leading recoil relation. The ionization probability remains in the source model; here we neglect '
+            'ionization energy only in the heavy-particle mechanical energy balance.')
+        self.add(words('We need the recoil speed to calculate how long an ion stays near the grain.',(0,2.6),29,width=12.4))
+        air=Dot([-5.,.9,0],color=BLUE,radius=.13)
+        target=Dot([-2.8,.9,0],color=GOLD,radius=.15)
+        self.add(air,target,Arrow([-5.,.2,0],[-3.1,.2,0],buff=0,color=BLUE))
+        self.add(words('Incoming air',(-4.9,1.85),25,BLUE,width=3.),words('Evaporated atom',(-2.1,1.85),25,GOLD,width=3.))
+        self.add(eq(r'v\hat{\mathbf z}',(-4.,-.35),30,BLUE,width=2.))
+        self.add(words('The grain frame',(-3.8,-1.15),26,width=5.))
+        rows=self.term_definitions([r'm_A:\ \text{representative air-particle mass [kg]}',
+            r'm_{\rm Si}:\ \text{mass of one vapor atom [kg]}',
+            r'v:\ \text{incoming air speed [m/s]}',r'V_T\ll v:\ \text{initial vapor motion is small}'],[3.,.75,0],27,6.4)
+        for row in rows:self.play(FadeIn(row),run_time=.35)
+        self.add(eq(r'\hat{\mathbf z}:\ \text{unit vector along the incoming air stream [dimensionless]}',(0,-1.7),25,MUTED))
+        self.add(words('Small ionization losses are neglected in the heavy-particle energy balance.',(0,-2.4),26,width=12.4))
+        self.add(words('This requires collision energy well above the losses; very slow recoils need more care.',(0,-3.15),25,BLUE,width=12.4))
+        self.citation('Dimant and Oppenheim (2017), Part 1, section 6.1',paper1)
+        self.finish()
+
+        self.start_slide('A collision redistributes momentum and kinetic energy',
+            'The air particle has velocity u_A after collision and the meteor ion has velocity V. '
+            'The direction z-hat is along the incoming air stream, hence opposite to the meteor velocity. '
+            'V is the speed magnitude. Vartheta is the recoil angle to the air stream, not a spatial '
+            'position angle and not the centre-of-mass scattering angle. The drawn example uses equal masses '
+            'and a 35-degree recoil, with both outgoing velocities calculated from conservation.')
+        origin=np.array([-3.8,.55,0]);angle=35*DEGREES
+        ion_v,air_v=cold_recoil(1.,1.,angle)
+        self.add(Arrow([-6.1,.55,0],origin,buff=.15,color=BLUE),Dot(origin,color=GOLD,radius=.10))
+        self.play(GrowArrow(Arrow(origin,origin+2.1*np.array([ion_v[0],ion_v[1],0]),buff=.1,color=RED)),
+                  GrowArrow(Arrow(origin,origin+2.1*np.array([air_v[0],air_v[1],0]),buff=.1,color=BLUE)))
+        self.add(eq(r'\mathbf V',(-2.35,2.),31,RED,width=1.4),eq(r'\mathbf u_A',(-2.9,-1.05),31,BLUE,width=1.6))
+        self.add(DashedLine(origin,origin+RIGHT*2.5,color=MUTED,stroke_width=2))
+        self.play(Create(Arc(radius=.6,start_angle=0,angle=angle,color=GREEN).shift(origin)))
+        self.add(eq(r'\vartheta',(-2.9,.83),27,GREEN,width=1.),eq(r'\hat{\mathbf z}',(-1.35,.1),26,width=1.))
+        self.add(words('After collision',(-4.,-1.6),25,width=5.5))
+        rows=self.term_definitions([r'\mathbf V:\ \text{ion velocity [m/s]},\quad V=|\mathbf V|',
+            r'\mathbf u_A:\ \text{outgoing air velocity [m/s]}',r'\vartheta=\angle(\mathbf V,\hat{\mathbf z})\quad[\mathrm{rad}]',
+            r'\mathbf V\cdot\hat{\mathbf z}=V\cos\vartheta'],[3.1,.85,0],28,6.4)
+        for row in rows:self.play(FadeIn(row),run_time=.3)
+        self.play(Write(eq(r'\underbrace{m_Av\hat{\mathbf z}}_{\text{incoming momentum}}=\underbrace{m_A\mathbf u_A+m_{\rm Si}\mathbf V}_{\text{outgoing momentum}}',(0,-2.45),35,BLUE)))
+        self.citation('Two-body collision mechanics: DO (2017), Part 1, section 6.1',paper1)
+        self.finish()
+
+        self.start_slide('Eliminate the unknown outgoing air velocity',
+            'Momentum conservation expresses u_A in terms of the ion velocity. Substitute this expression '
+            'in the kinetic-energy balance. Expanding the squared vector gives the cross term '
+            '-2(m_Si/m_A)vV cos(vartheta). The squared magnitude and dot product are why the angle enters. '
+            'All velocities refer to the same grain frame and the initial vapor-atom velocity is approximated as zero.')
+        self.add(words('Momentum gives the air velocity; energy determines the recoil speed.',(0,2.65),28,width=12.4))
+        self.play(Write(eq(r'\mathbf u_A=v\hat{\mathbf z}-\frac{m_{\rm Si}}{m_A}\mathbf V',(0,1.55),40,BLUE)))
+        self.play(Write(eq(r'\frac12m_Av^2=\frac12m_A|\mathbf u_A|^2+\frac12m_{\rm Si}V^2',(0,.3),39,GREEN)))
+        self.add(words('Substitute and divide by the incoming air mass.',(0,-.85),27,width=12.4))
+        self.play(Write(eq(r'v^2=\left|v\hat{\mathbf z}-\frac{m_{\rm Si}}{m_A}\mathbf V\right|^2+\frac{m_{\rm Si}}{m_A}V^2',(0,-1.95),38)))
+        self.add(words('Each kinetic-energy term has units of joules before division by mass.',(0,-3.1),25,width=12.4))
+        self.citation('Conservation of momentum and energy: DO (2017), Part 1',paper1)
+        self.finish()
+
+        self.start_slide('The recoil formula follows from the cross term',
+            'Expand the squared air velocity. Cancel v squared from both sides and divide by the positive '
+            'mass ratio. For nonzero recoil V, divide by V to obtain the published cold-target speed-angle '
+            'relation. Positive speeds require cos(vartheta)>0. Zero recoil is the no-transfer endpoint.')
+        self.add(words('Expand the squared vector, then cancel the incoming kinetic-energy term.',(0,2.65),28,width=12.4))
+        self.play(Write(eq(r'0=-2\frac{m_{\rm Si}}{m_A}vV\cos\vartheta+\left[\left(\frac{m_{\rm Si}}{m_A}\right)^2+\frac{m_{\rm Si}}{m_A}\right]V^2',(0,1.45),36)))
+        self.play(Write(eq(r'2v\cos\vartheta=\left(1+\frac{m_{\rm Si}}{m_A}\right)V\qquad(V>0)',(0,.05),39,BLUE)))
+        self.play(Write(eq(r'\boxed{V=\frac{2m_A}{m_{\rm Si}+m_A}\,v\cos\vartheta}',(0,-1.45),43,GREEN)))
+        self.add(eq(r'0\leq\vartheta<\pi/2:\quad\text{recoil is into the forward air-stream hemisphere}',(0,-2.75),28))
+        self.add(words('The ion can leave at many angles; its speed is tied to its chosen direction.',(0,-3.3),24,width=12.4))
+        self.citation('DO (2017), Part 1, section 6.1; Part 2, equation 3',paper1)
+        self.finish()
+
+        self.start_slide('Head-on examples: a heavier vapor atom recoils more slowly',
+            'Three illustrative head-on collisions use the same incident speed and three mass ratios. '
+            'All outgoing velocities conserve both momentum and kinetic energy in the stated elastic '
+            'heavy-particle approximation. Circle sizes are schematic; labels give the mass ratios. '
+            'The equal-mass target takes the air-particle speed and the air particle stops.')
+        self.add(eq(r'\vartheta=0,\qquad V=\frac{2v}{1+m_{\rm Si}/m_A}',(0,2.6),37,BLUE))
+        for j,ratio in enumerate([1/3,1.,3.]):
+            y=1.15-1.45*j
+            target=Dot([-2.2,y,0],radius=.13*ratio**(1/3),color=GOLD)
+            air=Dot([-4.,y,0],radius=.13,color=BLUE)
+            ion_v,air_v=cold_recoil(1.,ratio,0.)
+            self.add(target,air,eq(r'm_{\rm Si}/m_A='+['1/3','1','3'][j],(-5.3,y+.55),26,width=3.))
+            self.play(air.animate.move_to([-2.46,y,0]),run_time=.65,rate_func=linear)
+            self.play(target.animate.set_color(RED).shift(1.8*ion_v[0]*RIGHT),
+                      air.animate.shift(1.8*air_v[0]*RIGHT),run_time=1.4,rate_func=linear)
+            self.add(eq(r'V/v='+['1.5','1','0.5'][j],(3.5,y+.25),31,RED,width=3.),
+                     eq(r'u_{A,z}/v='+['0.5','0','-0.5'][j],(3.5,y-.35),27,BLUE,width=3.))
+        self.add(words('Same incoming speed; different masses partition momentum and energy differently.',(0,-3.1),26,width=12.4))
+        self.citation('Elastic heavy-particle kinematics: DO (2017), Part 1, section 6.1',paper1)
+        self.finish()
+
+        self.start_slide('The allowed velocities lie on a shifted sphere',
+            'Introduce alpha, the air mass fraction of the collision pair. Complete the square in the '
+            'recoil relation to show a sphere in three-dimensional velocity space. Its center and radius '
+            'are both alpha v. This is the Galilean shift of the constant-speed center-of-mass sphere. '
+            'The diagram is a two-dimensional slice through that sphere; it is not a physical cloud surface.')
+        self.add(eq(r'\alpha\equiv\frac{m_A}{m_{\rm Si}+m_A}=\frac{1}{1+m_{\rm Si}/m_A}\quad\text{[dimensionless]}',(0,2.65),32,BLUE))
+        c=np.array([-3.8,.45,0]);radius=1.35;zero=c-radius*RIGHT
+        self.add(Circle(radius,color=BLUE).move_to(c),Dot(c,color=BLUE,radius=.04),Dot(zero,color=FG,radius=.045),
+            Arrow(zero+LEFT*.3,zero+RIGHT*3.3,buff=0,color=MUTED,stroke_width=2))
+        angle=35*DEGREES
+        end=zero+2*radius*np.cos(angle)*np.array([np.cos(angle),np.sin(angle),0])
+        self.play(GrowArrow(Arrow(zero,end,buff=0,color=RED)))
+        self.add(eq(r'0',(zero[0]-.22,zero[1]-.45),25,width=.7),
+                 eq(r'\alpha v',(-3.8,-.1),27,BLUE,width=2.),
+                 eq(r'V_z\ [\mathrm{m/s}]',(-2.,-.25),24,width=2.5))
+        self.add(words('Slice of the 3D velocity sphere',(-3.8,2.05),24,BLUE,width=5.8))
+        self.add(words('Red: an allowed ion velocity',(-3.8,-1.4),24,RED,width=5.8))
+        rows=self.term_definitions([r'V^2=2\alpha v V_z',r'V_x^2+V_y^2+(V_z-\alpha v)^2=(\alpha v)^2',
+            r'\text{center}=\alpha v\hat{\mathbf z}',r'\text{radius}=\alpha v'],[3.2,.5,0],30,6.2)
+        for row in rows:self.play(Write(row))
+        self.add(words('Changing the mass fraction scales all recoil speeds by the same factor.',(0,-2.5),27,width=12.4))
+        self.add(words('Isotropic scattering in the center-of-mass frame still gives a shifted sphere here.',(0,-3.2),25,width=12.4))
+        self.citation('DO (2017), Part 1: the collision shell in velocity space',paper1)
+        self.finish()
+
+        self.start_slide('The delta function represents a narrowly selected recoil speed',
+            'Fix the recoil direction. The cold-target relation allows one speed V_0, so the distribution '
+            'is narrow in speed. A unit-area rectangular kernel illustrates the delta function: as its '
+            'speed width epsilon shrinks its height grows as one over epsilon. This is a distribution '
+            'under an integral, not a literal infinite particle population. Thermal motion gives a finite shell thickness.')
+        self.add(eq(r'V_0=2\alpha v\cos\vartheta:\quad\text{allowed speed in this direction [m/s]}',(0,2.65),32,BLUE))
+        origin=np.array([-5.2,-.55,0]);center=origin+2.2*RIGHT
+        self.add(Arrow(origin+LEFT*.2,origin+RIGHT*4.8,buff=0,color=MUTED,stroke_width=2),
+                 Arrow(origin+DOWN*.1,origin+UP*2.8,buff=0,color=MUTED,stroke_width=2))
+        self.add(eq(r'V\ [\mathrm{m/s}]',(-1.1,-1.1),25,width=2.),eq(r'\delta_\epsilon\ [\mathrm{s/m}]',(-5.85,.7),24,width=2.8).rotate(PI/2))
+        self.add(eq(r'V_0',(-3.,-1.1),28,BLUE,width=1.))
+        def kernel(width):
+            height=1./width
+            return Polygon(center+LEFT*width/2,center+LEFT*width/2+UP*height,
+                center+RIGHT*width/2+UP*height,center+RIGHT*width/2,
+                color=GREEN,fill_opacity=.15)
+        box=kernel(1.3);self.play(Create(box))
+        self.play(Transform(box,kernel(.75)),run_time=1.2)
+        self.play(Transform(box,kernel(.45)),run_time=1.2)
+        rows=self.term_definitions([r'\text{width}=\epsilon\quad[\mathrm{m/s}]',r'\text{height}=1/\epsilon\quad[\mathrm{s/m}]',
+            r'\int\delta_\epsilon(V-V_0)\,dV=1',r'\epsilon\to0:\quad\delta_\epsilon\to\delta'],[3.15,.7,0],30,6.1)
+        for row in rows:self.play(Write(row))
+        self.add(words('A narrower speed range gives a taller curve with the same unit area.',(0,-2.25),28,GREEN,width=12.4))
+        self.add(words('Finite initial thermal motion broadens the idealized shell.',(0,-3.15),26,width=12.4))
+        self.citation('DO (2017), Part 1, thin-shell approximation; Part 2, equation 3',paper1)
+        self.finish()
+
+        self.start_slide('Integrating the delta function means evaluating at the allowed speed',
+            'For V_0 positive, the delta function samples the integrand at V_0. Applied to V squared, '
+            'this gives V_0 squared. The derivative of the argument V-V_0 with respect to V is one, '
+            'so there is no extra mass factor in this particular delta integration. A scaled argument '
+            'would require its derivative factor. The speed-volume factor was derived in the preceding section.')
+        self.add(eq(r'g(V):\ \text{a smooth weighting function of speed}',(0,2.65),30,BLUE))
+        self.play(Write(eq(r'\int_0^\infty g(V)\,\delta(V-V_0)\,dV=g(V_0)\qquad(V_0>0)',(0,1.4),37,BLUE)))
+        self.add(words('Use the velocity-space counting weight as the function being sampled.',(0,.05),27,width=12.4))
+        self.play(Write(eq(r'\boxed{\int_0^\infty V^2\delta(V-V_0)\,dV=V_0^2=4\alpha^2v^2\cos^2\vartheta}',(0,-1.3),37,GREEN)))
+        self.add(eq(r'\frac{d}{dV}(V-V_0)=1:\quad\text{no hidden factor from this delta argument}',(0,-2.4),29))
+        self.add(words('Velocity-space counting supplies two powers of the recoil speed.',(0,-3.15),25,width=12.4))
+        self.citation('DO (2017), Part 2, speed integration in equations 10--11',paper2)
+        self.finish()
+
+        self.start_slide('Where do the first TWO inverse-speed powers come from?',
+            'Define Q_Omega as the local production rate per velocity solid angle. Hold this directional '
+            'birth rate fixed while tracking the explicit recoil mass dependence. Integrating S over V '
+            'with the V squared measure must return Q_Omega. Therefore the delta-shell source has a '
+            'coefficient Q_Omega/V_0 squared. This is number conservation in velocity space, not an '
+            'extra physical enhancement of ionization. Its angular weighting is supplied by the collision model.')
+        self.add(words('Count births into one chosen direction before transporting them.',(0,2.65),29,width=12.4))
+        self.add(eq(r'Q_\Omega(\mathbf r,\Omega_v):\quad\text{births per volume, per second, per solid angle}',(0,1.7),29,BLUE))
+        self.add(eq(r'[Q_\Omega]=\mathrm{m^{-3}s^{-1}sr^{-1}},\qquad\int Q_\Omega\,d\Omega_v=Q_i',(0,.85),29))
+        self.play(Write(eq(r'Q_\Omega=\int_0^\infty S_{\rm ion}(\mathbf r,V,\Omega_v)\,V^2\,dV',(0,-.25),36)))
+        self.play(Write(eq(r'\boxed{S_{\rm ion}=\frac{Q_\Omega}{V_0^2}\,\delta(V-V_0)}\quad\Longrightarrow\quad V_0^{-2}\propto\alpha^{-2}',(0,-1.65),37,GREEN)))
+        self.add(words('The same births occupy a smaller velocity shell as recoil speeds decrease.',(0,-2.65),25,width=12.4))
+        self.add(words('Direction weighting comes from the collision model.',(0,-3.3),25,width=12.4))
+        self.citation('Velocity-space source counting; DO (2017), Part 1, section 6',paper1)
+        self.finish()
+
+        self.start_slide('The THIRD inverse-speed power is time spent in the source',
+            'Use the preceding characteristic solution. A simple constant-area source segment with length '
+            'L and uniform directional birth rate Q_Omega contributes S times L/V. The delta restricts '
+            'V to V_0, so the coefficient becomes Q_Omega L/V_0 cubed. The real DO calculation integrates '
+            'a spatially varying source along the paths. At fixed direction and fixed source geometry, '
+            'that integration preserves the same explicit recoil mass power.')
+        self.add(words('Use the same straight-path transport derived in the preceding section.',(0,2.65),28,width=12.4))
+        slab=Rectangle(width=3.2,height=.8,color=GOLD,fill_opacity=.1).move_to([-3.8,.65,0])
+        self.add(slab,Arrow([-5.8,-.25,0],[-1.7,-.25,0],buff=0,color=BLUE),
+            eq(r'L:\ \text{source length [m]}',(-3.8,1.5),27,GOLD,width=5.8),eq(r'\text{travel time}=L/V_0',(-3.8,-1.05),30,BLUE,width=5.8))
+        rows=self.term_definitions([r'f_i=\int S_{\rm ion}\,dt=\int\frac{S_{\rm ion}}V\,d\ell',
+            r'\text{uniform source segment: }f_i=\frac{L}{V}S_{\rm ion}',
+            r'\boxed{f_i=\frac{Q_\Omega L}{V_0^3}\delta(V-V_0)}'],[3.15,.55,0],31,6.4)
+        for row in rows:self.play(Write(row))
+        self.play(Write(eq(r'\underbrace{\alpha^{-2}}_{\text{source per velocity volume}}\ \underbrace{\alpha^{-1}}_{\text{residence time}}=\alpha^{-3}=\left(1+\frac{m_{\rm Si}}{m_A}\right)^3',(0,-2.15),34,GREEN)))
+        self.add(words('Keep incoming speed, direction, birth rate and source geometry fixed.',(0,-3.3),24,width=12.4))
+        self.citation('Ballistic source integration: DO (2017), Part 1, section 6.3',paper1)
+        self.finish()
+
+        self.start_slide('Counting velocities removes two powers and leaves residence time',
+            'The directional ion density n_Omega equals the speed integral of f V squared. The source '
+            'normalization and speed-volume measure cancel, leaving Q_Omega times the crossing time L/V_0. '
+            'This is precisely the source-slab residence-time reasoning from the preceding transport section. '
+            'Integrating the actual source along the trajectory, and then over directions, gives the DO field. '
+            'Only the explicit kinematic mass dependence is being isolated here; real cross sections and '
+            'thermal source geometry can also depend on composition.')
+        self.add(eq(r'n_\Omega\equiv\frac{dn_i}{d\Omega_v}\quad[\mathrm{m^{-3}sr^{-1}}]',(0,2.65),33,BLUE))
+        self.play(Write(eq(r'n_\Omega=\int_0^\infty f_iV^2\,dV=\frac{Q_\Omega L}{V_0^3}\underbrace{\int_0^\infty V^2\delta(V-V_0)\,dV}_{V_0^2}',(0,1.2),36)))
+        self.play(Write(eq(r'\boxed{n_\Omega=Q_\Omega\frac{L}{V_0}=\frac{Q_\Omega L}{2v\cos\vartheta}\left(1+\frac{m_{\rm Si}}{m_A}\right)}',(0,-.65),39,GREEN)))
+        self.add(words('Density = production rate into this direction times time spent crossing the source.',(0,-2.1),27,width=12.4))
+        self.add(eq(r'\alpha^{-3}\alpha^2=\alpha^{-1}=1+\frac{m_{\rm Si}}{m_A}',(0,-3.05),35,BLUE))
+        self.citation('Explicit mass dependence: DO (2017), Part 2, equations 3 and 11',paper2)
+        self.finish()
+
+        self.start_slide('Now the mass factor in the DO density has a physical origin',
+            'The recoil relation sets the speed shell; phase-space normalization gives two inverse-speed '
+            'powers in the source; ballistic transport adds one; the density measure removes two. '
+            'The remaining first power is a residence-time factor. DO evaluates the nonuniform source '
+            'and angular integrals, giving the coefficient used on the next slides. The derivation assumes '
+            'small initial thermal speed and negligible ionization energy in the heavy-particle balance. '
+            'It becomes weak for very slow recoil at nearly 90 degrees. Changing actual composition also '
+            'changes cross sections, ionization, and thermal properties, so the isolated factor is not the whole trend.')
+        stages=[('COLLISION',r'V_0=2\alpha v\cos\vartheta','Masses set recoil speed',BLUE),
+                ('VELOCITY COUNTING',r'\text{source amplitude}\propto\alpha^{-2}','Same births in a smaller speed shell',GOLD),
+                ('TRANSPORT',r'\text{shell amplitude}\propto\alpha^{-3}','Slower ions spend longer near the source',RED),
+                ('DENSITY',r'\int f_iV^2dV\propto\alpha^{-1}','One residence-time factor remains',GREEN)]
+        for j,(label,formula,caption,color) in enumerate(stages):
+            y=2.25-j*1.1
+            self.play(FadeIn(words(label,(-4.7,y),24,color,width=3.8)),Write(eq(formula,(0,y),31,color,width=4.6)))
+            self.add(words(caption,(4.55,y),23,width=4.2))
+        self.add(words('Fixed source and collision law: the explicit factor is 1 + meteor-ion mass / air-particle mass.',(0,-2.6),25,width=12.4))
+        self.add(words('Next: insert the DO coefficient, then replace the unknown surface density with ablation rate.',(0,-3.25),24,BLUE,width=12.4))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 3, 11 and 45',paper2)
+        self.finish()
+
     def normalization(self):
         # DO Part 1 Eq. 18 outgoing half-Maxwellian and surface flux; Part 2
         # Eq. 45. Keep its n0 convention, including sqrt(2/pi), throughout.
@@ -2301,20 +2548,7 @@ class MeteorHeadRCS(Slide):
 
         self.ion_transport_derivation()
 
-        self.start_slide('Where does the ion-to-air mass ratio enter?',
-            'Two-body collision kinematics gives the recoil speed of a nearly stationary meteor atom struck by an '
-            'air particle in the grain frame. DO Part 2 Eq. 3 contains a delta-function shell in ion speed. '
-            'The V squared velocity-volume factor in Eq. 10 removes two of the three mass-ratio powers, leaving '
-            'the first power in Eq. 11 and hence Eq. 45. Here vartheta is the ion direction relative to the air stream, '
-            'not the spatial position angle theta.')
-        self.play(FadeIn(self.prose('An incoming air particle transfers momentum to the evaporated atom.',26).shift(UP*2.35)))
-        self.play(Write(self.equation(r'V=\frac{2m_A}{m_{\rm Si}+m_A}\,v\cos\vartheta',39,BLUE).shift(UP*1.25)))
-        self.play(Write(self.equation(r'f_i\ \propto\ \left(1+\frac{m_{\rm Si}}{m_A}\right)^3\delta\!\left(V-\frac{2v\cos\vartheta}{1+m_{\rm Si}/m_A}\right)',34).shift(DOWN*.05)))
-        self.play(Write(self.equation(r'\int f_i V^2\,dV\ \propto\ \left(1+\frac{m_{\rm Si}}{m_A}\right)^3\left(1+\frac{m_{\rm Si}}{m_A}\right)^{-2}=1+\frac{m_{\rm Si}}{m_A}',33,GREEN).shift(DOWN*1.45)))
-        self.play(FadeIn(self.equation(r'\vartheta:\ \text{ion recoil angle};\quad\delta:\ \text{Dirac delta in speed};\quad m_A:\ \text{mean air-particle mass}',24,MUTED).shift(DOWN*2.65)))
-        self.play(FadeIn(self.prose('The remaining trajectory and angle integrals give the published density expression.',24).shift(DOWN*3.25)))
-        self.citation('Dimant and Oppenheim (2017), Part 2, equations 3, 10--11 and 45','https://doi.org/10.1002/2017JA023963')
-        self.finish()
+        self.recoil_mass_derivation()
 
         self.start_slide('Separate the DO kinetic shape from its density scale',
             'Start from DO Part 2 Eq. 45, rather than a dimensional guess. H denotes the dimensionless angular/radial '
