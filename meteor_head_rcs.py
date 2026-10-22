@@ -1255,30 +1255,257 @@ class MeteorHeadRCS(Slide):
         self.citation('Dimant and Oppenheim (2017), Part 1, equation 20','https://doi.org/10.1002/2017JA023960')
         self.finish()
 
-    def collision_cross_section(self):
-        # Bronshten (1983) parameterization, reproduced in Sugar et al. (2018),
-        # section 5.3, Eq. 13, and Sugar et al. (2019), Eq. 9.
-        # The coefficient is inherited, not a Si-specific laboratory fit.
-        self.start_slide('Why can a collision cross section depend on speed?',
-            'Cross section is an effective area for a specified collision process, not simply the geometrical size '
-            'of two hard spheres. Interparticle forces deflect trajectories; at the same impact parameter a faster '
-            'encounter is generally deflected less. The numerical exponent in the adopted law is empirical, '
-            'not a consequence of the DO density normalization.')
-        for y,label,deflection,c in [(1.0,'Slower encounter',.8,BLUE),(-.55,'Faster encounter',.25,GREEN)]:
-            target=Circle(.18,color=RED,fill_opacity=.12).move_to([-3.0,y,0])
-            incoming=Line([-6,y+.45,0],[-3.4,y+.45,0],color=c)
-            outgoing=CubicBezier(np.array([-3.4,y+.45,0]),np.array([-2.8,y+.45,0]),
-                np.array([-2.4,y+.45+deflection,0]),np.array([-1.5,y+.45+deflection,0]),color=c)
-            self.play(Create(target),Create(incoming),Create(outgoing))
-            self.add(self.prose(label,25,c).move_to([2.5,y+.5,0]))
-        self.play(FadeIn(self.prose('At the same impact parameter, different speed gives different scattering.',26).shift(UP*2.8)))
-        self.play(FadeIn(self.prose('Effective area depends on the interaction and on what counts as a collision.',25).shift(DOWN*1.8)))
-        self.next_slide('The exponent is an adopted empirical input',
-            notes='The qualitative deflection sketch does not derive minus 0.8. Bronshten supplies an empirical speed parametrization reused by Sugar et al. We adopt that model, then derive its consequences explicitly. A different species or cross-section convention needs separate validation.')
-        self.play(Write(self.equation(r'\sigma_c(v)\propto v^{-p},\qquad p=0.8\ \text{in the adopted empirical law}',32,GOLD).shift(DOWN*2.65)))
-        self.play(FadeIn(self.prose('The value 0.8 is supplied by the collision model; it is not derived by the DO theory.',24,RED).shift(DOWN*3.25)))
-        self.citation('Bronshten (1983); Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265')
+    def collision_force_physics(self):
+        # Classical scattering: MIT 16.55 (2014), lectures 6--7, pp. 6--9.
+        # Molecular potentials and their limits: Khrapak (2014), arXiv:1404.5476.
+        # Sugar et al. (2018), section 5.3, adopts Bronshten separately from its LJ test.
+        from meteor_rcs.collision_physics import trajectory
+        def column(item, position, width=6.):
+            if item.width>width:item.scale_to_fit_width(width)
+            return item.move_to(position)
+        mechanics='https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/ba010aa23f0da845aa3ff555f3d60921_MIT16_55F14_Lecture6-7.pdf'
+        molecular='https://arxiv.org/abs/1404.5476'
+        self.start_slide('Neutral atoms still exert forces on each other',
+            'The colliding objects are an evaporated meteor atom and an air molecule, not two solid grains. '
+            'Neutral means zero net charge, not absence of interactions. Correlated electronic fluctuations '
+            'give dispersion attraction; overlap of electronic clouds gives strong repulsion through electronic '
+            'structure, including Pauli exclusion and electrostatic interactions. The shaded clouds are schematic, '
+            'not electron orbits. A Lennard-Jones pair potential is an illustrative effective model, not a '
+            'first-principles meteor atom-air potential or the source of the empirical exponent 0.8.')
+        clouds=VGroup()
+        for x,c in [(-3.8,GOLD),(-.6,BLUE)]:
+            cloud=Circle(.7,color=c,fill_opacity=.12).move_to([x,.95,0])
+            centre=Dot([x,.95,0],radius=.07,color=c)
+            clouds.add(VGroup(cloud,centre))
+        labels=VGroup(self.prose('Meteor atom',25,GOLD).move_to([-3.8,2.25,0]),
+            self.prose('Air molecule',25,BLUE).move_to([-.6,2.25,0]))
+        self.play(FadeIn(clouds),FadeIn(labels))
+        self.play(FadeIn(column(self.prose('Electron fluctuations create attraction',25),[3.5,1.8,0],5.3)))
+        attraction=VGroup(Arrow([-3.05,.95,0],[-2.4,.95,0],color=GREEN,buff=0),
+            Arrow([-1.35,.95,0],[-2.0,.95,0],color=GREEN,buff=0))
+        self.play(*[GrowArrow(a) for a in attraction])
+        self.next_slide('Electronic overlap produces strong repulsion',
+            notes='The nuclei do not need to make mechanical contact. Effective forces arise from the electronic state of the pair. The attractive and repulsive terms below describe a model potential energy, in joules.')
+        self.play(FadeOut(attraction),FadeOut(labels))
+        self.play(clouds[0].animate.shift(RIGHT*.95),clouds[1].animate.shift(LEFT*.95))
+        self.play(GrowArrow(Arrow([-2.8,.95,0],[-3.5,.95,0],color=RED,buff=0)),
+            GrowArrow(Arrow([-1.6,.95,0],[-.9,.95,0],color=RED,buff=0)))
+        self.play(FadeIn(column(self.prose('Overlapping clouds resist compression',25,RED),[3.5,.55,0],5.3)))
+        self.play(FadeIn(column(self.prose('Electronic structure, including Pauli exclusion',24),[3.5,-.1,0],5.3)))
+        self.play(FadeIn(self.prose('An illustrative neutral-particle potential',24).shift(DOWN*.5)))
+        self.play(Write(self.equation(r'U(r)=\underbrace{C_{12}/r^{12}}_{\text{short-range repulsion}}'
+            r'-\underbrace{C_6/r^6}_{\text{dispersion attraction}}',36,BLUE).shift(DOWN*1.3)))
+        self.play(FadeIn(self.equation(r'r:\ \text{separation [m]};\quad U:\ \text{pair potential energy [J]}',25).shift(DOWN*2.45)))
+        self.play(FadeIn(self.equation(r'C_{12}\ [\mathrm{J\,m^{12}}],\quad C_6\ [\mathrm{J\,m^6}]:\ \text{interaction strengths}',24).shift(DOWN*3.1)))
+        self.citation('Pair potentials: Khrapak (2014); Sugar et al. (2018), section 5.3',molecular)
         self.finish()
+
+        self.start_slide('A potential-energy gradient changes the relative motion',
+            'Reduce the two-body elastic problem to relative separation r with reduced mass mu. '
+            'The force is minus the gradient of potential energy. For the repulsive term, the force points '
+            'outward along the separation vector. The fixed origin in the animation is the interaction centre '
+            'of the relative-coordinate problem, not an infinitely heavy atmospheric molecule. The two '
+            'trajectories are numerical integrations of the same inverse-twelfth-power repulsion at the same '
+            'impact parameter and different incoming speeds. Only the illustrative elastic encounter is modeled.')
+        self.play(Write(self.equation(r'm_M\ddot{\mathbf r}_M=\mathbf F,\qquad '
+            r'm_A\ddot{\mathbf r}_A=-\mathbf F',37,BLUE).shift(UP*2.65)))
+        self.play(FadeIn(self.equation(r'm_M,m_A:\ \text{masses [kg]};\quad '
+            r'\mathbf F:\ \text{equal and opposite interaction forces [N]}',25).shift(UP*1.8)))
+        self.play(Write(self.equation(r'\mathbf r=\mathbf r_M-\mathbf r_A\quad\Rightarrow\quad '
+            r'\ddot{\mathbf r}=\left(\frac1{m_M}+\frac1{m_A}\right)\mathbf F',34,GREEN).shift(UP*.75)))
+        self.play(Write(self.equation(r'\mu\equiv\frac{m_Mm_A}{m_M+m_A}\quad\Rightarrow\quad '
+            r'\mu\ddot{\mathbf r}=\mathbf F',35,GREEN).shift(DOWN*.4)))
+        self.next_slide('The interaction energy supplies the force',
+            notes='Both particles recoil. Subtract their Newton equations to obtain the relative-coordinate equation. The reduced mass includes both recoils. The force is minus the potential gradient, so the positive inverse-twelfth-power term gives an outward force.')
+        self.play(Write(self.equation(r'\mathbf F=-\nabla U,\qquad '
+            r'U=\frac{C_{12}}{r^{12}}\ \Rightarrow\ '
+            r'\mathbf F=\frac{12C_{12}}{r^{13}}\widehat{\mathbf r}',35,GOLD).shift(DOWN*1.6)))
+        self.play(FadeIn(self.prose('Integrating this force gives the trajectories on the next slide.',27).shift(DOWN*2.65)))
+        self.play(FadeIn(self.equation(r'\mu:\ \text{reduced mass [kg]};\quad '
+            r'\widehat{\mathbf r}:\ \text{outward unit vector}',24).shift(DOWN*3.2)))
+        self.citation('Central-force scattering: MIT 16.55 (2014), lectures 6--7',mechanics)
+        self.finish()
+
+        self.start_slide('The same force law bends slow and fast encounters differently',
+            'Both rows use the same dimensionless repulsive potential and b=1.1 a. Length a and speed v0 '
+            'are illustrative reference scales, not a calibrated atom-air interaction. A common physical clock '
+            'advances both trajectories; the faster particle exits earlier. The arrows are proportional to '
+            'the computed force, with one common scale. The final angle is measured from the numerical '
+            'outgoing velocity. Energy and angular momentum are conserved by the integration to its tolerance.')
+        results=[trajectory(1.),trajectory(2.)]
+        clock=ValueTracker(0)
+        total=max(r['time'][-1] for r in results)
+        force_scale=max(np.linalg.norm(r['force'],axis=1).max() for r in results)
+        animated=[]
+        self.play(FadeIn(self.equation(r'b:\ \text{incoming-path offset [m]};\quad \theta:\ \text{deflection angle [rad]}',25).shift(UP*2.7)))
+        self.add(column(self.prose('Relative-coordinate trajectories',23),[3.5,2.2,0],5.8))
+        for result,y,c,ratio in zip(results,[.95,-1.45],[BLUE,GREEN],[1,2]):
+            centre=np.array([-2.2,y,0.]);scale=.29
+            def point_at(t,r=result,o=centre):
+                return o+scale*np.r_[np.array([np.interp(t,r['time'],r['state'][:,k]) for k in [0,1]]),0.]
+            def trace(r=result,o=centre,c=c):
+                t=min(clock.get_value(),r['time'][-1]);pts=r['state'][r['time']<=t,:2]
+                pts=np.vstack([pts,[np.interp(t,r['time'],r['state'][:,k]) for k in [0,1]]])
+                return VMobject(color=c,stroke_width=3).set_points_as_corners([o+scale*np.r_[p,0.] for p in pts])
+            line=always_redraw(trace)
+            atom=Dot(point_at(0),radius=.055,color=c)
+            atom.add_updater(lambda mob,fn=point_at:mob.move_to(fn(clock.get_value())))
+            def force_arrow(r=result,fn=point_at,c=c):
+                t=min(clock.get_value(),r['time'][-1]);f=np.array([np.interp(t,r['time'],r['force'][:,k]) for k in [0,1]])
+                p=fn(t);delta=np.r_[.75*f/force_scale,0.]
+                if np.linalg.norm(delta)<.005:delta=np.array([.005,0,0])
+                return Arrow(p,p+delta,buff=0,color=RED,stroke_width=3,max_tip_length_to_length_ratio=.2)
+            force=always_redraw(force_arrow)
+            reference=DashedLine(centre+[-2.32,.319,0],centre+[2.6,.319,0],color=MUTED,stroke_opacity=.3)
+            bracket=DoubleArrow(centre+[-2.7,0,0],centre+[-2.7,.319,0],buff=0,color=MUTED,tip_length=.07)
+            self.add(reference,Dot(centre,radius=.045,color=RED),line,atom,force,bracket,
+                self.equation(r'b',22).move_to(centre+[-3.,.16,0]))
+            animated.extend([line,atom,force])
+            label=self.equation(r'v='+('v_0' if ratio==1 else '2v_0'),30,c).move_to([3.5,y+.75,0])
+            angle=self.equation(r'\theta='+f'{np.degrees(result["angle"]):.1f}'+r'^\circ',30,c).move_to([3.5,y+.05,0])
+            self.play(FadeIn(label),FadeIn(angle),run_time=.4)
+        scales=VGroup(self.equation(r'a:\ \text{reference length [m]}',22),
+            self.equation(r'v_0:\ \text{reference speed [m/s]}',22)).arrange(DOWN,buff=.15).move_to([3.5,0,0])
+        self.play(FadeIn(scales))
+        self.play(FadeIn(self.equation(r'b=1.1a;\quad U/(\mu v_0^2)=\tfrac12(a/r)^{12}',25).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('Red arrows: force. Dashed lines: undeflected incoming direction.',24,RED).shift(DOWN*3.2)))
+        self.play(clock.animate.set_value(total),run_time=9,rate_func=linear)
+        for item in animated:item.clear_updaters()
+        self.citation('Illustrative elastic trajectories; central-force mechanics: MIT 16.55',mechanics)
+        self.finish()
+
+        self.start_slide('Encounter time and incoming momentum both matter',
+            'Use the small-angle approximation, where the unperturbed trajectory is nearly straight. '
+            'At fixed b, the transverse force is the same function of position along the incoming path. '
+            'Doubling speed compresses this force pulse in time by two without changing its height. '
+            'Its time integral, the transverse impulse, halves. Incoming relative momentum doubles, '
+            'so the weak deflection angle becomes one quarter. These pulse curves use the inverse-twelfth-power '
+            'force along straight paths; this approximation is distinct from the finite-angle trajectories above.')
+        axes=Axes(x_range=[-2,2,1],y_range=[0,1.2,.5],x_length=6.1,y_length=2.35,
+            axis_config={'color':MUTED,'include_tip':False}).move_to([-2.65,.85,0])
+        slow=axes.plot(lambda t:(1+t*t)**-7,x_range=[-2,2,.02],color=BLUE)
+        fast=axes.plot(lambda t:(1+4*t*t)**-7,x_range=[-2,2,.02],color=GREEN)
+        self.play(Create(axes),Create(slow),Create(fast))
+        self.add(self.equation(r'F_\perp/F_0',24).move_to([-5.15,2.45,0]),
+            self.equation(r't/t_0',24).move_to([-2.65,-.65,0]))
+        self.play(FadeIn(column(self.equation(r'v_0:\ \text{wider force pulse}',27,BLUE),[3.3,1.8,0],6.)),
+            FadeIn(column(self.equation(r'2v_0:\ \text{half the pulse duration}',27,GREEN),[3.3,1.,0],6.)))
+        self.play(FadeIn(self.prose('Same impact parameter; weak deflection.',25).shift(UP*2.8)))
+        self.play(FadeIn(self.equation(r't_0=b/v_0\ [\mathrm s];\quad F_0:\ \text{peak transverse force [N]}',24).shift(DOWN*1.2)))
+        self.play(Write(self.equation(r'\Delta p_\perp=\int F_\perp\,dt,\qquad p_{\rm in}=\mu v\quad[\mathrm{kg\,m/s}]',34,BLUE).shift(DOWN*2.15)))
+        self.next_slide('A smaller impulse turns a larger incoming momentum less',
+            notes='Delta p is an impulse, in kilogram metres per second. The small-angle result theta=Delta p_perp/(mu v) follows from the transverse component of the outgoing momentum. At fixed impact parameter theta scales as v^-2 in this straight-path approximation. This is not the speed exponent of the cross section, which also integrates over impact parameters.')
+        self.play(Write(self.equation(r'\theta\simeq\frac{\Delta p_\perp}{\mu v};\qquad '
+            r'v\to2v:\ \Delta p_\perp\to\tfrac12\Delta p_\perp\ \Rightarrow\ \theta\to\tfrac14\theta',32,GOLD).shift(DOWN*3.05)))
+        self.citation('Impulse approximation: MIT 16.55 (2014), lectures 6--7',mechanics)
+        self.finish()
+
+        self.start_slide('A cross section counts an area of incoming trajectories',
+            'Look along the incoming relative velocity. Impact parameter b is the perpendicular separation '
+            'between an undeflected path and the interaction centre. For a monotonically repulsive potential, '
+            'a chosen deflection threshold theta0 selects a disk b less than b_star. An annulus has area '
+            '2 pi b db. The velocity-dependent radius of this disk is an effective interaction radius, '
+            'not an atomic surface shrinking. The radius ratio here is the exact inverse-twelfth-power '
+            'similarity scaling 2^-1/6 for twice the speed.')
+        origin=np.array([-3.45,.55,0.]);radius=1.55
+        disk=Circle(radius,color=BLUE,fill_opacity=.07).move_to(origin)
+        ring=Annulus(inner_radius=1.,outer_radius=1.15,color=GOLD,fill_opacity=.22).move_to(origin)
+        rng=np.random.default_rng(782);positions=rng.uniform(-1.9,1.9,(130,2))
+        dots=VGroup(*[Dot(origin+np.r_[p,0],radius=.025,color=BLUE if np.linalg.norm(p)<radius else MUTED) for p in positions])
+        self.play(Create(disk),FadeIn(dots),FadeIn(ring))
+        self.add(self.prose('View along the incoming velocity',24).move_to([-3.45,2.7,0]))
+        radial=Arrow(origin,origin+[radius,0,0],color=BLUE,buff=0)
+        self.play(GrowArrow(radial))
+        self.add(self.equation(r'b_\star(v)',27,BLUE).move_to([-3.45,-1.45,0]))
+        self.play(Write(column(self.equation(r'\theta(b,v)\geq\theta_0:\ \text{a specified deflection event}',29),[2.6,2.1,0],6.)))
+        self.play(FadeIn(column(self.equation(r'b:\ \text{impact parameter [m]};\quad\theta_0:\ \text{threshold [rad]}',23),[2.6,1.25,0],6.)))
+        self.play(Write(column(self.equation(r'd\sigma=2\pi b\,db',35,GOLD),[2.6,.2,0],6.)))
+        self.play(Write(column(self.equation(r'\sigma_>(v)=\int_0^{b_\star(v)}2\pi b\,db=\pi b_\star^2(v)',34,BLUE),[2.6,-.95,0],6.)))
+        self.next_slide('Higher speed reduces the area producing the same deflection',
+            notes='Keep the threshold fixed and increase the speed. Some trajectories at larger b no longer satisfy the same deflection criterion. The dot positions remain fixed; only membership in the selected collision event changes. The atom has not changed size.')
+        newradius=radius*2**(-1/6)
+        self.play(disk.animate.scale(newradius/radius).set_color(GREEN),FadeOut(ring),FadeOut(radial),
+            *[d.animate.set_color(GREEN if np.linalg.norm(p)<newradius else MUTED) for d,p in zip(dots,positions)],run_time=1.5)
+        self.play(FadeIn(self.prose('Fewer incoming paths meet the same deflection threshold.',27,GREEN).shift(DOWN*2.5)))
+        self.play(FadeIn(self.prose('The effective area changes; the physical atom does not shrink.',26).shift(DOWN*3.15)))
+        self.citation('Impact-parameter cross sections: MIT 16.55 (2014)',mechanics)
+        self.finish()
+
+        self.start_slide('Momentum-transfer cross section weights the deflection',
+            'A deflection threshold is one cross-section convention. Momentum-transfer cross section '
+            'weights each impact-parameter annulus by its fractional loss of forward relative momentum, '
+            '1-cos(theta). In elastic centre-of-mass scattering the momentum magnitude stays the same. '
+            'Small forward deflections count weakly; large turns count strongly. This distinction matters '
+            'because a total collision rate and a momentum-relaxation rate are not generally identical.')
+        for x,theta,c in [(-3.5,np.pi/12,BLUE),(2.8,np.pi/2,GREEN)]:
+            centre=np.array([x,.9,0.]);length=1.6
+            self.play(GrowArrow(Arrow(centre+[-length,0,0],centre,buff=0,color=MUTED)),
+                GrowArrow(Arrow(centre,centre+length*np.array([np.cos(theta),np.sin(theta),0]),buff=0,color=c)))
+            self.play(FadeIn(self.equation(r'\theta='+('15' if theta<1 else '90')+r'^\circ:\quad '
+                r'1-\cos\theta='+f'{1-np.cos(theta):.3f}',29,c).move_to([x,-.05,0])))
+        self.play(FadeIn(self.prose('Elastic scattering: the loss of forward momentum is what matters.',27).shift(UP*2.7)))
+        self.play(Write(self.equation(r'\Delta p_\parallel=\mu v(1-\cos\theta)',36,GOLD).shift(DOWN*1.15)))
+        self.play(Write(self.equation(r'\sigma_{\rm mt}(v)=2\pi\int_0^\infty '
+            r'[1-\cos\theta(b,v)]\,b\,db\quad[\mathrm{m^2}]',35,BLUE).shift(DOWN*2.2)))
+        self.play(FadeIn(self.prose('Isotropic elastic scattering gives equal total and momentum-transfer cross sections.',24).shift(DOWN*3.15)))
+        self.citation('Momentum transfer: MIT 16.55 (2014); Sugar et al. (2018)',mechanics)
+        self.finish()
+
+        self.start_slide('The force law determines a characteristic interaction length',
+            'For a homogeneous repulsive potential U=Cs/r^s, compare interaction energy with relative '
+            'kinetic energy. Define r0 by U(r0)=E. This is an interaction length, not the closest approach '
+            'of every trajectory or a hard atomic radius. After rescaling r and b by r0, the dimensionless '
+            'scattering equations contain no additional speed dependence. Thus any fixed-angle cross section '
+            'and the finite momentum-transfer cross section scale with r0 squared. The prefactor depends on '
+            'the exponent and on which cross section is used.')
+        axes=Axes(x_range=[.8,1.7,.3],y_range=[0,4.5,1],x_length=4.5,y_length=2.7,
+            axis_config={'color':MUTED,'include_tip':False}).move_to([-3.65,.8,0])
+        potential=axes.plot(lambda r:r**-12,x_range=[.884,1.7,.006],color=RED)
+        self.play(Create(axes),Create(potential))
+        self.add(self.equation(r'U/E_0',23,RED).move_to([-5.2,2.55,0]),
+            self.equation(r'r/a',23).move_to([-3.65,-.85,0]))
+        for energy,c,label in [(1,BLUE,r'E_0'),(4,GREEN,r'4E_0')]:
+            r0=energy**(-1/12)
+            self.play(Create(DashedLine(axes.c2p(.8,energy),axes.c2p(1.7,energy),color=c)),
+                FadeIn(Dot(axes.c2p(r0,energy),radius=.055,color=c)))
+            self.add(self.equation(label,24,c).move_to([-.8,axes.c2p(1.7,energy)[1],0]))
+        self.play(FadeIn(self.prose('Illustration: repulsive inverse-twelfth-power potential',23).move_to([-3.45,-1.45,0])))
+        self.play(Write(column(self.equation(r'U(r)=\frac{C_s}{r^s},\quad s>1;\qquad E=\frac12\mu v^2',33,BLUE),[2.9,2.25,0],6.)))
+        self.play(FadeIn(column(self.equation(r'C_s:\ \text{strength [J m}^s\text{]};\quad s:\ \text{dimensionless exponent}',23),[2.9,1.4,0],6.)))
+        self.play(Write(column(self.equation(r'\frac{C_s}{r_0^s}=E\quad\Rightarrow\quad '
+            r'r_0=\left(\frac{2C_s}{\mu v^2}\right)^{1/s}',34,GREEN),[2.9,.25,0],6.)))
+        self.play(FadeIn(column(self.equation(r'r_0:\ \text{interaction length [m]};\quad a,E_0:\ \text{reference scales}',23),[2.9,-.85,0],6.)))
+        self.next_slide('Cross section scales as the square of the interaction length',
+            notes='This is a scaling derivation for an ideal homogeneous potential. It explains how an interaction can produce a speed-dependent cross section without assuming hard spheres. A fixed-angle or momentum-transfer convention gives a speed-independent dimensionless prefactor in this ideal model.')
+        self.play(Write(self.equation(r'\sigma(v)\propto r_0^2\quad\Rightarrow\quad '
+            r'\boxed{\sigma(v)\propto v^{-4/s}}',40,GOLD).shift(DOWN*2.45)))
+        self.play(FadeIn(self.prose('A steeper repulsive core produces a weaker speed dependence.',26).shift(DOWN*3.2)))
+        self.citation('Power-law scattering: MIT 16.55 (2014); Khrapak (2014)',mechanics)
+        self.finish()
+
+        self.start_slide('A microscopic mechanism does not fix the empirical exponent',
+            'The illustrative r^-12 repulsion gives a high-energy cross-section exponent 1/3. '
+            'It therefore cannot be presented as a derivation of the adopted 0.8. An ideal r^-5 '
+            'potential would reproduce 0.8 algebraically, but choosing it to match the exponent would '
+            'not establish the actual atom-air interaction. Real cross sections depend on species, '
+            'collision energy, electronic potentials and the chosen collision convention. Sugar section '
+            '5.3 tests model potentials for relative ion-neutral versus neutral-neutral behavior, then '
+            'adopts the older Bronshten parametrization for absolute collision rates.')
+        self.play(Write(self.equation(r'U\propto r^{-12}\quad\Rightarrow\quad '
+            r'\sigma\propto v^{-1/3}',39,BLUE).shift(UP*2.3)))
+        self.play(FadeIn(self.prose('That explains a mechanism for speed dependence.',28).shift(UP*1.45)))
+        self.play(Write(self.equation(r'U\propto r^{-5}\quad\Rightarrow\quad '
+            r'\sigma\propto v^{-0.8}\qquad\text{only for that ideal potential}',33,GREEN).shift(UP*.35)))
+        self.play(FadeIn(self.prose('Choosing a power to match 0.8 would not establish the real atom--air potential.',25,RED).shift(DOWN*.55)))
+        self.play(FadeIn(self.prose('The adopted 0.8 comes from the Bronshten collision parametrization.',27,GOLD).shift(DOWN*1.65)))
+        self.play(FadeIn(self.prose('Sugar et al. use that law for collision rates after testing separate model potentials.',25).shift(DOWN*2.45)))
+        self.play(FadeIn(self.prose('Species, collision energy, and the cross-section definition determine the appropriate law.',25).shift(DOWN*3.2)))
+        self.citation('Adopted meteor law: Sugar et al. (2018), section 5.3',
+            'https://doi.org/10.1002/2018JA025265')
+        self.finish()
+
+    def collision_cross_section(self):
+        self.collision_force_physics()
         self.start_slide('The atom--air collision cross section',
             'The adopted sigma_c is the effective heavy-particle scattering cross section governing the first '
             'collision of an ablated atom with air. Bronshten (1983) supplies the empirical velocity law; '
@@ -2513,6 +2740,9 @@ class MeteorHeadRCS(Slide):
             ('Free molecular sphere drag: Loth et al. (2021)','10.2514/1.J060153'),
             ('Thermal ablation: Hill et al. (2005)','10.1051/0004-6361:20053053'),
             ('Primary Si ionization: Jones (1997)','10.1093/mnras/288.4.995'),
+            ('Molecular scattering: Khrapak (2014)','10.1140/epjd/e2014-50449-y'),
+            ('Classical collision theory: MIT 16.55 (2014)',
+             'https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/ba010aa23f0da845aa3ff555f3d60921_MIT16_55F14_Lecture6-7.pdf'),
             ('Empirical collisions: Bronshten (1983)','10.1007/978-94-009-7222-3'),
             ('Collision cross section: Sugar et al. (2018), section 5.3','10.1002/2018JA025265'),
             ('Kinetic model: Dimant and Oppenheim (2017), Part 1','10.1002/2017JA023960'),
@@ -2525,9 +2755,9 @@ class MeteorHeadRCS(Slide):
         for page in range(pages):
             self.start_slide('References (%d/%d)'%(page+1,pages),'Clickable primary references for the physical derivation.')
             subset=entries[page*5:page*5+5]
-            rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose('doi:'+doi.replace('%3C','<').replace('%3E','>'),17,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
+            rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose('MIT OpenCourseWare: Collision Theory' if doi.startswith('https://') else 'doi:'+doi.replace('%3C','<').replace('%3E','>'),17,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
                 for title,doi in subset]).arrange(DOWN,buff=.4,aligned_edge=LEFT).move_to(ORIGIN)
             for row in rows:self.play(FadeIn(row),run_time=.3)
-            self.paper_links([(title,'https://doi.org/'+doi,row) for (title,doi),row in zip(subset,rows)])
+            self.paper_links([(title,doi if doi.startswith('https://') else 'https://doi.org/'+doi,row) for (title,doi),row in zip(subset,rows)])
             if page<pages-1:self.finish()
         self.wait(1.)

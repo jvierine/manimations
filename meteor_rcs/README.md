@@ -213,8 +213,24 @@ the plasma-frequency scale. The dielectric follows from `exp(-i*omega*t)`,
 `J = sigma*E`, `J = dP/dt`, and `D = epsilon0*E + P`. The constant collision
 frequency in the archived example is identified as an assumption.
 
+The collision-speed explanation now begins with electronic attraction and
+short-range repulsion. A reduced-mass force balance precedes numerically
+integrated elastic trajectories at the same impact parameter and two speeds.
+A separate weak-deflection force-pulse comparison derives the impulse and
+angle scaling. A front view of incoming impact parameters turns annular area
+into a threshold cross section, followed by momentum-transfer weighting.
+For an ideal repulsive potential `U = Cs/r^s`, energy comparison and similarity
+give `r0 ~ v^(-2/s)` and `sigma ~ v^(-4/s)`. The `r^-12` illustration therefore
+gives `v^(-1/3)`, not the adopted meteor-law exponent. Choosing `s=5` to match
+0.8 is explicitly distinguished from establishing a real atom-air potential.
+The numerical example is explanatory and does not replace the archived
+Bronshten collision law. Conservation and speed-similarity checks cover the
+relative-motion integration.
+
 Additional references:
 
+- [MIT 16.55 (2014), lectures 6--7](https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/ba010aa23f0da845aa3ff555f3d60921_MIT16_55F14_Lecture6-7.pdf), classical scattering and momentum-transfer cross sections.
+- [Khrapak (2014)](https://arxiv.org/abs/1404.5476), Lennard-Jones transport cross sections and high-energy scaling.
 - [Bronshten (1983), Physics of Meteoric Phenomena](https://doi.org/10.1007/978-94-009-7222-3).
 - [Sugar et al. (2018), section 5.3](https://doi.org/10.1002/2018JA025265), adoption of the empirical collision law.
 - [Yee (1966)](https://doi.org/10.1109/TAP.1966.1138693), staggered Maxwell discretization.
