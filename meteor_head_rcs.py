@@ -1904,9 +1904,12 @@ class MeteorHeadRCS(Slide):
         self.start_slide('The plasma density in three physical dimensions',
             'The rotating surface is the actual DO isodensity F_DO=0.05, reconstructed by axisymmetry. '
             'It is one illustrative density level, not a material boundary or the numerical support cutoff. '
-            'All three spatial directions have the same scale; colour is only surface shading.')
+            'The two planar cut faces show actual density on a fixed sequential logarithmic colour scale. '
+            'The outer constant-density shell is neutral grey-blue. Separate face normals preserve the cut edges '
+            'and lighting supplies depth cues. Values above ten share the darkest displayed colour; '
+            'this display limit does not cap the physical density. All spatial axes retain the same scale.')
         self.play_gpu_movie('do_physical.mp4',center=[0,.3,0],width=12.7)
-        self.play(FadeIn(self.prose('One isodensity surface; plasma also exists outside it.',26,FG).shift(DOWN*3.1)))
+        self.play(FadeIn(self.prose('Cut-face colour shows density; the outer surface marks one density level.',26,FG).shift(DOWN*3.1)))
         self.finish()
         self.start_slide('Use axial distance and distance from the trajectory axis',
             'A ring of equal z and transverse radius has the same density at every azimuth. '

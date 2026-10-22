@@ -159,3 +159,20 @@ def test_regrouped_shape_integral_matches_direct_allowed_ray_sum():
             return 2/np.pi*jinfty(xi)*xi*k
         f3=quad(partial,c,1.,epsabs=1e-10)[0]
         np.testing.assert_allclose(direct,np.pi*(c*f1+chi*f2+f3),rtol=3e-5)
+
+
+def test_cut_faces_sample_the_actual_density_inside_the_isosurface():
+    # The new coloured faces are physical meridional sections. Check their
+    # saved native densities against independent Python quadrature and the
+    # outer contour, including both axial ends and the transverse direction.
+    with h5py.File(ROOT/'data.h5') as f:
+        theta=f['gallery/theta'][:]
+        radii=f['gallery/cut_radius'][:].reshape(len(theta),-1)
+        density=f['gallery/cut_density'][:].reshape(radii.shape)
+        np.testing.assert_allclose(radii[:,-1],f['gallery/radius'][:])
+        np.testing.assert_allclose(density[:,-1],.05,rtol=2e-7)
+        assert np.all(density[:,:-1]>=.05)
+        for j in [0,18,36,54,72]:
+            for k in [0,24,48,72,96]:
+                r=radii[j,k];t=theta[j]
+                np.testing.assert_allclose(density[j,k],electron_density(r*np.cos(t),r*np.sin(t)),rtol=2e-7)

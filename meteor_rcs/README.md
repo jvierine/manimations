@@ -2,7 +2,8 @@
 
 Git contains code only. Run `conda run -n base python fetch_assets.py` from the
 repository root to restore checksum-verified scientific inputs and cached media
-from juha.no. All HDF5 files, figures, movies, browser scene arrays, TeX glyph
+from juha.no. Individually updated movies may have their own pinned URL and
+checksum while other inputs retain the shared immutable archive. All HDF5 files, figures, movies, browser scene arrays, TeX glyph
 images, and compiled WebAssembly mentioned below are external build assets,
 not repository contents. The full build fetches missing assets automatically.
 
@@ -230,7 +231,7 @@ A separate rotating physical isodensity surface (`ne/nstar = 0.05`) is obtained
 by solving the same function for radius at each polar angle and revolving it
 about the trajectory axis. It is an illustrative density level, not a plasma
 edge or FDTD cutoff. `Figure::check_annotations` checks captions against the
-projected geometry in all 48 frames of each animation. Camera-independent
+projected geometry at all 361 sampled camera times of each orbit. Camera-independent
 caption space avoids labels moving through the plotted surface.
 
 The 2D density map retains dimensionless axes and adds metre axes. Their
@@ -313,7 +314,14 @@ conservative enclosing sphere at all 481 recorded camera times.
 Both DO views use Rustplotlib MeshView with actual indexed triangles, a
 perspective camera, smooth normals and a shared WebGL depth buffer. The first
 view is a log-density height graph; the second is a spatial isodensity with a
-quarter cutaway and an explicitly enlarged grain marker. Masks and isodensity
+quarter cutaway and an explicitly enlarged grain marker. Two genuine planar
+cut faces sample the same density inside that contour. They use the native
+sequential palette on a fixed logarithmic scale from 0.05 to 10 in `ne/nstar`;
+values above 10 saturate only the displayed colour. The surrounding constant-
+density shell is neutral grey-blue. Independent face vertices preserve sharp
+cut edges under the renderer's existing directional lighting. The cut-face
+radii and densities are retained in HDF5 and checked against Python quadrature.
+Masks and isodensity
 radii come from the exact gallery density arrays in HDF5. Fixed TeX annotations
 occupy a separate viewport region. Camera bounds are checked over a complete
 orbit. The native `Figure::check_annotations` audit checks the conservative

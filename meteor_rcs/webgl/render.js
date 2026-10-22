@@ -1,9 +1,9 @@
 // Exact HDF5 gallery arrays / numerically solved isodensity. Only camera moves.
 import init,{MeshView} from './pkg/rustplotlib_web.js';
 await init();
-const scenes=await(await fetch('scenes.json')).json();
+const scenes=await(await fetch('scenes.json',{cache:'no-store'})).json();
 const glyph={};
-await Promise.all(['axz','axr','axx','axy','log','iso'].map(name=>new Promise((resolve,reject)=>{
+await Promise.all(['axz','axr','axx','axy','log','iso','density'].map(name=>new Promise((resolve,reject)=>{
  const im=new Image();im.onload=()=>{glyph[name]=im;resolve()};im.onerror=reject;im.src='glyphs/'+name+'.svg';
 })));
 
@@ -25,7 +25,7 @@ function load(){
  current=scenes[mode.value];view.set_axis_scale(...current.scale);
  if(current.rgb)view.set_colored_mesh(new Float32Array(current.xyz),new Uint32Array(current.triangles),new Float32Array(current.rgb));
  else{view.set_mesh(new Float32Array(current.xyz),new Uint32Array(current.triangles),new Float32Array(current.values));view.set_colormap(new Float32Array(current.palette));view.set_scale(...current.colorRange);}
- view.set_bounds(...current.bounds);view.set_lines(axes(mode.value));progress=0;draw(0);status.textContent='Ready';
+ view.set_bounds(...current.bounds);view.set_lines(new Float32Array([...axes(mode.value),...(current.seams||[])]));progress=0;draw(0);status.textContent='Ready';
 }
 function text(t,x,y,size=30,color='#172333'){ctx.font=size+'px Georgia,serif';ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function math(name,x,y,h=38){const im=glyph[name];ctx.drawImage(im,x,y-h,h*im.naturalWidth/im.naturalHeight,h);}
@@ -47,12 +47,23 @@ function draw(t){
   ctx.fillStyle=grad;ctx.fillRect(1570,620,35,190);text('4',1625,635,27);text('−3',1625,810,27);
   text('Height is density,',1560,850,25);text('not physical distance.',1560,884,25);
  }else{
-  text('Spatial density level',1560,130,30);math('iso',1560,198,38);
-  text('Quarter cutaway',1560,260,27);text('to reveal the interior',1560,300,25);
-  rule(380,'#245774');math('axz',1630,392,38);text('Trajectory: +z behind',1560,435,24);
-  rule(500,'#267369');math('axx',1630,512,38);rule(590,'#804592');math('axy',1630,602,38);
-  text('Same spatial scale',1560,680,26);text('on all three axes',1560,720,26);
-  text('Gold: enlarged grain',1560,795,25);text('Plasma exists beyond',1560,850,25);text('this density surface.',1560,884,25);
+  text('Outer density level',1560,75,29);math('iso',1560,130,36);
+  text('Cut faces: density',1560,193,29);math('density',1560,247,38);
+  const top=292,bottom=527,grad=ctx.createLinearGradient(0,bottom,0,top),pal=current.cutPalette;
+  for(let i=0;i<pal.length/3;i++)grad.addColorStop(i/(pal.length/3-1),'rgb('+pal[3*i]*255+','+pal[3*i+1]*255+','+pal[3*i+2]*255+')');
+  ctx.fillStyle=grad;ctx.fillRect(1570,top,32,bottom-top);
+  const [lo,hi]=current.cutRange;
+  for(const value of [.05,.1,1,10]){
+   const y=bottom-(bottom-top)*Math.log(value/lo)/Math.log(hi/lo);
+   text(value===hi?'≥10':String(value),1620,y+8,26);
+  }
+  text('Logarithmic scale',1560,570,25);
+  rule(622,'#245774');math('axz',1630,634,35);
+  rule(685,'#267369');math('axx',1630,697,35);
+  rule(748,'#804592');math('axy',1630,760,35);
+  text('Same spatial scale',1560,812,25);
+  text('Gold: enlarged grain',1560,857,24);
+  text('Plasma extends outside.',1560,891,24);
  }
 }
 async function orbit(record=false){

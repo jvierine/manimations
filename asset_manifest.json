@@ -90,8 +90,9 @@
     },
     {
       "path": "meteor_rcs/assets/do_physical.mp4",
-      "sha256": "4d07657a64b3f1f922f1d3a91e5657a3f0133a410f5ee8c9a161435b5460272c",
-      "bytes": 3769541
+      "sha256": "e864fb3940e74167f1920bed1a12bb9f32f904b04ebb799ac139904ade725055",
+      "bytes": 4268727,
+      "url": "https://juha.no/space/manimations-assets/do-physical-density-cutaway-e864fb3940e74167.mp4"
     },
     {
       "path": "meteor_rcs/assets/fdtd_current.mp4",

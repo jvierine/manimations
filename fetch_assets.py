@@ -33,7 +33,21 @@ def main():
             missing.append(entry)
     if options.verify and missing:
         raise SystemExit(f'{len(missing)} assets are missing or changed; run fetch_assets.py')
-    if missing:
+    # Updated movies may be pinned individually without repacking the entire
+    # immutable shared archive. Both delivery paths require exact file hashes.
+    individual = [entry for entry in missing if 'url' in entry]
+    archived = [entry for entry in missing if 'url' not in entry]
+    for entry in individual:
+        target = ROOT / entry['path']
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='manimations-asset-') as folder:
+            temporary = Path(folder) / 'asset'
+            with urlopen(entry['url'], timeout=120) as source, temporary.open('wb') as output:
+                shutil.copyfileobj(source, output)
+            if digest(temporary) != entry['sha256']:
+                raise ValueError(f"Asset checksum mismatch: {entry['path']}")
+            shutil.copyfile(temporary, target)
+    if archived:
         with tempfile.TemporaryDirectory(prefix='manimations-assets-') as folder:
             archive = Path(folder) / 'assets.tar.gz'
             with urlopen(manifest['url'], timeout=120) as source, archive.open('wb') as output:
@@ -41,7 +55,7 @@ def main():
             if digest(archive) != manifest['sha256']:
                 raise ValueError('Asset archive checksum mismatch')
             with tarfile.open(archive, 'r:gz') as bundle:
-                for entry in missing:
+                for entry in archived:
                     member = bundle.getmember(entry['path'])
                     if not member.isfile():
                         raise ValueError('Asset archive member is not a regular file')

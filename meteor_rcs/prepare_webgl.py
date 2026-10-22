@@ -14,6 +14,9 @@ def build(package=None):
         x=f['gallery/z'][:];y=f['gallery/r'][:]
         h=f['gallery/log_density'][:].reshape(len(y),len(x))
         theta=f['gallery/theta'][:];radius=f['gallery/radius'][:]
+        cut_radius=f['gallery/cut_radius'][:].reshape(len(theta),-1)
+        cut_density=f['gallery/cut_density'][:].reshape(cut_radius.shape)
+        cut_palette=f['gallery/cut_palette'][:].reshape(-1,3)
     xx,yy=np.meshgrid(x,y);ok=np.isfinite(h).ravel()
     remap=np.full(ok.size,-1);remap[ok]=np.arange(sum(ok));faces=[]
     for j in range(len(y)-1):
@@ -29,11 +32,36 @@ def build(package=None):
     for r,t in zip(radius,theta):
         for p in phi:
             xyz.append([r*np.cos(t),r*np.sin(t)*np.cos(p),r*np.sin(t)*np.sin(p)])
-            rgb.append([.19,.51,.48])
+            rgb.append([.65,.73,.76])
     for j in range(len(theta)-1):
         for i in range(len(phi)-1):
             if 0<=phi[i]<np.pi/2:continue
             a=j*len(phi)+i;b=a+1;c=a+len(phi);d=c+1;tri.extend([(a,b,c),(b,d,c)])
+    # Duplicate vertices across the two planar cut faces and curved shell:
+    # WebGL computes separate normals, retaining the sharp cut edges instead
+    # of rounding them. Vertex RGB comes from true n_e/n_star on a fixed log
+    # scale, never from projected height or a hand-painted radial gradient.
+    cut_range=[0.05,10.]
+    density_colours=np.column_stack([
+        np.interp(np.clip(np.log10(cut_density/cut_range[0])/
+            np.log10(cut_range[1]/cut_range[0]),0,1),
+            np.linspace(0,1,len(cut_palette)),cut_palette[:,k]).ravel()
+        for k in range(3)])
+    seams=[]
+    for p in [0.,np.pi/2]:
+        off=len(xyz)
+        zz=cut_radius*np.cos(theta[:,None])
+        rr=cut_radius*np.sin(theta[:,None])
+        face=np.stack([zz,rr*np.cos(p),rr*np.sin(p)],axis=-1)
+        xyz.extend(face.reshape(-1,3).tolist());rgb.extend(density_colours.tolist())
+        cols=cut_radius.shape[1]
+        for j in range(len(theta)-1):
+            for i in range(cols-1):
+                a=off+j*cols+i;b=a+1;c=a+cols;d=c+1
+                tri.extend([(a,b,c),(b,d,c)])
+        boundary=face[:,-1]
+        for a,b in zip(boundary[:-1],boundary[1:]):
+            seams.extend([*a,.26,.34,.39,*b,.26,.34,.39])
     # Enlarged spherical origin marker, occluded by the actual surface where appropriate.
     off=len(xyz);nt=17;np_=33
     for t in np.linspace(0,np.pi,nt):
@@ -44,7 +72,8 @@ def build(package=None):
         for i in range(np_-1):
             a=off+j*np_+i;b=a+1;c=a+np_;d=c+1;tri.extend([(a,b,c),(b,d,c)])
     scenes['physical']=dict(xyz=np.ravel(xyz).tolist(),triangles=np.ravel(tri).tolist(),
-        rgb=np.ravel(rgb).tolist(),bounds=[-2,8,-5,5,-5,5],scale=[1,1,1])
+        rgb=np.ravel(rgb).tolist(),bounds=[-2,8,-5,5,-5,5],scale=[1,1,1],
+        cutPalette=cut_palette.ravel().tolist(),cutRange=cut_range,seams=seams)
     # Fit the real perspective camera around the mesh, allowing a small target
     # pan to keep its projected bounding box centred. Geometry never changes.
     for kind,scene in scenes.items():
@@ -85,6 +114,11 @@ def build(package=None):
         scene['cameraDistance']=distance
         scene['cameraTargets']=[frame(yaw,distance)[1].tolist() for yaw in yaws]
         print('Fitted camera',kind,distance)
+    from manim import TexTemplate
+    from manim.utils.tex_file_writing import tex_to_svg_file
+    glyph=Path(tex_to_svg_file(r'n_e/n_\star',environment='align*',tex_template=TexTemplate()))
+    (target/'glyphs').mkdir(exist_ok=True)
+    shutil.copyfile(glyph,target/'glyphs/density.svg')
     (target/'scenes.json').write_text(json.dumps(scenes,separators=(',',':'),allow_nan=False))
     subprocess.run(['cargo','run','--quiet','--release','--manifest-path',str(ROOT/'plots/Cargo.toml'),
                     '--','--check-webgl-layout',str(target/'scenes.json')],check=True)

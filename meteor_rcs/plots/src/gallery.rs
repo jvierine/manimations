@@ -39,11 +39,31 @@ pub fn build(_out: &Path) -> Result<serde_json::Value> {
             (lo + hi) / 2.
         })
         .collect();
+    // Genuine meridional cut faces: sample the same density INSIDE the
+    // solved isosurface. Resolve the central gradient logarithmically without
+    // assigning a finite value to the point-source singularity at the origin.
+    let cut_samples = 97;
+    let mut cut_radius = Vec::new();
+    let mut cut_density = Vec::new();
+    for (&t, &outer) in theta.iter().zip(&radial) {
+        for i in 0..cut_samples {
+            let r = 0.003_f64 * (outer / 0.003).powf(i as f64 / (cut_samples - 1) as f64);
+            cut_radius.push(r);
+            cut_density.push(model.at(r * t.cos(), r * t.sin()));
+        }
+    }
+    let sequential: Vec<_> = (0..256)
+        .flat_map(|i| {
+            rustplotlib::ColorMap::sequential()
+                .sample(i as f64 / 255.)
+                .map(|v| v as f64 / 255.)
+        })
+        .collect();
     let checks: Vec<_> = [[0., 1.], [1., 1.], [-1., 1.], [0.01, 0.01], [15., 8.]]
         .into_iter()
         .map(|[z, r]| [z, r, model.at(z, r)])
         .collect();
     Ok(
-        serde_json::json!({"checks":checks,"z":xs,"r":ys,"log_density":heights.iter().map(|v|if v.is_finite(){Some(*v)}else{None}).collect::<Vec<_>>(),"theta":theta,"radius":radial}),
+        serde_json::json!({"checks":checks,"z":xs,"r":ys,"log_density":heights.iter().map(|v|if v.is_finite(){Some(*v)}else{None}).collect::<Vec<_>>(),"theta":theta,"radius":radial,"cut_radius":cut_radius,"cut_density":cut_density,"cut_samples":cut_samples,"cut_palette":sequential}),
     )
 }
