@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Near-meteoroid plasma</title>
+<style>body{margin:16px;font:18px Georgia,serif;color:#172333;background:white}canvas#output{display:block;width:min(96vw,1440px);height:auto}button,a{font:16px sans-serif;padding:9px;margin:5px}#status{font:15px sans-serif}select{font-size:18px}canvas#gpu{display:none}</style>
+<label>View <select id="mode"><option value="height">Density-height surface</option><option value="physical">Spatial isodensity cutaway</option></select></label>
+<button id="preview">Rotate</button><button id="reset">Reset</button><button id="record">Record orbit</button><button id="depth">Run depth test</button>
+<a id="download" hidden>Download recording</a><span id="status">Loading</span>
+<canvas id="gpu" width="1536" height="900"></canvas><canvas id="output" width="1920" height="900"></canvas>
+<script type="module" src="render.js"></script></html>

@@ -8,6 +8,6 @@ publish = false
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rustplotlib = { git = "https://github.com/jvierine/rustplotlib", rev = "2da4af7f2a2274b875608bf435e4fa3b368ab98d" }
+rustplotlib = { git = "https://github.com/jvierine/rustplotlib", rev = "fb711f434845727e9ff4377aad1179a2e377c3d8" }
 
 libm = "0.2"

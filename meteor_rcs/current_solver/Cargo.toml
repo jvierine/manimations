@@ -1,0 +1,15 @@
+[package]
+name = "meteor-fdtd"
+version = "0.1.0"
+edition = "2024"
+description = "Three-dimensional Yee/CPML cold-plasma scattering solver"
+
+[dependencies]
+mpi = { version = "0.8", default-features = false }
+rayon = "1.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -69,9 +69,13 @@ def native_plots():
         np.testing.assert_allclose(value,electron_density(z,r),rtol=2e-7)
     with h5py.File(ROOT/'data.h5','a') as f:
         for key,value in gallery.items():f['gallery/'+key]=np.asarray(value,dtype=float)
+    from meteor_rcs.prepare_webgl import build
+    build()
 
 
 def main():
+    from meteor_rcs.radar_examples import main as radar_examples
+    radar_examples()
     (ROOT/'assets').mkdir(exist_ok=True)
     with h5py.File(ROOT/'inputs.h5') as f:
         t={key:f['trajectory'][key][:] for key in f['trajectory']}

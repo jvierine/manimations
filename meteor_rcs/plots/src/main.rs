@@ -1,6 +1,7 @@
 //! Native plot builder for the Manim Slides deck. Python supplies HDF5 arrays
 //! over stdin; Rustplotlib owns all layout, axes, typography, and rendering.
 mod gallery;
+mod webgl_layout;
 mod support {
     pub mod dimant;
 }
@@ -60,6 +61,9 @@ fn edges(centers: &[f64]) -> Vec<f64> {
 }
 
 fn main() -> Result<()> {
+    if std::env::args().nth(1).as_deref() == Some("--check-webgl-layout") {
+        return webgl_layout::check(&PathBuf::from(std::env::args().nth(2).expect("scene JSON")));
+    }
     let d: Data = serde_json::from_reader(io::stdin())?;
     let out = PathBuf::from(std::env::args().nth(1).expect("output directory"));
     std::fs::create_dir_all(&out)?;

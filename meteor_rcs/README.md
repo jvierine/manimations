@@ -60,8 +60,8 @@ The derivation then connects the thermal ablation equations to Si primary
 electron production, production line density, Dimant--Oppenheim normalization
 and morphology, cold collisional/magnetized plasma current, Yee FDTD, the
 induced-current radiation integral, and polarized monostatic RCS. It concludes
-with convergence, beam selection, and the inverse problem of constraining the
-physical meteoroid parameters from a calibrated echo and trajectory.
+by inserting the calculated RCS into the radar equation, then calculating received
+power and SNR. The inverse-problem and detection-height digressions are omitted.
 
 The DO sequence explains each factor in production line density, the atmosphere
 and grain rest frames, velocity-dependent collision lengths, dimensionless
@@ -97,7 +97,7 @@ accents to match the native Rustplotlib figures.
 
 All quantitative plots are constructed and rendered by
 [`jvierine/rustplotlib`](https://github.com/jvierine/rustplotlib), pinned to
-`2da4af7f2a2274b875608bf435e4fa3b368ab98d` in `plots/Cargo.toml`.
+`fb711f434845727e9ff4377aad1179a2e377c3d8` in `plots/Cargo.toml`.
 `plots/src/main.rs` owns axes, labels, layout, colors, and SVG/PNG exports.
 Manim imports the PNGs; the matching SVGs remain available for vector reuse.
 Python prepares numerical arrays and passes them over stdin to the small Rust
@@ -239,3 +239,41 @@ grain in radiative equilibrium, P_emit is approximately P_abs to the order
 retained. Incoming radial sunlight supplies no tangential momentum, leaving
 the negative recoil. This states the assumptions behind the displayed drag
 formula rather than presenting it as a universal optical-scattering law.
+
+
+## GPU camera movies and current animation
+
+Both DO views use Rustplotlib MeshView with actual indexed triangles, a
+perspective camera, smooth normals and a shared WebGL depth buffer. The first
+view is a log-density height graph; the second is a spatial isodensity with a
+quarter cutaway and an explicitly enlarged grain marker. Masks and isodensity
+radii come from the exact gallery density arrays in HDF5. Fixed TeX annotations
+occupy a separate viewport region. Camera bounds are checked over a complete
+orbit. The native `Figure::check_annotations` audit checks the conservative
+projected mesh-and-axis bounds against the entire reserved annotation gutter
+at all 361 camera times, and rejects an injected overlapping-label control.
+The browser depth fixture verifies that nearer triangles occlude farther
+ones regardless of submission order.
+
+The local preview server is started with the record_webgl module. The two orbit
+controls save actual canvas recordings directly into assets. Manim streams
+those recorded MP4s sequentially, using the movie time base rather than a
+handful of preprojected image frames.
+
+The current movie uses a 64-cubed, three-thread, frozen-DO-density Rust FDTD
+illustration. Its 240 native staggered electric-field/current slices, SI units,
+timing, configuration and complete solver source are archived in
+current_preview.h5. This is an illustrative current calculation, not a
+converged quantitative RCS result. The prepare_current module can reproduce it;
+prepare_webgl recreates browser transport from the HDF5 product without rerunning
+the solver. The current movie uses Rustplotlib FieldView, fixed colour ranges,
+and a physical nanosecond clock; playback is deliberately slowed.
+
+The end-of-lecture examples retain link budgets in radar_examples.h5. Historical
+Arecibo, full-array Jicamarca, Millstone zenith, and EISCAT 3D design parameters
+are explicitly identified. Common range and effective noise bandwidth make the
+ideal sensitivity comparison inspectable. A weak Gaussian-cloud benchmark
+separates frequency-dependent target RCS from instrument sensitivity. It is
+not represented as a DO FDTD prediction. The Rayleigh/geometric alternative
+uses the critical plasma surface only in its stated conducting-sphere
+approximation.

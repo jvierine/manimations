@@ -8,3 +8,9 @@ qa*/
 qa*.png
 *.mp4
 .DS_Store
+
+!meteor_rcs/assets/do_height.mp4
+!meteor_rcs/assets/do_physical.mp4
+!meteor_rcs/assets/fdtd_current.mp4
+meteor_rcs/current_solver/target/
+meteor_rcs/webgl/current.json

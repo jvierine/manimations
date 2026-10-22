@@ -152,11 +152,12 @@ class MeteorHeadRCS(Slide):
         self.line_density()
         self.source_terms()
         self.do_introduction()
+        self.density_amplitude_introduction()
         self.do_gallery_animation()
         self.do_parameters()
-        self.collision_length()
-        self.collision_cross_section()
         self.collision_frames()
+        self.collision_cross_section()
+        self.collision_length()
         self.velocity_dependence()
         self.mean_free_path_coordinates()
         self.normalization()
@@ -178,11 +179,10 @@ class MeteorHeadRCS(Slide):
         self.far_field()
         self.rcs()
         self.polarization()
+        self.rayleigh_geometry()
         self.limits()
-        self.convergence()
         self.radar_equation()
-        self.detection()
-        self.inference()
+        self.radar_worked_examples()
         self.references()
 
     def lecture_map(self):
@@ -624,7 +624,7 @@ class MeteorHeadRCS(Slide):
             'calculated here for 55P or for the secular track.')
         self.play(Write(self.equation(r'\frac{dP_{\rm surv}}{dt}=-\Gamma_{\rm dest}(t)P_{\rm surv}'
             r'\quad\Rightarrow\quad P_{\rm surv}(t)=e^{-H(t)}',34,BLUE).shift(UP*2.2)))
-        self.play(Write(self.equation(r'H(t)=\int_0^t\Gamma_{\rm dest}(t^\prime)\,dt^\prime,\qquad'
+        self.play(Write(self.equation(r'H(t)=\int_0^t\Gamma_{\rm dest}(t^\prime)\,dt^\prime,\qquad '
             r'\tau_{\rm coll}^{-1}=\langle\Gamma_{\rm dest}\rangle_{\rm orbit}',33).shift(UP*1.15)))
         defs=self.equation(r'P_{\rm surv}:\ \text{surviving fraction};\quad H:\ \text{cumulative exposure (dimensionless)};'
             r'\quad\tau_{\rm coll}:\ \text{collision lifetime [s]}',23).shift(UP*.35)
@@ -1204,32 +1204,80 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Use instantaneous v, not initial entry speed.',27).shift(DOWN*2.5)))
         self.finish()
 
+
     def collision_length(self):
-        # Source: DO Part 1, Eqs. 6 and 20; Sugar et al. (2018), Eq. 1.
-        self.start_slide('Mean free paths of evaporated meteor atoms',
-            'ell_A is the fast ablated-neutral collision mean free path measured through the atmosphere. '
-            'lambda_T is the primary-neutral thermal collision length relative to the grain, used to scale the DO '
-            'near-head plasma distribution. Neither is the ambient air--air thermal mean free path. '
-            'The fast-stream approximation uses relative speed approximately equal to meteor speed.')
-        self.play(Write(self.equation(r'\nu_c=n_A\sigma_c(v)v,\qquad\tau_c=1/\nu_c',36).shift(UP*2.1)))
-        first=self.equation(r'\ell_A=\frac{v}{\nu_c}=\frac{1}{n_A\sigma_c}',43,BLUE).move_to([-3.4,.75,0])
-        second=self.equation(r'\boxed{\lambda_T=\frac{V_T}{\nu_c}=\frac{V_T}{v}\ell_A}',41,GREEN).move_to([3.4,.75,0])
-        self.play(Write(first),Write(second))
-        self.play(FadeIn(self.prose('Fast ablated-neutral mean free path',25,BLUE).move_to([-3.4,-.3,0])),
-            FadeIn(self.prose('Thermal separation from the grain',25,GREEN).move_to([3.4,-.3,0])))
-        defs=self.term_definitions([
-            r'n_A:\ \text{air number density [m}^{-3}\text{]};\quad\sigma_c:\ \text{atom--air collision cross section [m}^2\text{]}',
-            r'v:\ \text{meteor--air speed [m/s]};\quad V_T=\sqrt{k_BT_M/m_{\rm Si}}:\ \text{thermal speed [m/s]}',
-            r'\nu_c:\ \text{collision rate [s}^{-1}\text{]};\quad\tau_c:\ \text{mean time to first collision [s]}'],[0,-1.8,0],25,12.4)
-        self.play(FadeIn(defs))
-        self.play(FadeIn(self.prose('The DO plasma distribution uses distance from the grain, scaled by the thermal length.',25).shift(DOWN*3.1)))
-        self.citation('Dimant and Oppenheim (2017), Part 1','https://doi.org/10.1002/2017JA023960')
+        self.start_slide('Count the air particles intercepted in a short time',
+            'Derive the collision rate as number density times relative speed times effective collision area. '
+            'For independent encounters in a dilute gas the no-collision survival probability is exponential. '
+            'The fast-stream approximation uses relative speed v; thermal launch speeds are much smaller.')
+        box=Rectangle(width=4.5,height=1.15,color=BLUE,fill_opacity=.05).move_to([-3.8,1.,0])
+        target=Circle(.57,color=GOLD,fill_opacity=.08).move_to([-1.55,1.,0])
+        self.play(Create(box),Create(target))
+        rng=np.random.default_rng(133)
+        air=VGroup(*[Dot([-5.8+rng.uniform(0,3.9),rng.uniform(.5,1.5),0],radius=.035,color=BLUE) for _ in range(20)])
+        self.play(FadeIn(air));self.play(air.animate.shift(RIGHT*.25),run_time=.7)
+        self.add(self.equation(r'\sigma_c\ [\mathrm{m^2}]',25,GOLD).move_to([-1.5,2.,0]),
+            self.equation(r'v\,dt\ [\mathrm m]',26,BLUE).move_to([-4.,.1,0]))
+        count=self.equation(r'dN=n_A\,\sigma_c\,v\,dt',35,BLUE).move_to([2.8,1.65,0])
+        rate=self.equation(r'\nu_c=\frac{dN}{dt}=n_A\sigma_c v\quad[\mathrm{s^{-1}}]',34,BLUE).move_to([2.8,.55,0])
+        self.play(Write(count),run_time=1.);self.play(Write(rate),run_time=1.)
+        self.play(FadeIn(self.equation(r'n_A:\ \text{air number density [m}^{-3}\text{]};\quad '
+            r'dN:\ \text{expected encounters in }dt;\quad v:\ \mathrm{m/s}',24,MUTED).shift(DOWN*1.15)))
+        self.next_slide('From encounter rate to a mean waiting time',
+            notes='A Poisson process at rate nu_c has P0(t)=exp(-nu_c t). Its mean waiting time is the integral of P0, equal to 1/nu_c. P0 is a probability and tau_c is in seconds.')
+        self.play(Write(self.equation(r'P_0(t)=e^{-\nu_c t}:\quad\text{probability of no collision by time }t',30).shift(DOWN*2.0)))
+        self.play(Write(self.equation(r'\tau_c=\int_0^\infty P_0(t)\,dt=\frac{1}{\nu_c}\quad[\mathrm s]',36,GREEN).shift(DOWN*3.)))
+        self.citation('Dimant and Oppenheim (2017), Part 1, equations 6 and 20','https://doi.org/10.1002/2017JA023960')
+        self.finish()
+
+        self.start_slide('One collision clock, two different measured displacements',
+            'The same neutral and same waiting time produce two distance scales because the reference '
+            'frames differ. ell_A is travel through air to the first collision; lambda_T is a characteristic '
+            'thermal displacement relative to the grain. They are not two independent collision processes. '
+            'The air-frame path is approximated by v tau because u is much smaller than v.')
+        common=self.equation(r'\tau_c=\frac{1}{n_A\sigma_c(v)v}',38).shift(UP*2.2)
+        self.play(Write(common))
+        left=self.equation(r'\ell_A\simeq v\tau_c=\frac{1}{n_A\sigma_c}',37,BLUE).move_to([-3.4,.9,0])
+        self.play(FadeIn(self.prose('Distance travelled through air',26,BLUE).move_to([-3.4,1.65,0])))
+        self.play(Write(left),run_time=1.1)
+        self.next_slide('Measure displacement relative to the grain',
+            notes='The reference-frame subtraction already established thermal separation u t. Use its characteristic speed V_T in the same waiting time; do not interpret the long air-frame flight as the size of the electron cloud.')
+        self.play(FadeIn(self.prose('Distance separated from the grain',26,GREEN).move_to([3.4,1.65,0])))
+        right=self.equation(r'\lambda_T=V_T\tau_c=\frac{V_T}{n_A\sigma_c v}',37,GREEN).move_to([3.4,.9,0])
+        self.play(Write(right),run_time=1.1)
+        self.play(Write(self.equation(r'\frac{\lambda_T}{\ell_A}=\frac{V_T}{v}\ll1',42,GOLD).shift(DOWN*.6)))
+        self.play(FadeIn(self.equation(r'V_T=\sqrt{k_BT_M/m_{\rm Si}}:\ \text{thermal speed [m/s]};'
+            r'\quad T_M:\ \text{grain temperature [K]}',25,MUTED).shift(DOWN*1.8)))
+        self.play(FadeIn(self.equation(r'k_B:\ \text{Boltzmann constant [J/K]};\quad '
+            r'm_{\rm Si}:\ \text{Si atom mass [kg]}',24,MUTED).shift(DOWN*2.4)))
+        self.play(FadeIn(self.prose('Use the thermal displacement to scale the plasma surrounding the moving grain.',26,FG).shift(DOWN*3.15)))
+        self.citation('Dimant and Oppenheim (2017), Part 1, equation 20','https://doi.org/10.1002/2017JA023960')
         self.finish()
 
     def collision_cross_section(self):
         # Bronshten (1983) parameterization, reproduced in Sugar et al. (2018),
         # section 5.3, Eq. 13, and Sugar et al. (2019), Eq. 9.
         # The coefficient is inherited, not a Si-specific laboratory fit.
+        self.start_slide('Why can a collision cross section depend on speed?',
+            'Cross section is an effective area for a specified collision process, not simply the geometrical size '
+            'of two hard spheres. Interparticle forces deflect trajectories; at the same impact parameter a faster '
+            'encounter is generally deflected less. The numerical exponent in the adopted law is empirical, '
+            'not a consequence of the DO density normalization.')
+        for y,label,deflection,c in [(1.0,'Slower encounter',.8,BLUE),(-.55,'Faster encounter',.25,GREEN)]:
+            target=Circle(.18,color=RED,fill_opacity=.12).move_to([-3.0,y,0])
+            incoming=Line([-6,y+.45,0],[-3.4,y+.45,0],color=c)
+            outgoing=CubicBezier(np.array([-3.4,y+.45,0]),np.array([-2.8,y+.45,0]),
+                np.array([-2.4,y+.45+deflection,0]),np.array([-1.5,y+.45+deflection,0]),color=c)
+            self.play(Create(target),Create(incoming),Create(outgoing))
+            self.add(self.prose(label,25,c).move_to([2.5,y+.5,0]))
+        self.play(FadeIn(self.prose('At the same impact parameter, different speed gives different scattering.',26).shift(UP*2.8)))
+        self.play(FadeIn(self.prose('Effective area depends on the interaction and on what counts as a collision.',25).shift(DOWN*1.8)))
+        self.next_slide('The exponent is an adopted empirical input',
+            notes='The qualitative deflection sketch does not derive minus 0.8. Bronshten supplies an empirical speed parametrization reused by Sugar et al. We adopt that model, then derive its consequences explicitly. A different species or cross-section convention needs separate validation.')
+        self.play(Write(self.equation(r'\sigma_c(v)\propto v^{-p},\qquad p=0.8\ \text{in the adopted empirical law}',32,GOLD).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('The value 0.8 is supplied by the collision model; it is not derived by the DO theory.',24,RED).shift(DOWN*3.25)))
+        self.citation('Bronshten (1983); Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265')
+        self.finish()
         self.start_slide('The atom--air collision cross section',
             'The adopted sigma_c is the effective heavy-particle scattering cross section governing the first '
             'collision of an ablated atom with air. Bronshten (1983) supplies the empirical velocity law; '
@@ -1248,7 +1296,7 @@ class MeteorHeadRCS(Slide):
         speed=self.equation(r'v_k\equiv\frac{v_{\rm rel}}{1\ \mathrm{km\,s^{-1}}},\qquad v_{\rm rel}\simeq v',30).move_to([2.3,.5,0])
         self.play(Write(law),Write(speed))
         self.play(FadeIn(self.prose('Bronshten (1983) empirical law; used by Sugar et al. (2018), section 5.3.',26,FG).shift(DOWN*.8)))
-        self.play(Write(self.equation(r'\nu_c=n_A\sigma_c v,\qquad\ell_A=(n_A\sigma_c)^{-1},\qquad\lambda_T=V_T/\nu_c',32,GREEN).shift(DOWN*1.65)))
+        self.play(FadeIn(self.prose('Next: turn the collision area into a rate, a waiting time, and two displacements.',25,GREEN).shift(DOWN*1.65)))
         self.play(FadeIn(self.prose('This is a collision cross section. Ionization probability is a separate input.',25).shift(DOWN*2.55)))
         self.play(FadeIn(self.prose('The same law is adopted for the Si proxy; it is not a Si-specific measurement.',25,RED).shift(DOWN*3.15)))
         refs=[('Bronshten (1983)','https://doi.org/10.1007/978-94-009-7222-3',-2.4),
@@ -1278,16 +1326,26 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Production per path: losses and later trail chemistry require additional physics.',24).shift(DOWN*2.8)))
         self.finish()
 
-    def play_density_frames(self, folder, center=ORIGIN, width=10., seconds=5.):
-        """Native Rustplotlib frames; no screen-space text moves through data."""
-        from PIL import Image
-        frames=[np.asarray(Image.open(path).convert('RGBA')) for path in sorted((ROOT/'assets'/folder).glob('*.png'))]
-        picture=ImageMobject(frames[0]).set(width=width).move_to(center)
-        frame=ValueTracker(0)
-        picture.add_updater(lambda mob: setattr(mob,'pixel_array',frames[min(len(frames)-1,int(frame.get_value()))]))
+    def play_gpu_movie(self, name, center=ORIGIN, width=12.7):
+        """Decode a Rustplotlib GPU-recorded MP4 sequentially; retain correct frame timing."""
+        import cv2
+        cap=cv2.VideoCapture(str(ROOT/'assets'/name))
+        fps=cap.get(cv2.CAP_PROP_FPS);count=int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        success,pixels=cap.read()
+        if not success or fps<=0:raise RuntimeError('Cannot decode '+name)
+        picture=ImageMobject(cv2.cvtColor(pixels,cv2.COLOR_BGR2RGBA)).set(width=width).move_to(center)
         self.play(FadeIn(picture))
-        self.play(frame.animate.set_value(len(frames)-1),run_time=seconds,rate_func=linear)
-        picture.clear_updaters()
+        clock=ValueTracker(0);decoded=[0]
+        def update(mob):
+            wanted=min(count-1,int(clock.get_value()*fps))
+            while decoded[0]<wanted:
+                success,frame=cap.read()
+                if not success:break
+                decoded[0]+=1
+                mob.pixel_array=cv2.cvtColor(frame,cv2.COLOR_BGR2RGBA)
+        picture.add_updater(update)
+        self.play(clock.animate.set_value((count-1)/fps),run_time=(count-1)/fps,rate_func=linear)
+        picture.clear_updaters();cap.release()
         return picture
 
     def do_introduction(self):
@@ -1314,13 +1372,56 @@ class MeteorHeadRCS(Slide):
             'A steady source in the grain frame; thermal neutral launch speeds much less than meteoroid speed; '
             'first ionizing collisions and ballistic secondary ions; isotropic differential ionization. '
             'Quasi-neutrality is an approximation away from microscopic charge-separation scales.')
-        self.stack(self.equation(r'V_T\ll v:\quad\text{slow thermal escape from a fast-moving grain}',32),
-            self.equation(r'\text{steady spherical neutral source}\quad+\quad\text{directed atmospheric stream}',31),
-            self.equation(r'\text{first ionizing collision}\quad\longrightarrow\quad\text{ballistic secondary ions}',31,GREEN),
-            self.equation(r'G_{\rm ion}=\mathrm{constant\ in\ scattering\ angle}',30),
-            self.equation(r'n_e\simeq n_i:\quad\text{quasi-neutral electron-density approximation}',31,BLUE),
-            self.prose('The resulting plasma is axisymmetric and strongly different ahead of and behind the grain.',25))
+
+        for y,tex,color in [
+            (2.55,r'V_T\ll v:\quad\text{slow thermal escape from a fast-moving grain}',FG),
+            (1.95,r'\text{steady spherical neutral source}+\text{directed atmospheric stream}',FG),
+            (1.35,r'\text{first ionizing collision}\longrightarrow\text{ballistic secondary ions}',GREEN)]:
+            self.play(Write(self.equation(tex,29,color).move_to([0,y,0])))
+        self.play(Write(self.equation(r'G_{\rm ion}\equiv\frac{d\sigma_{\rm ion}}{d\Omega}'
+            r'\quad[\mathrm{m^2\,sr^{-1}}]',34,BLUE).shift(UP*.45)))
+        self.play(FadeIn(self.prose('Ionizing-collision cross section per unit scattering solid angle.',25,FG).shift(DOWN*.2)))
+        self.play(FadeIn(self.equation(r'\sigma_{\rm ion}:\ \text{total ionization cross section [m}^2\text{]};'
+            r'\quad\Omega:\ \text{scattering solid angle [sr]}',23,MUTED).shift(DOWN*.75)))
+        self.next_slide('The isotropic ionization assumption',
+            notes='The differential cross section is independent of angle at a fixed relative collision speed, in the collision centre-of-mass frame. This is an assumption of Part 2, not a statement of speed independence.')
+        self.play(Write(self.equation(r'G_{\rm ion}=\frac{\sigma_{\rm ion}}{4\pi}'
+            r'\quad\text{at fixed collision speed}',30,GOLD).shift(DOWN*1.4)))
+        self.play(FadeIn(self.prose('Equal solid angles are equally likely in the collision centre-of-mass frame.',24).shift(DOWN*2.05)))
+        self.play(Write(self.equation(r'n_e\simeq n_i:\quad\text{quasi-neutral electron-density approximation}',28,BLUE).shift(DOWN*2.7)))
+        self.play(FadeIn(self.prose('The directed atmospheric stream still makes the plasma asymmetric.',24).shift(DOWN*3.25)))
         self.citation('Dimant and Oppenheim (2017), Parts 1--2','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+
+    def density_amplitude_introduction(self):
+        self.start_slide('A density model needs an amount and a spatial distribution',
+            'Introduce the reference density n_star before it appears in a normalization or figure label. '
+            'It controls the amplitude of the electron density, while the dimensionless kinetic function '
+            'describes its shape. Lambda_T is the characteristic distance from the grain; its collision-time '
+            'origin is derived next. The point-source idealization has no finite peak, so n_star is not a maximum.')
+        grain=self.grain(np.array([-4.25,.45,0]),.11)
+        rng=np.random.default_rng(112)
+        dots=VGroup(*[Dot([-4.25+rng.normal(.25,.75),.45+rng.normal(0,.6),0],radius=.03,color=GREEN)
+            for _ in range(100)])
+        self.play(FadeIn(grain),FadeIn(dots))
+        self.play(FadeIn(self.prose('Electron cloud around the grain',23,GREEN).move_to([-4.1,2.,0])))
+        idea=self.equation(r'n_e(\mathbf r)=\text{density scale}\times\text{dimensionless shape}',32,BLUE).shift(UP*2.6)
+        self.play(Write(idea))
+        items=self.term_definitions([
+            r'n_\star:\ \text{reference density amplitude [m}^{-3}\text{]}',
+            r'F_{\rm DO}:\ \text{dimensionless kinetic shape}',
+            r'\lambda_T:\ \text{characteristic distance from the grain [m]}',
+            r'\mathbf r:\ \text{position relative to the grain [m]}'],
+            [2.4,.8,0],25,7.5)
+        for row in items:self.play(FadeIn(row),run_time=.6)
+        self.next_slide('Give the density scale its symbol',
+            notes='The same shape at twice the amplitude means twice the electron density at every point. q controls supply; the collision length controls spatial dilution. The exact prefactor will be derived later from the published kinetic density.')
+        self.play(Write(self.equation(r'n_e(\mathbf r)=n_\star F_{\rm DO}(\mathbf r/\lambda_T)',39,BLUE).shift(DOWN*1.4)))
+        self.play(Write(self.equation(r'q\ [\mathrm{m^{-1}}]\ /\ \lambda_T^2\ [\mathrm{m^2}]'
+            r'\quad\longrightarrow\quad n_\star\ [\mathrm{m^{-3}}]',29,GOLD).shift(DOWN*2.45)))
+        self.play(FadeIn(self.prose('More electron production raises the scale; a wider distribution dilutes it.',25).shift(DOWN*3.2)))
+        self.citation('Dimant and Oppenheim (2017), Part 2: density amplitude and kinetic shape','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
     def do_gallery_animation(self):
@@ -1328,7 +1429,7 @@ class MeteorHeadRCS(Slide):
             'This rotating log-height surface uses the exact density function and colormap of the requested gallery example. '
             'The two base coordinates are a meridional slice in thermal collision lengths. Height is log density, '
             'not a third physical spatial coordinate. Positive axial coordinate is behind the grain.')
-        self.play_density_frames('do_turntable',center=[0,.1,0],width=10.,seconds=6.)
+        self.play_gpu_movie('do_height.mp4',center=[0,.3,0],width=12.7)
         self.play(Write(self.equation(r'\text{Height and colour: }\log_{10}(8\pi n_e/n_\star)',29,BLUE).shift(DOWN*3.2)))
         self.citation('Dimant and Oppenheim (2017), Part 2, equations 45--48','https://doi.org/10.1002/2017JA023963')
         self.finish()
@@ -1356,45 +1457,70 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('After source normalization, grain area is not another free amplitude factor.',24).shift(DOWN*2.8)))
         self.finish()
 
+
     def collision_frames(self):
-        # Source: DO Part 1 Eq. 20; common bulk motion cancels in separation.
-        self.start_slide('The atom stays near the moving grain until its first collision',
-            'The animation follows one neutral with an illustrative transverse thermal velocity. '
-            'Grain and neutral share the large bulk velocity in the atmosphere frame. In one collision time '
-            'they travel a long distance together, while their separation grows only at the thermal speed. '
-            'The thermal separation is exaggerated for visibility. The DO near-head plasma scale is this '
-            'separation, not the long path measured through air.')
-        self.play(FadeIn(self.prose('Atmosphere frame',28,FG).move_to([-3.5,2.4,0])),
-            FadeIn(self.prose('Moving with the grain',28,FG).move_to([3.5,2.4,0])))
-        start=np.array([-5.5,.45,0]);end=start+3.5*RIGHT
-        grain=self.grain(start,.11);atom=Dot(start+.15*UP,radius=.06,color=GREEN)
-        fixed=self.grain(np.array([2.5,.45,0]),.11)
-        relative_atom=Dot([2.5,.6,0],radius=.06,color=GREEN)
-        self.add(grain,atom,fixed,relative_atom)
-        path=Line(start+.15*UP,end+.9*UP,color=GREEN,stroke_opacity=.35)
-        self.play(Create(path),grain.animate.move_to(end),atom.animate.move_to(end+.9*UP),
-            relative_atom.animate.move_to([2.5,1.35,0]),run_time=2.,rate_func=linear)
-        separation=DoubleArrow(end+.22*UP,end+.78*UP,buff=0,color=BLUE,
-            max_tip_length_to_length_ratio=.2)
-        relative=DoubleArrow([2.5,.67,0],[2.5,1.23,0],buff=0,color=BLUE,
-            max_tip_length_to_length_ratio=.2)
-        bulk=DoubleArrow(start+.45*DOWN,end+.45*DOWN,buff=0,color=GOLD)
-        self.play(GrowArrow(separation),GrowArrow(relative),GrowArrow(bulk))
-        self.add(self.equation(r'\lambda_T',25,BLUE).next_to(separation,RIGHT,buff=.14),
-            self.equation(r'\lambda_T',25,BLUE).next_to(relative,RIGHT,buff=.14),
-            self.equation(r'\ell_A\simeq v\tau_c',28,GOLD).next_to(bulk,DOWN,buff=.15),
-            self.prose('Grain',22,GOLD).move_to([3.75,.3,0]),
-            self.prose('Evaporated neutral',22,GREEN).move_to([4.6,1.45,0]))
-        eq=self.equation(r'\Delta\mathbf r=\mathbf r_{\rm atom}-\mathbf r_{\rm grain}'
-            r'=\mathbf v_{\rm thermal}\tau_c\quad\Longrightarrow\quad\lambda_T=V_T\tau_c',33,BLUE).shift(DOWN*1.3)
-        self.play(Write(eq))
-        v=self.sample['sample_speed_kms'];vt=np.sqrt(1.380649e-23*self.sample['sample_temperature_k']/(28.085*1.66053906660e-27))
-        ratio=v*1000/vt;length=self.sample['sample_lambda_m']
-        example=self.equation(rf'v={v:.1f}\ \mathrm{{km/s}},\ V_T={vt/1000:.2f}\ \mathrm{{km/s}}:'
-            rf'\quad\ell_A={ratio*length:.1f}\ \mathrm m,\quad\lambda_T={length:.2f}\ \mathrm m',29).shift(DOWN*2.25)
-        self.play(Write(example))
-        self.play(FadeIn(self.prose('Use thermal separation to scale the ionized plasma surrounding the grain.',27,FG).shift(DOWN*3.1)))
-        self.citation('Dimant and Oppenheim (2017), Part 1','https://doi.org/10.1002/2017JA023960')
+        # Actual archived scales in two coordinate systems. Both panels use the
+        # same transverse metre scale; the right panel zooms the forward scale.
+        v=self.sample['sample_speed_kms']*1000
+        vt=np.sqrt(1.380649e-23*self.sample['sample_temperature_k']/(28.085*1.66053906660e-27))
+        length=self.sample['sample_lambda_m'];tau=length/vt;travel=v*tau
+        self.start_slide('The atom and grain share the fast forward motion',
+            'Start with a concrete trajectory before introducing two distance symbols. '
+            'An illustrative neutral is emitted with a transverse thermal velocity V_T. '
+            'In the atmosphere frame both bodies share v; in the grain frame that motion is subtracted. '
+            'The neutral is followed for one mean waiting time, not a deterministic lifetime of every atom. '
+            'Axes carry metres. Transverse scales are identical; the forward axis is zoomed in the grain frame.')
+        self.play(FadeIn(self.prose('Atmosphere frame',28,FG).move_to([-3.45,2.45,0])),
+            FadeIn(self.prose('Grain frame: forward-motion zoom',26,FG).move_to([3.35,2.45,0])))
+        def axes(xrange,xlength,center):
+            return Axes(x_range=xrange,y_range=[0,.24,.08],x_length=xlength,y_length=2.35,
+                tips=False,axis_config={'color':MUTED,'include_numbers':True,'font_size':18,
+                'decimal_number_config':{'color':MUTED,'num_decimal_places':2}}).move_to(center)
+        left=axes([0,12,4],5.35,[-3.5,.8,0])
+        right=axes([-.2,.2,.2],3.8,[3.25,.8,0])
+        self.play(Create(left),Create(right))
+        self.add(self.equation(r'x_{\rm air}\ [\mathrm m]',23).move_to([-3.5,-.85,0]),
+            self.equation(r'x_{\rm grain}\ [\mathrm m]',23).move_to([3.25,-.85,0]),
+            self.equation(r'y\ [\mathrm m]',23).rotate(PI/2).move_to([-6.85,1.,0]),
+            self.equation(r'y\ [\mathrm m]',23).rotate(PI/2).next_to(right.y_axis,LEFT,buff=.55))
+        clock=ValueTracker(0.)
+        grain=always_redraw(lambda:self.grain(left.c2p(travel*clock.get_value(),0),.105))
+        neutral=always_redraw(lambda:Dot(left.c2p(travel*clock.get_value(),length*clock.get_value()),radius=.055,color=GREEN))
+        fixed=self.grain(right.c2p(0,0),.105)
+        relative=always_redraw(lambda:Dot(right.c2p(0,length*clock.get_value()),radius=.055,color=GREEN))
+        trace=TracedPath(neutral.get_center,stroke_color=GREEN,stroke_width=2.5)
+        trace2=TracedPath(relative.get_center,stroke_color=GREEN,stroke_width=2.5)
+        self.add(grain,neutral,fixed,relative,trace,trace2)
+        legend=self.equation(r'\text{Gold: grain; green: neutral};\quad\tau_c:\ \text{mean time to first collision}',24,MUTED).shift(DOWN*1.5)
+        self.play(FadeIn(legend))
+        self.play(clock.animate.set_value(1.),run_time=4.,rate_func=linear)
+        for m in [grain,neutral,relative,trace,trace2]:m.clear_updaters()
+        self.play(Flash(neutral.get_center(),color=BLUE,flash_radius=.16),
+            Flash(relative.get_center(),color=BLUE,flash_radius=.16))
+        self.play(Write(self.equation(rf't=\tau_c={tau*1000:.3f}\,\mathrm{{ms}}:\qquad '
+            rf'\text{{travel through air}}\simeq{travel:.1f}\,\mathrm m,\quad '
+            rf'\text{{separation}}={length:.2f}\,\mathrm m',29,BLUE).shift(DOWN*2.25)))
+        self.play(FadeIn(self.prose('The forward motion carries both objects; it does not separate them.',27,FG).shift(DOWN*3.1)))
+        self.finish()
+
+        self.start_slide('Subtract the common motion to obtain the cloud scale',
+            'Derive the reference-frame difference before naming lambda_T. '
+            'Choose the release point as the origin and ignore the microscopic grain radius. '
+            'The velocity u is one atom thermal launch velocity, with characteristic scale V_T. '
+            'Both the axial and transverse components of displacement are set by u, not by the common bulk velocity.')
+        rows=self.term_definitions([
+            r'\mathbf v:\ \text{grain velocity through air [m/s]}',
+            r'\mathbf u:\ \text{thermal launch velocity relative to the grain [m/s]}',
+            r'\mathbf r_{\rm grain}(t)=\mathbf v\,t',
+            r'\mathbf r_{\rm atom}(t)=(\mathbf v+\mathbf u)t'],[0,1.4,0],33,12.)
+        for row in rows:self.play(Write(row),run_time=.8)
+        self.next_slide('The bulk velocity cancels',
+            notes='Pause on the two actual positions before taking their difference. The common v t cancels, leaving u t in all three directions.')
+        self.play(Write(self.equation(r'\Delta\mathbf r=\mathbf r_{\rm atom}-\mathbf r_{\rm grain}'
+            r'=(\mathbf v+\mathbf u)t-\mathbf v t=\mathbf u t',36,BLUE).shift(DOWN*.55)))
+        self.play(Write(self.equation(r't\sim\tau_c:\qquad|\Delta\mathbf r|\sim V_T\tau_c\equiv\lambda_T',38,GREEN).shift(DOWN*1.85)))
+        self.play(FadeIn(self.prose('The DO coordinates measure separation from the moving grain.',28,FG).shift(DOWN*2.9)))
+        self.citation('Dimant and Oppenheim (2017), Part 1, primary-neutral flight and collision length','https://doi.org/10.1002/2017JA023960')
         self.finish()
 
     def velocity_dependence(self):
@@ -1418,23 +1544,27 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('The distance an evaporated atom separates from the grain sets the DO plasma scale.',25).shift(DOWN*2.4)))
         self.finish()
 
-        self.start_slide('Derive the velocity scaling of the plasma length',
-            'Keep n_A and T_M fixed. First multiply the empirical cross-section power by v in the collision rate. '
-            'Then invert the rate to obtain the thermal collision length. The faster flux and falling cross section '
-            'partly offset one another. These are controlled scalings, not the full changing ablation trajectory.')
-        self.play(Write(self.equation(r'\sigma_c(v)\propto v^{-0.8}',38,GOLD).shift(UP*2.3)))
-        rate=MathTex(r'\nu_c','=',r'n_A',r'\sigma_c(v)',r'v',font_size=40,color=FG).shift(UP*1.2)
-        rate[3].set_color(GOLD);rate[4].set_color(BLUE)
-        self.play(Write(rate))
-        self.play(Indicate(rate[3],color=GOLD),Indicate(rate[4],color=BLUE))
-        expanded=self.equation(r'\nu_c\propto v^{-0.8}\,v^1=v^{-0.8+1}=v^{0.2}',40,BLUE).move_to(rate)
-        self.play(TransformMatchingTex(rate,expanded))
-        thermal=self.equation(r'\lambda_T=\frac{V_T}{\nu_c}\propto\frac{1}{v^{0.2}}=v^{-0.2}',40,GREEN).shift(DOWN*.15)
-        self.play(Write(thermal))
-        fast=self.equation(r'\ell_A=\frac{v}{\nu_c}\propto\frac{v^1}{v^{0.2}}=v^{0.8}',37,GOLD).shift(DOWN*1.5)
-        self.play(Write(fast))
-        self.play(FadeIn(self.prose('These lengths differ because the atom and grain share the large bulk motion.',25).shift(DOWN*2.75)))
-        self.citation('Collision law: Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265')
+
+        self.start_slide('Carry the adopted cross section through the collision clock',
+            'The -0.8 is an empirical model input, not an exponent derived by the DO solution. '
+            'Derive the consequences first for an arbitrary exponent p, then insert p=0.8. '
+            'Hold air density and grain temperature fixed; the thermal launch speed is then fixed.')
+        self.play(FadeIn(self.prose('Hold atmospheric density and grain temperature fixed.',28,FG).shift(UP*2.5)))
+        self.play(Write(self.equation(r'\sigma_c(v)=\sigma_0(v/v_0)^{-p},\qquad p=0.8\ \text{in the adopted law}',33,GOLD).shift(UP*1.5)),run_time=1.2)
+        self.play(FadeIn(self.equation(r'\sigma_0=\sigma_c(v_0)\ [\mathrm{m^2}],\quad '
+            r'v_0:\ \text{reference speed [m/s]},\quad p:\ \text{dimensionless fitted exponent}',23,MUTED).shift(UP*.7)))
+        rate=self.equation(r'\nu_c=n_A\sigma_c v\ \propto\ v^{-p}v=v^{1-p}'
+            r'\quad\Rightarrow\quad\nu_c\propto v^{0.2}',36,BLUE).shift(DOWN*.25)
+        self.play(Write(rate),run_time=1.3)
+        self.next_slide('The thermal distance uses the inverse collision rate',
+            notes='Pause here. Faster motion raises the incoming particle flux, while the adopted decreasing cross section partly compensates it. The resulting collision rate increases only as v^0.2.')
+        self.play(Write(self.equation(r'\lambda_T=V_T/\nu_c\ \propto\ v^{p-1}'
+            r'\quad\Rightarrow\quad\lambda_T\propto v^{-0.2}',36,GREEN).shift(DOWN*1.4)),run_time=1.3)
+        self.next_slide('The air-frame path also includes the forward speed',
+            notes='Pause again before changing reference frame. The air-frame travel distance is v/nu, so it increases as v^0.8 even though the thermal separation decreases. There is no inconsistency: they measure different displacements.')
+        self.play(Write(self.equation(r'\ell_A=v/\nu_c\ \propto\ v^p'
+            r'\quad\Rightarrow\quad\ell_A\propto v^{0.8}',36,GOLD).shift(DOWN*2.5)),run_time=1.3)
+        self.citation('Adopted empirical collision law: Bronshten (1983); Sugar et al. (2018), section 5.3','https://doi.org/10.1002/2018JA025265')
         self.finish()
 
         self.start_slide('What the scaling changes in the meteor head plasma',
@@ -1522,7 +1652,7 @@ class MeteorHeadRCS(Slide):
             'The rotating surface is the actual DO isodensity F_DO=0.05, reconstructed by axisymmetry. '
             'It is one illustrative density level, not a material boundary or the numerical support cutoff. '
             'All three spatial directions have the same scale; colour is only surface shading.')
-        self.play_density_frames('do_physical',center=[0,.2,0],width=9.5,seconds=6.)
+        self.play_gpu_movie('do_physical.mp4',center=[0,.3,0],width=12.7)
         self.play(FadeIn(self.prose('One isodensity surface; plasma also exists outside it.',26,FG).shift(DOWN*3.1)))
         self.finish()
         self.start_slide('Use axial distance and distance from the trajectory axis',
@@ -1659,7 +1789,7 @@ class MeteorHeadRCS(Slide):
         definitions=self.equation(r's=R/\lambda_T,\quad H=|\mu|f_1+\mu f_2+f_3,\quad F_{\rm DO}=H/s,\quad\mu=\cos\theta',28,MUTED).shift(UP*.25)
         self.play(Write(definitions))
         self.play(Write(self.equation(r'\frac{H}{R}=\frac{1}{\lambda_T}\frac{H}{s}=\frac{F_{\rm DO}}{\lambda_T}',35,GREEN).shift(DOWN*.7)))
-        self.play(Write(self.equation(r'n_e\simeq n_i=n_\star F_{\rm DO},\qquad'
+        self.play(Write(self.equation(r'n_e\simeq n_i=n_\star F_{\rm DO},\qquad '
             r'\boxed{n_\star=\frac{8\pi a^2n_0n_AG_{\rm ion}}{\sqrt3\lambda_T}\left(1+\frac{m_{\rm Si}}{m_A}\right)}',34,BLUE).shift(DOWN*1.85)))
         self.play(FadeIn(self.equation(r'm_A=\rho_A/n_A:\ \text{mean air-particle mass [kg]};\quad R:\ \text{distance from grain [m]}',23,MUTED).shift(DOWN*2.9)))
         self.citation('Dimant and Oppenheim (2017), Part 2, equations 45--48','https://doi.org/10.1002/2017JA023963')
@@ -1669,7 +1799,7 @@ class MeteorHeadRCS(Slide):
             'Substitute a squared n0 from the whole-surface flux balance and G_ion from the primary ionization '
             'probability. Color carries the same factor across the substitutions. pi and grain area cancel; '
             'the remaining numerical coefficient is shown explicitly. No additional grain area is applied afterward.')
-        substitutions=self.equation(r'a^2n_0=\frac{\dot N_{\rm vap}}{4\pi\sqrt{2/\pi}V_T},\qquad'
+        substitutions=self.equation(r'a^2n_0=\frac{\dot N_{\rm vap}}{4\pi\sqrt{2/\pi}V_T},\qquad '
             r' G_{\rm ion}=\frac{\beta_{\rm Si}\sigma_c}{4\pi}',34,GREEN).shift(UP*2.15)
         self.play(Write(substitutions))
         first=self.equation(r'n_\star=\frac{8\pi}{\sqrt3\lambda_T}'
@@ -1690,12 +1820,12 @@ class MeteorHeadRCS(Slide):
             'lambda_T=V_T/(n_A sigma_c v). The explicit cross section and speed combine into the same lambda_T '
             'that already sets the spatial coordinates. They are not absent from the physics. The final result '
             'gives a volume-density scale from production per travelled metre divided by a squared collision length.')
-        self.play(Write(self.equation(r'q=\frac{\beta_{\rm Si}\dot N_{\rm vap}}{v}\quad\Rightarrow\quad'
+        self.play(Write(self.equation(r'q=\frac{\beta_{\rm Si}\dot N_{\rm vap}}{v}\quad\Rightarrow\quad '
             r'\beta_{\rm Si}\dot N_{\rm vap}=qv',38,GREEN).shift(UP*2.3)))
         first=self.equation(r'n_\star=\frac{q\,(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\lambda_T}'
             r'\frac{n_A\sigma_c v}{V_T}',39).shift(UP*.9)
         self.play(Write(first))
-        identity=self.equation(r'\lambda_T=\frac{V_T}{n_A\sigma_c v}\quad\Rightarrow\quad'
+        identity=self.equation(r'\lambda_T=\frac{V_T}{n_A\sigma_c v}\quad\Rightarrow\quad '
             r'\frac{n_A\sigma_c v}{V_T}=\frac{1}{\lambda_T}',35,GOLD).shift(DOWN*.35)
         self.play(Write(identity))
         result=self.equation(r'\boxed{n_\star=\frac{q(1+m_{\rm Si}/m_A)}{2\sqrt{6\pi}\lambda_T^2}}',44,BLUE).shift(DOWN*1.75)
@@ -1795,6 +1925,120 @@ class MeteorHeadRCS(Slide):
         self.citation('Roden and Gedney (2000), convolution PML','https://doi.org/10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A')
         self.finish()
 
+
+    def charge_separation_picture(self, y=1.0):
+        """Uniform slab, ions fixed; positive displacement of the electron fluid."""
+        left=-5.7; right=-2.0; delta=.65; height=1.45
+        ions=Rectangle(width=right-left,height=height,color=RED,stroke_width=2).move_to([(left+right)/2,y,0])
+        electrons=Rectangle(width=right-left,height=height,color=GREEN,fill_opacity=.12,stroke_width=2).move_to([(left+right)/2,y,0])
+        self.add(ions,electrons)
+        self.play(electrons.animate.shift(RIGHT*delta),run_time=1.5)
+        positive=Rectangle(width=delta,height=height,color=RED,fill_opacity=.18,stroke_width=0).move_to([left+delta/2,y,0])
+        negative=Rectangle(width=delta,height=height,color=GREEN,fill_opacity=.18,stroke_width=0).move_to([right+delta/2,y,0])
+        self.play(FadeIn(positive),FadeIn(negative))
+        self.add(self.equation('+',28,RED).move_to(positive),self.equation('-',28,GREEN).move_to(negative))
+        displacement=DoubleArrow([left,y-height/2-.35,0],[left+delta,y-height/2-.35,0],buff=0,color=GREEN,tip_length=.12)
+        self.play(GrowArrow(displacement))
+        self.add(self.equation(r'\xi',26,GREEN).move_to([left+delta/2,y-height/2-.75,0]))
+        return left,right,delta,height
+
+    def plasma_frequency_derivation(self):
+        self.start_slide('Displacing electrons exposes equal and opposite charge',
+            'A local, uniform, cold plasma slab has fixed ions and mobile electrons. '
+            'Displace the entire electron fluid by a small xi along positive x. '
+            'An ion-only layer remains on the left; an equal electron excess appears on the right. '
+            'The diagram is a one-dimensional slab model, not the finite meteor-cloud eigenmode.')
+        self.play(FadeIn(self.prose('Fixed positive ions; electrons displaced to the right',26).shift(UP*2.55)))
+        self.charge_separation_picture(.9)
+        self.add(self.prose('Positive excess',22,RED).move_to([-5.4,2.,0]),
+                 self.prose('Negative excess',22,GREEN).move_to([-1.7,2.,0]))
+        defs=self.term_definitions([
+            r'n_e:\ \text{equilibrium electron number density [m}^{-3}\text{]}',
+            r'\xi:\ \text{electron-fluid displacement [m]}',
+            r'S:\ \text{slab face area [m}^2\text{]};\quad e>0:\ \text{charge magnitude [C]}'],
+            [2.8,1.1,0],24,6.2)
+        self.play(FadeIn(defs))
+        self.play(Write(self.equation(r'\text{exposed volume}=S\xi\quad\Rightarrow\quad N=n_eS\xi',33).shift(DOWN*1.45)))
+        self.next_slide('Count charge in the exposed layer',
+            notes='Number density times exposed volume is the missing-electron count. Each missing electron leaves charge plus e. Divide the charge by face area to obtain the surface-charge magnitude. Sigma_q is not a collision cross section.')
+        self.play(Write(self.equation(r'Q=eN=n_eeS\xi,\qquad \sigma_q\equiv Q/S=n_ee\xi\quad[\mathrm{C/m^2}]',34,BLUE).shift(DOWN*2.45)))
+        self.play(FadeIn(self.prose('The two thin edge layers carry +Q and -Q; the interior remains neutral.',25).shift(DOWN*3.15)))
+        self.citation('Fitzpatrick, Plasma Physics: Plasma Frequency','https://farside.ph.utexas.edu/teaching/plasma/Plasma/node5.html')
+        self.finish()
+
+        self.start_slide('Gauss law turns separated charge into a restoring field',
+            'Approximate the thin exposed layers as infinite sheets. Their fields cancel outside and add inside. '
+            'A Gaussian pillbox around the positive sheet has one face in the zero exterior field and one in the interior field. '
+            'Its flux is E S, and its enclosed charge is sigma_q S. This gives positive E_x for positive electron displacement.')
+        x0,x1,delta,h=self.charge_separation_picture(1.)
+        self.play(GrowArrow(Arrow([x0+delta+.2,1.,0],[x1-.25,1.,0],buff=0,color=BLUE)))
+        self.add(self.equation(r'E_x>0',26,BLUE).move_to([-3.5,1.55,0]),
+            self.prose('Fields cancel outside; add inside',23).move_to([-3.6,-.55,0]))
+        pill=DashedVMobject(Rectangle(width=1.45,height=2.1,color=GOLD).move_to([x0+.3,1.,0]))
+        self.play(Create(pill))
+        self.add(self.prose('Gaussian pillbox',22,GOLD).move_to([-5.3,2.5,0]))
+        self.play(Write(self.equation(r'\oint\mathbf E\cdot d\mathbf S=Q_{\rm enclosed}/\epsilon_0',31).move_to([2.8,2.,0])))
+        self.play(Write(self.equation(r'E_xS=\sigma_qS/\epsilon_0',34,BLUE).move_to([2.8,.8,0])))
+        self.play(Write(self.equation(r'E_x=\sigma_q/\epsilon_0=n_ee\xi/\epsilon_0',35,BLUE).shift(DOWN*1.4)))
+        self.next_slide('The electron force points back toward neutrality',
+            notes='An electron has charge minus e, so its force is opposite to the restoring electric field. The field points in the displacement direction, whereas the force points against displacement. The sign is the origin of the stable oscillator.')
+        self.play(Write(self.equation(r'F_x=(-e)E_x=-\frac{n_ee^2}{\epsilon_0}\xi',37,RED).shift(DOWN*2.35)))
+        self.play(FadeIn(self.equation(r'\epsilon_0:\ \text{vacuum permittivity [F/m]};\quad F_x:\ \text{force on one electron [N]}',24,MUTED).shift(DOWN*3.2)))
+        self.citation('Feynman Lectures II, section 7-4: plasma oscillations','https://www.feynmanlectures.caltech.edu/II_07.html')
+        self.finish()
+
+        self.start_slide('Electron inertia and the restoring field make an oscillator',
+            'Newton law applied to one electron gives a linear oscillator. Identify the coefficient of xi '
+            'with omega_p squared. Use angular frequency in radians per second, and f_p=omega_p/(2 pi) in Hz. '
+            'This ideal derivation neglects collisions, magnetic field and pressure; those are restored in the response model.')
+        self.play(Write(self.equation(r'm_e\ddot\xi=-\frac{n_ee^2}{\epsilon_0}\xi',39,BLUE).shift(UP*2.25)))
+        self.play(Write(self.equation(r'\ddot\xi+\underbrace{\frac{n_ee^2}{\epsilon_0m_e}}_{\omega_p^2}\xi=0',42).shift(UP*.9)))
+        self.next_slide('Identify the natural oscillation frequency',
+            notes='Compare with the harmonic oscillator x double dot plus omega squared x equals zero. The square root follows from that equation, not a dimensional guess. Four times the density gives twice the angular frequency.')
+        self.play(Write(self.equation(r'\boxed{\omega_p=\sqrt{\frac{n_ee^2}{\epsilon_0m_e}}},\qquad \xi(t)=\xi_0\cos(\omega_pt)',39,GREEN).shift(DOWN*.65)))
+        self.play(Write(self.equation(r'\omega_p:\ \mathrm{rad/s};\quad f_p=\omega_p/(2\pi):\ \mathrm{Hz};\quad m_e:\ \text{electron mass [kg]}',24,MUTED).shift(DOWN*1.75)))
+        self.play(FadeIn(self.prose('A denser electron fluid creates a stronger restoring field.',26).shift(DOWN*2.5)))
+        self.play(Write(self.equation(r'n_e\longrightarrow4n_e\quad\Rightarrow\quad\omega_p\longrightarrow2\omega_p',31,BLUE).shift(DOWN*3.15)))
+        self.citation('Feynman Lectures II, equations 7.22--7.25','https://www.feynmanlectures.caltech.edu/II_07.html')
+        self.finish()
+
+    def polarization_derivation(self):
+        self.start_slide('Polarization measures charge separation per unit volume',
+            'P is electric dipole moment per unit volume. A positive charge at r_i and an electron at r_i+xi '
+            'have dipole p=e r_i-e(r_i+xi)=-e xi. Summing n_e pairs per unit volume gives P=-n_e e xi. '
+            'This is the linear local displacement description with ions fixed; P points opposite to electron displacement.')
+        ion=Dot([-4.8,1.2,0],color=RED,radius=.12)
+        electron=Dot([-2.4,1.2,0],color=GREEN,radius=.1)
+        self.play(FadeIn(ion),FadeIn(electron))
+        self.add(self.equation('+e',26,RED).move_to([-4.8,1.9,0]),
+            self.equation('-e',26,GREEN).move_to([-2.4,1.9,0]))
+        self.play(GrowArrow(Arrow([-4.65,.6,0],[-2.55,.6,0],buff=0,color=GREEN)))
+        self.add(self.equation(r'\boldsymbol\xi=\mathbf r_e-\mathbf r_i',27,GREEN).move_to([-3.6,-.05,0]))
+        self.play(GrowArrow(Arrow([-2.55,2.55,0],[-4.65,2.55,0],buff=0,color=BLUE)))
+        self.add(self.equation(r'\mathbf p',26,BLUE).move_to([-3.6,2.95,0]))
+        self.play(FadeIn(self.equation(r'\mathbf r_i,\mathbf r_e:\ \text{ion and electron positions [m]}',23,MUTED).move_to([2.8,.5,0])))
+        self.play(Write(self.equation(r'\mathbf p=e\mathbf r_i-e\mathbf r_e=-e\boldsymbol\xi',32,BLUE).move_to([2.8,1.55,0])))
+        self.play(Write(self.equation(r'\mathbf P\equiv\frac{\sum\mathbf p}{\Delta V}=-n_ee\boldsymbol\xi',36,BLUE).shift(DOWN*1.25)))
+        self.play(FadeIn(self.equation(r'\mathbf p:\ \text{dipole moment [C m]};\quad \mathbf P:\ \text{dipole moment per volume [C/m}^2\text{]}',24,MUTED).shift(DOWN*2.35)))
+        self.play(FadeIn(self.prose('The dipole arrow points from the negative charge toward the positive charge.',25).shift(DOWN*3.15)))
+        self.citation('Feynman Lectures II, chapters 10--11: polarization and dielectric response','https://www.feynmanlectures.caltech.edu/II_10.html')
+        self.finish()
+
+        self.start_slide('Changing polarization is an electric current',
+            'With density held fixed, differentiate P=-n_e e xi. The time derivative of electron displacement '
+            'is electron mean velocity u_e, so partial_t P=-n_e e u_e=J. For a single harmonic with exp(-i omega t), '
+            'a time derivative is multiplication by -i omega. This is the bridge from mechanical response to permittivity.')
+        self.play(Write(self.equation(r'\mathbf P=-n_ee\boldsymbol\xi,\qquad \partial_t n_e=0',37,BLUE).shift(UP*2.3)))
+        self.play(Write(self.equation(r'\partial_t\mathbf P=-n_ee\,\partial_t\boldsymbol\xi=-n_ee\mathbf u_e=\mathbf J',38,GREEN).shift(UP*.95)))
+        self.play(FadeIn(self.equation(r'\mathbf u_e=\partial_t\boldsymbol\xi:\ \text{electron mean velocity [m/s]};\quad \mathbf J:\ \mathrm{A/m^2}',24,MUTED).shift(DOWN*.2)))
+        self.next_slide('Write the same relation for a sinusoidal field',
+            notes='Introduce the complex exponential time convention explicitly. Physical fields are the real parts. Differentiating exp(-i omega t) produces minus i omega. P is a displacement response; its derivative is the moving-electron current.')
+        self.play(Write(self.equation(r'\mathbf P(t)=\operatorname{Re}\{\widetilde{\mathbf P}e^{-i\omega t}\}',34).shift(DOWN*1.25)))
+        self.play(Write(self.equation(r'\widetilde{\mathbf J}=-i\omega\widetilde{\mathbf P},\qquad \widetilde{\mathbf P}=\frac{i}{\omega}\widetilde{\mathbf J}',36,GREEN).shift(DOWN*2.35)))
+        self.play(FadeIn(self.prose('Next: use the current response to find polarization, then permittivity.',25).shift(DOWN*3.2)))
+        self.citation('Feynman Lectures II, section 7-4; linear polarization response','https://www.feynmanlectures.caltech.edu/II_07.html')
+        self.finish()
+
     def plasma_response(self):
         self.start_slide('Start from the force on an electron',
             'Cold electron-fluid momentum equation: electric and magnetic Lorentz forces, plus linear momentum relaxation. '
@@ -1808,11 +2052,12 @@ class MeteorHeadRCS(Slide):
         self.play(Write(law))
         defs=self.term_definitions([r'\mathbf u_e:\ \text{electron mean velocity [m/s]};\quad e>0:\ \text{elementary charge [C]}',
             r'm_e:\ \text{electron mass [kg]};\quad\mathbf E:\ \text{total electric field [V/m]};\quad\mathbf B_0:\ \text{background field [T]}',
-            r'\nu_{en}=\sum_s n_s\langle\sigma_{m,s}v_e\rangle:\ \text{electron--neutral momentum relaxation [s}^{-1}\text{]}'],[0,-1.8,0],24,12.3)
+            r'\nu_{en}:\ \text{electron--neutral momentum relaxation [s}^{-1}\text{]}'],[0,-1.8,0],24,12.3)
         self.play(FadeIn(defs))
         self.play(FadeIn(self.prose('Collision rate uses electron energies and neutral species, rather than meteoroid speed.',24).shift(DOWN*3.1)))
         self.citation('Marshall and Close (2015), section 2: cold, collisional, magnetized response','https://doi.org/10.1002/2015JA021238')
         self.finish()
+        self.plasma_frequency_derivation()
         self.start_slide('Convert electron motion into electric current',
             'For fixed local electron density, multiply the momentum equation by minus n_e e/m_e. '
             'The sign comes from the negative electron charge. Define omega_p squared and the positive-e gyrovector '
@@ -1826,21 +2071,7 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.equation(r'\epsilon_0:\ \text{vacuum permittivity [F/m]};\quad n_e:\ \text{fixed local density [m}^{-3}\text{]}',24,MUTED).shift(DOWN*3.2)))
         self.citation('Marshall and Close (2015), equation 6','https://doi.org/10.1002/2015JA021238')
         self.finish()
-        self.start_slide('Why does electron density define a plasma frequency?',
-            'Displace a uniform electron population by xi against fixed positive ions. Gauss law gives a restoring '
-            'electric field n_e e xi/epsilon_0. Newton law is then a harmonic oscillator with omega_p squared. '
-            'This illustrates the local frequency scale, not a finite-cloud eigenmode calculation.')
-        ions=VGroup(*[Dot([-4.8+.5*i,.8,0],color=RED,radius=.07) for i in range(7)])
-        electrons=VGroup(*[Dot([-4.8+.5*i,.35,0],color=GREEN,radius=.06) for i in range(7)])
-        self.add(ions,electrons);self.play(electrons.animate.shift(RIGHT*.3))
-        self.add(self.equation(r'\xi',27,GREEN).move_to([-2.7,-.2,0]))
-        self.play(Write(self.equation(r'E=\frac{n_e e\xi}{\epsilon_0}',36,BLUE).move_to([2.6,1.2,0])))
-        self.play(Write(self.equation(r'm_e\ddot\xi=-eE\quad\Rightarrow\quad\ddot\xi+\frac{n_e e^2}{\epsilon_0m_e}\xi=0',32).move_to([2.3,-.1,0])))
-        self.play(Write(self.equation(r'\boxed{\omega_p=\sqrt{n_e e^2/(\epsilon_0m_e)}}',39,GREEN).shift(DOWN*1.65)))
-        self.play(electrons.animate.shift(LEFT*.6),run_time=.5);self.play(electrons.animate.shift(RIGHT*.3),run_time=.5)
-        self.play(FadeIn(self.prose('More electrons per volume give a stronger restoring field and a faster response.',26).shift(DOWN*2.8)))
-        self.citation('Cold-plasma response used by Marshall and Close (2015), section 2','https://doi.org/10.1002/2015JA021238')
-        self.finish()
+        self.polarization_derivation()
         self.start_slide('Derive the collisional dielectric response',
             'Set B0=0 and use fields proportional to exp(-i omega t), with positive real omega. '
             'J=sigma E, J=partial_t P and D=epsilon_0 E+P give the stated dielectric. '
@@ -1868,71 +2099,157 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.equation(r'\mathbf E_{\rm inc}:\ \text{known radar wave};\quad\mathbf E_s:\ \text{unknown scattered field}\quad[\mathrm{V/m}]',25,MUTED).shift(DOWN*2.8)))
         self.citation('Marshall and Close (2015), section 2: self-consistent plasma scattering','https://doi.org/10.1002/2015JA021238')
         self.finish()
-        self.start_slide('From Maxwell curls to the Yee time step',
-            'Faraday law advances H from the E curl. Ampere-Maxwell law advances E from the H curl minus plasma current. '
-            'Replace derivatives by centred differences. Superscripts are time samples, not powers.')
-        self.play(Write(self.equation(r'\mu_0\partial_t\mathbf H_s=-\nabla\times\mathbf E_s',35,BLUE).shift(UP*2.3)))
-        self.play(Write(self.equation(r'\mathbf H_s^{n+1/2}=\mathbf H_s^{n-1/2}-\frac{\Delta t}{\mu_0}\nabla_h\times\mathbf E_s^n',34,BLUE).shift(UP*1.2)))
-        self.play(Write(self.equation(r'\epsilon_0\partial_t\mathbf E_s=\nabla\times\mathbf H_s-\mathbf J',35,GREEN).shift(DOWN*.05)))
-        self.play(Write(self.equation(r'\mathbf E_s^{n+1}=\mathbf E_s^n+\frac{\Delta t}{\epsilon_0}(\nabla_h\times\mathbf H_s^{n+1/2}-\mathbf J^{n+1/2})',33,GREEN).shift(DOWN*1.15)))
-        defs=self.term_definitions([r'\mathbf H_s:\ \text{scattered magnetic field [A/m]};\quad\mathbf J:\ \text{plasma current [A/m}^2\text{]}',
-            r'n:\ \text{time-step index};\quad\Delta t:\ \text{time step [s]};\quad\nabla_h\times:\ \text{discrete spatial curl}',
-            r'\mu_0:\ \text{vacuum permeability [H/m]};\quad\epsilon_0:\ \text{vacuum permittivity [F/m]}'],[0,-2.65,0],24,12.3)
-        self.play(FadeIn(defs))
+        self.start_slide('Two coupled laws propagate an electromagnetic wave',
+            'Faraday law couples an electric-field curl to changing magnetic field. '
+            'Ampere-Maxwell law couples a magnetic-field curl to changing electric field and conduction current. '
+            'Together, with the charge/divergence constraints and initial conditions, they propagate electromagnetic waves. '
+            'The plasma current adds a material response; scattered fields satisfy the incident-subtracted equations.')
+        self.play(FadeIn(self.prose('Faraday: a circulating electric field changes the magnetic field.',27,BLUE).shift(UP*2.55)))
+        self.play(Write(self.equation(r'\mu_0\partial_t\mathbf H_s=-\nabla\times\mathbf E_s',38,BLUE).shift(UP*1.55)))
+        self.play(FadeIn(self.equation(r'\mu_0:\ \text{vacuum permeability [H/m]}',24,MUTED).shift(UP*.9)))
+        self.next_slide('The Ampere-Maxwell partner',
+            notes='The displacement-current term epsilon_0 partial_t E is essential for a vacuum wave. In plasma, electron current also contributes. These two curl equations are coupled; neither is an independent propagation rule for only one field.')
+        self.play(FadeIn(self.prose('Ampere-Maxwell: a circulating magnetic field changes E and carries current.',26,GREEN).shift(UP*.35)))
+        self.play(Write(self.equation(r'\epsilon_0\partial_t\mathbf E_s=\nabla\times\mathbf H_s-\mathbf J',38,GREEN).shift(DOWN*.7)))
+        self.play(Write(self.equation(r'\mathbf J=0:\quad \partial_t^2\mathbf E=c^2\nabla^2\mathbf E,\qquad c=(\mu_0\epsilon_0)^{-1/2}',31).shift(DOWN*1.9)))
+        self.play(FadeIn(self.prose('The electric and magnetic fields sustain the travelling wave together.',26).shift(DOWN*2.8)))
+        self.play(FadeIn(self.equation(r'\mathbf E_s:\ \mathrm{V/m};\quad\mathbf H_s:\ \mathrm{A/m};\quad\mathbf J:\ \mathrm{A/m^2};\quad s:\ \text{scattered field}',24,MUTED).shift(DOWN*3.3)))
+        self.citation('Yee (1966), Maxwell curl equations and staggered discretization','https://doi.org/10.1109/TAP.1966.1138693')
+        self.finish()
+
+        self.start_slide('The Yee grid alternates magnetic and electric updates',
+            'E samples live at integer times n Delta t. H samples live at half times (n+1/2) Delta t. '
+            'Replace each time derivative by a centred difference and each spatial curl by its staggered-grid curl. '
+            'Superscripts label time samples, not powers. The plasma-current update is synchronized to the half step.')
+        self.play(FadeIn(self.equation(r't_n=n\Delta t:\quad \mathbf E^n;\qquad t_{n+1/2}=(n+\tfrac12)\Delta t:\quad \mathbf H^{n+1/2},\mathbf J^{n+1/2}',27).shift(UP*2.65)))
+        self.play(FadeIn(self.prose('Faraday law: use the electric curl to advance H by one time step.',25,BLUE).shift(UP*1.9)))
+        self.play(Write(self.equation(r'\mu_0\frac{\mathbf H_s^{n+1/2}-\mathbf H_s^{n-1/2}}{\Delta t}=-\nabla_h\times\mathbf E_s^n',32,BLUE).shift(UP*.95)))
+        self.play(Write(self.equation(r'\mathbf H_s^{n+1/2}=\mathbf H_s^{n-1/2}-\frac{\Delta t}{\mu_0}\nabla_h\times\mathbf E_s^n',32,BLUE).shift(DOWN*.05)))
+        self.next_slide('Then advance the electric field',
+            notes='Use the newly updated magnetic field and the half-step plasma current. This is the discrete Ampere-Maxwell law. The electron current response was derived in the preceding section and is driven by the total electric field.')
+        self.play(FadeIn(self.prose('Ampere-Maxwell law: use the new magnetic curl and plasma current to advance E.',25,GREEN).shift(DOWN*1.05)))
+        self.play(Write(self.equation(r'\mathbf E_s^{n+1}=\mathbf E_s^n+\frac{\Delta t}{\epsilon_0}(\nabla_h\times\mathbf H_s^{n+1/2}-\mathbf J^{n+1/2})',33,GREEN).shift(DOWN*2.05)))
+        self.play(FadeIn(self.equation(r'\Delta t:\ \text{time step [s]};\quad n:\ \text{time index};\quad \nabla_h\times:\ \text{curl on the staggered spatial grid}',23,MUTED).shift(DOWN*3.05)))
         self.citation('Yee (1966); Marshall and Close (2015), equations 4--6','https://doi.org/10.1109/TAP.1966.1138693')
         self.finish()
-        self.start_slide('Choose a step short enough to resolve both responses',
-            'Vacuum Courant limit on an equal-spacing 3D grid: dx/(c sqrt(3)). This solver uses dx/(2c) and '
-            'a plasma/gyrofrequency constraint. The 0.7 factor is a solver margin, not a physical constant.')
-        self.stack(self.equation(r'\Delta t_{\rm CFL}\leq\frac{1}{c\sqrt{\Delta x^{-2}+\Delta y^{-2}+\Delta z^{-2}}}',37),
-            self.equation(r'\Delta x=\Delta y=\Delta z:\quad\Delta t_{\rm CFL}\leq\frac{\Delta x}{c\sqrt3}',34,BLUE),
-            self.equation(r'\Delta t=\min\!\left[\frac{\Delta x}{2c},\frac{0.7}{\sqrt{\omega_{p,\max}^2+|\boldsymbol\Omega_e|^2}}\right]',36,GREEN),
-            self.equation(r'\Delta x:\ \text{cell spacing [m]};\quad c:\ \text{light speed [m/s]};\quad\omega_{p,\max}:\ \text{largest local plasma frequency [rad/s]}',23,MUTED),
-            self.prose('Stability still requires checks of spatial resolution, box size, and convergence.',25))
+        self.start_slide('Is half a grid cell per time step safe?',
+            'For the vacuum Yee scheme on a cubic three-dimensional grid, the von Neumann dispersion relation '
+            'bounds the Courant number S=c Delta t/Delta x by one over sqrt(3). S=0.5 is inside that bound. '
+            'This is stability of the vacuum update, not a guarantee of spatial accuracy or of a coupled material update.')
+        self.play(FadeIn(self.prose('Test the discrete wave, rather than judging the distance by eye.',27).shift(UP*2.6)))
+        self.play(Write(self.equation(r'\sin^2\!\frac{\omega\Delta t}{2}=S^2\!\left[\sin^2\!\frac{k_x\Delta x}{2}+\sin^2\!\frac{k_y\Delta x}{2}+\sin^2\!\frac{k_z\Delta x}{2}\right]',31,BLUE).shift(UP*1.45)))
+        self.play(FadeIn(self.equation(r'S\equiv c\Delta t/\Delta x:\ \text{Courant number};\quad k_x,k_y,k_z:\ \text{spatial wavevector components}',23,MUTED).shift(UP*.45)))
+        self.next_slide('Bound all three spatial directions',
+            notes='Each squared sine is at most one. To keep the temporal frequency real for every spatial grid mode, require 3 S squared no greater than one. If S is too large, some grid modes grow exponentially.')
+        self.play(Write(self.equation(r'3S^2\le1\quad\Rightarrow\quad S\le1/\sqrt3\simeq0.577',36).shift(DOWN*.65)))
+        self.play(Write(self.equation(r'\Delta t=\Delta x/(2c)\quad\Rightarrow\quad S=0.5<0.577',38,GREEN).shift(DOWN*1.85)))
+        self.play(FadeIn(self.prose('Stable in vacuum; refine the mesh and time step to check phase and RCS accuracy.',25).shift(DOWN*3.0)))
+        self.citation('Schneider, Understanding the FDTD Method, chapters 7 and 9','https://eecs.wsu.edu/~schneidj/ufdtd/')
+        self.finish()
+
+        self.start_slide('The plasma adds a second, faster response to resolve',
+            'The solver also restricts the step by plasma and gyrofrequency. The coefficient 0.7 is an implementation '
+            'margin, not a universal coupled-scheme stability theorem. Material-update stability and numerical phase '
+            'accuracy must be tested against analytic cases and step refinement, separately from the vacuum CFL test.')
+        self.play(Write(self.equation(r'\Delta t=\min\!\left[\frac{\Delta x}{2c},\frac{0.7}{\sqrt{\omega_{p,\max}^2+|\boldsymbol\Omega_e|^2}}\right]',39,GREEN).shift(UP*2.1)))
+        self.play(FadeIn(self.equation(r'\omega_{p,\max}:\ \text{largest local plasma frequency [rad/s]};\quad|\boldsymbol\Omega_e|:\ \text{gyrofrequency [rad/s]}',24,MUTED).shift(UP*.7)))
+        self.play(FadeIn(self.prose('First bound: propagate the EM wave stably on the Yee grid.',27,BLUE).shift(DOWN*.35)))
+        self.play(FadeIn(self.prose('Second bound: sample the electron response; 0.7 is a solver margin.',27,GREEN).shift(DOWN*1.2)))
+        self.play(FadeIn(self.prose('Then check convergence: smaller cells and steps must reproduce the echo.',27).shift(DOWN*2.2)))
+        self.play(FadeIn(self.prose('A stable calculation can still have inaccurate phase or scattering amplitude.',25,RED).shift(DOWN*3.05)))
         self.citation('Yee (1966); Marshall and Close (2015), plasma FDTD','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def response_animation(self):
-        # Source: Schematic animation: meteor_head_rcs.py; harmonic current response, exp(-i omega
-        # t)
-        self.start_slide('The induced current is the radiating source',
-            'Schematic only: illustrates a phase-lagged cold-plasma current and a backward wave. '
-            'These curves are not exported FDTD fields and no quantitative amplitude is implied.')
-        phase=ValueTracker(0)
-        sphere=Circle(1.05,color=BLUE,fill_opacity=.15).move_to([1,0,0])
-        incoming=always_redraw(lambda:ParametricFunction(lambda s:np.array([s,1+.32*np.cos(2.2*s-phase.get_value()),0]),t_range=[-5.6,-.3],color=BLUE))
-        outgoing=always_redraw(lambda:ParametricFunction(lambda s:np.array([s,-1+.22*np.cos(2.2*s+phase.get_value()),0]),t_range=[-5.6,-.3],color=GOLD))
-        current=always_redraw(lambda:Arrow([1,0,0],[1,.04+.85*(.3*np.cos(phase.get_value())+np.sin(phase.get_value()))/np.sqrt(1.09),0],buff=0,color=GREEN,max_tip_length_to_length_ratio=.2))
-        self.add(sphere,incoming,outgoing,current)
-        self.add(self.prose('Incident field',24,BLUE).move_to([-3,2,0]),self.prose('Scattered field',24,GOLD).move_to([-3,-2,0]),
-                 self.equation(r'\mathbf J(t)',32,GREEN).move_to([3,.5,0]))
-        self.play(phase.animate.set_value(6*PI),run_time=3.2,rate_func=linear)
-        for item in [incoming,outgoing,current]:item.clear_updaters()
-        self.play(FadeIn(self.prose('Total field drives J; J changes the field that drives it.',28,FG).shift(DOWN*2.7)))
+        self.start_slide('Watch the radar pulse drive current in the plasma cloud',
+            'Actual small-grid Rust FDTD solution, frozen DO density. Left: total electric Ez in V/m; '
+            'right: physical electron Jz in A/m2, in the same xz plane. The incident peak field is 1 V/m, '
+            'frequency 53.5 MHz. The wave propagates along x, the meteor trajectory is along z. '
+            'The signed current scale is fixed for the whole movie; asinh makes weak current visible. '
+            'E and J have their native half-step Yee timing offset. Playback is slowed; the nanosecond clock is physical. '
+            'This illustrates current formation, not a converged quantitative RCS calculation.')
+        self.play_gpu_movie('fdtd_current.mp4',center=[0,.25,0],width=12.7)
+        self.play(FadeIn(self.prose('The total field drives electron current; that current generates the scattered field.',26,FG).shift(DOWN*3.2)))
+        self.citation('Cold-plasma FDTD formulation: Marshall and Close (2015)','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def far_field(self):
-        # Source: Far-zone induced-current integral: fdtd/src/main.rs; E-hat is the phasor at the
-        # radar frequency
-        self.start_slide('Fourier transform the current, then sum radiation',
-            'The Fourier sign is consistent with exp(-i omega t). Spatial phase and transverse projection are required. '
-            'Because J came from the Maxwell solve, this radiation integral contains field feedback rather than a Born density sum.')
-        self.stack(self.equation(r'\widehat{\mathbf J}(\mathbf r,\omega_0)\ \propto\ \int\mathbf J(\mathbf r,t)e^{+i\omega_0t}\,dt',35,GREEN),
-            self.equation(r'\mathbf A(\widehat{\mathbf n})=(\mathbf I-\widehat{\mathbf n}\widehat{\mathbf n}^{\mathsf T})\int\widehat{\mathbf J}(\mathbf r)e^{-ik\widehat{\mathbf n}\cdot\mathbf r}\,d^3r',35),
-            self.equation(r'\widehat{\mathbf n}:\ \text{viewing direction};\quad k=\omega_0/c;\quad Z_0:\ \text{vacuum impedance}',24,MUTED),
-            self.equation(r'\widehat{\mathbf E}_s(R\widehat{\mathbf n})\simeq\frac{ikZ_0e^{ikR}}{4\pi R}\,\mathbf A(\widehat{\mathbf n})',40,GOLD),
-            self.prose('Current amplitudes interfere; density alone is not the radiation amplitude.',26))
+        self.start_slide('Keep the current amplitude and its phase at the radar frequency',
+            'Write the real current as the real part of a complex amplitude times exp(-i omega_0 t). '
+            'The hat on a field denotes its complex sinusoidal amplitude; the hat on n denotes a unit direction. '
+            'A finite time Fourier integral needs its normalization to give an amplitude, not amplitude times time.')
+        self.play(Write(self.equation(r'\mathbf J(\mathbf r,t)=\operatorname{Re}\{\widehat{\mathbf J}(\mathbf r)e^{-i\omega_0t}\}',38,GREEN).shift(UP*2.2)))
+        self.play(Write(self.equation(r'\widehat{\mathbf J}(\mathbf r)=\frac2T\int_{t_0}^{t_0+T}\mathbf J(\mathbf r,t)e^{+i\omega_0t}\,dt',37).shift(UP*.6)))
+        self.play(FadeIn(self.prose('Over complete cycles after transients; the phase carries the timing of each current.',26).shift(DOWN*.65)))
+        self.play(FadeIn(self.equation(r'\widehat{\mathbf J}:\ \mathrm{A/m^2};\quad\omega_0=2\pi f_0:\ \mathrm{rad/s};\quad T:\ \text{interval [s]};\quad t_0:\ \text{window start [s]}',25,MUTED).shift(DOWN*1.6)))
+        self.play(FadeIn(self.prose('Each small current element radiates. Add the complex fields, including travel phase.',27,BLUE).shift(DOWN*2.75)))
+        self.finish()
+
+        self.start_slide('The magnetic vector potential carries radiation from the current',
+            'Use the outgoing free-space Green function in Lorenz gauge. A is the magnetic vector potential, '
+            'with B=curl A and E=-grad phi-partial_t A. Expand distance to an observer far from the source. '
+            'The scalar potential supplies the longitudinal cancellation; the far electric radiation is transverse.')
+        self.play(Write(self.equation(r'\mathbf B=\nabla\times\mathbf A,\qquad\mathbf E=-\nabla\phi-\partial_t\mathbf A',34,BLUE).shift(UP*2.5)))
+        self.play(FadeIn(self.equation(r'\mathbf A:\ \text{magnetic vector potential [T m]};\quad \phi:\ \text{electric scalar potential [V]}',24,MUTED).shift(UP*1.7)))
+        self.play(Write(self.equation(r'\widehat{\mathbf A}(\mathbf R)=\frac{\mu_0}{4\pi}\int\frac{\widehat{\mathbf J}(\mathbf r)e^{ik|\mathbf R-\mathbf r|}}{|\mathbf R-\mathbf r|}\,d^3r',34).shift(UP*.4)))
+        self.next_slide('Keep source-to-observer phase in the far field',
+            notes='At R much greater than source size, use one over R for the amplitude but retain the first-order path-length difference in the exponential. Losing this phase would incorrectly force all source points to radiate in phase in every direction.')
+        self.play(Write(self.equation(r'\mathbf R=R\widehat{\mathbf n},\quad|\mathbf R-\mathbf r|\simeq R-\widehat{\mathbf n}\cdot\mathbf r,\quad k=\omega_0/c',30).shift(DOWN*.8)))
+        self.play(Write(self.equation(r'\widehat{\mathbf A}(R\widehat{\mathbf n})\simeq\frac{\mu_0e^{ikR}}{4\pi R}\int\widehat{\mathbf J}(\mathbf r)e^{-ik\widehat{\mathbf n}\cdot\mathbf r}\,d^3r',33,BLUE).shift(DOWN*2.0)))
+        self.play(FadeIn(self.equation(r'R:\ \text{range [m]};\quad\widehat{\mathbf n}:\ \text{unit viewing direction};\quad k:\ \text{wavenumber [rad/m]}',24,MUTED).shift(DOWN*3.15)))
+        self.citation('Feynman Lectures II, chapter 21: retarded potentials','https://www.feynmanlectures.caltech.edu/II_21.html')
+        self.finish()
+
+        self.start_slide('Only the transverse current sum reaches the far-field receiver',
+            'Call the transverse current integral C_perp to avoid confusing it with magnetic vector potential A. '
+            'The matrix I-n n^T removes the component parallel to the observation direction. '
+            'C_perp has units ampere metres, while A has units tesla metres. E_s=i omega A_perp in the radiation zone.')
+        self.play(Write(self.equation(r'\mathbf C_\perp(\widehat{\mathbf n})\equiv(\mathbf I-\widehat{\mathbf n}\widehat{\mathbf n}^{\mathsf T})\int\widehat{\mathbf J}(\mathbf r)e^{-ik\widehat{\mathbf n}\cdot\mathbf r}\,d^3r',34,GREEN).shift(UP*2.2)))
+        self.play(FadeIn(self.equation(r'\mathbf C_\perp:\ \text{transverse current integral [A m]};\quad\mathbf I:\ \text{identity matrix}',25,MUTED).shift(UP*1.1)))
+        self.play(Write(self.equation(r'\mathbf I-\widehat{\mathbf n}\widehat{\mathbf n}^{\mathsf T}:\quad \mathbf v\longmapsto\mathbf v-\widehat{\mathbf n}(\widehat{\mathbf n}\cdot\mathbf v)',31).shift(DOWN*.05)))
+        self.next_slide('Convert the transverse current sum to the radiated field',
+            notes='Multiply the transverse vector potential by i omega_0. Since omega_0 mu_0=k Z_0, the electric radiation amplitude follows. Its one over R decay makes intensity decay as one over R squared.')
+        self.play(Write(self.equation(r'\widehat{\mathbf E}_s\simeq i\omega_0\widehat{\mathbf A}_\perp=\frac{ikZ_0e^{ikR}}{4\pi R}\mathbf C_\perp,\qquad Z_0=\sqrt{\mu_0/\epsilon_0}',36,GOLD).shift(DOWN*1.5)))
+        self.play(FadeIn(self.equation(r'Z_0\simeq377\ \Omega:\ \text{vacuum impedance};\quad \widehat{\mathbf E}_s:\ \text{scattered electric-field amplitude [V/m]}',24,MUTED).shift(DOWN*2.6)))
+        self.play(FadeIn(self.prose('Source phases can reinforce or cancel: the current distribution determines the echo.',25).shift(DOWN*3.2)))
+        self.citation('Marshall and Close (2015), induced-current radiation and RCS','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def rcs(self):
-        # Source: RCS convention and implementation: fdtd/src/main.rs
-        self.start_slide('RCS is the echo normalized to incident intensity',
-            'Receive polarization e_rx is a complex unit vector. The dagger is a conjugate transpose. '
-            'The range factors cancel in the far-zone definition. A consistent temporal Fourier normalization cancels as well.')
-        self.stack(self.equation(r'\sigma_{\rm rx}=\lim_{R\to\infty}4\pi R^2\frac{|\mathbf e_{\rm rx}^{\dagger}\widehat{\mathbf E}_s|^2}{|\widehat{\mathbf E}_{\rm inc}|^2}',40),
-            self.equation(r'\boxed{\sigma_{\rm rx}=\frac{k^2Z_0^2}{4\pi|\widehat{\mathbf E}_{\rm inc}|^2}|\mathbf e_{\rm rx}^{\dagger}\mathbf A|^2}',45,GOLD),
-            self.equation(r'[\sigma]=\mathrm{m^2},\qquad\sigma_{\rm dBsm}=10\log_{10}(\sigma/1\ \mathrm{m^2})',34),
-            self.equation(r'\mathbf e_{\rm rx}:\ \text{receive polarization unit vector};\quad\dagger:\ \text{conjugate transpose}',24,MUTED))
+        self.start_slide('The receiving antenna selects a polarization',
+            'e_rx is a complex, dimensionless unit polarization vector transverse to the viewing direction. '
+            'Dagger means conjugate transpose: first complex conjugate every component, then transpose the column to a row. '
+            'The resulting inner product is the electric-field amplitude measured in that receive channel.')
+        self.play(Write(self.equation(r'\mathbf e_{\rm rx}^{\dagger}\mathbf e_{\rm rx}=1,\qquad \mathbf e_{\rm rx}\cdot\widehat{\mathbf n}=0',35,BLUE).shift(UP*2.3)))
+        self.play(Write(self.equation(r'\mathbf e_{\rm rx}=\begin{bmatrix}e_x\\e_y\\e_z\end{bmatrix}\quad\Rightarrow\quad\mathbf e_{\rm rx}^{\dagger}=\begin{bmatrix}e_x^*&e_y^*&e_z^*\end{bmatrix}',34).shift(UP*.9)))
+        self.play(Write(self.equation(r'E_{\rm rx}=\mathbf e_{\rm rx}^{\dagger}\widehat{\mathbf E}_s=e_x^*\widehat E_{s,x}+e_y^*\widehat E_{s,y}+e_z^*\widehat E_{s,z}',32,GREEN).shift(DOWN*.6)))
+        self.play(FadeIn(self.equation(r'*:\ \text{complex conjugate};\quad \dagger:\ \text{conjugate transpose};\quad \widehat{\mathbf E}_s:\ \text{complex amplitude [V/m]}',23,MUTED).shift(DOWN*1.7)))
+        self.next_slide('A linear polarization example',
+            notes='For a real linear y-polarized receiver, the operation reduces to selecting E_y. For circular or elliptical polarization, relative complex phases matter and the conjugation is essential.')
+        self.play(Write(self.equation(r'\mathbf e_{\rm rx}=(0,1,0)^{\mathsf T}\quad\Rightarrow\quad E_{\rm rx}=\widehat E_{s,y};\qquad |E_{\rm rx}|^2=E_{\rm rx}E_{\rm rx}^*',32,BLUE).shift(DOWN*2.85)))
+        self.finish()
+
+        self.start_slide('RCS is the equivalent area that reproduces the measured echo',
+            'Compare receive-polarized scattered intensity at a large range R with incident intensity at the target. '
+            'Vacuum intensity is squared peak field divided by twice Z_0. Define the equivalent isotropic scattering area '
+            'by S_rx=S_inc sigma_rx/(4 pi R squared). The limiting range removes the one over R squared geometrical spreading.')
+        self.play(Write(self.equation(r'S_{\rm inc}=\frac{|\widehat{\mathbf E}_{\rm inc}|^2}{2Z_0},\qquad S_{\rm rx}=\frac{|E_{\rm rx}|^2}{2Z_0}\quad[\mathrm{W/m^2}]',34,BLUE).shift(UP*2.2)))
+        self.play(Write(self.equation(r'S_{\rm rx}=\frac{S_{\rm inc}\sigma_{\rm rx}}{4\pi R^2}\quad\Rightarrow\quad \sigma_{\rm rx}=4\pi R^2\frac{S_{\rm rx}}{S_{\rm inc}}',36).shift(UP*.8)))
+        self.play(Write(self.equation(r'\boxed{\sigma_{\rm rx}=\lim_{R\to\infty}4\pi R^2\frac{|\mathbf e_{\rm rx}^{\dagger}\widehat{\mathbf E}_s|^2}{|\widehat{\mathbf E}_{\rm inc}|^2}}',40,GOLD).shift(DOWN*.8)))
+        self.play(FadeIn(self.prose('R is observer range; the incident field is evaluated at the plasma cloud.',25).shift(DOWN*1.95)))
+        self.play(FadeIn(self.equation(r'\sigma_{\rm rx}:\ \mathrm{m^2};\quad\text{hats on fields: complex amplitudes at }f_0',25,MUTED).shift(DOWN*2.75)))
+        self.citation('MIT Lincoln Laboratory, radar cross section and the radar equation','https://www.ll.mit.edu/sites/default/files/outreach/doc/2018-07/lecture%201.pdf')
+        self.finish()
+
+        self.start_slide('Insert the radiated field: the range factors cancel',
+            'Substitute the transverse-current far-field amplitude into the RCS definition. '
+            'The squared outgoing phase is unity and the range squared cancels the squared one-over-range field. '
+            'The remaining result is an area, with receive polarization explicitly selected.')
+        self.stack(self.equation(r'\widehat{\mathbf E}_s=\frac{ikZ_0e^{ikR}}{4\pi R}\mathbf C_\perp',36,BLUE),
+            self.equation(r'\sigma_{\rm rx}=4\pi R^2\frac{k^2Z_0^2}{16\pi^2R^2}\frac{|\mathbf e_{\rm rx}^{\dagger}\mathbf C_\perp|^2}{|\widehat{\mathbf E}_{\rm inc}|^2}',34),
+            self.equation(r'\boxed{\sigma_{\rm rx}=\frac{k^2Z_0^2}{4\pi|\widehat{\mathbf E}_{\rm inc}|^2}|\mathbf e_{\rm rx}^{\dagger}\mathbf C_\perp|^2}',40,GOLD),
+            self.equation(r'\sigma_{\rm dBsm}=10\log_{10}(\sigma_{\rm rx}/1\ \mathrm{m^2})',31),
+            self.prose('This is the sigma to put into the radar equation.',28,BLUE))
         self.finish()
 
     def polarization(self):
@@ -1941,10 +2258,49 @@ class MeteorHeadRCS(Slide):
             'Incident propagation is +x and monostatic observation is -x. The following backward RHCP analyzer is the explicit '
             'solver convention; handedness must be referred to the propagation direction.')
         self.stack(self.equation(r'\widehat{\mathbf n}_{\rm back}=-\widehat{\mathbf k}_{\rm inc}=-\widehat{\mathbf x}',36),
-            self.equation(r'\mathbf e_{\mathrm{rx},R}=\frac{i\widehat{\mathbf y}+\widehat{\mathbf z}}{\sqrt2},\qquad \mathbf e_{\mathrm{rx},R}^{\dagger}\mathbf A=\frac{A_z-iA_y}{\sqrt2}',38,BLUE),
-            self.equation(r'\sigma_R\ \propto\ \frac{|A_z-iA_y|^2}{2}\quad\neq\quad |A_y|^2+|A_z|^2',38,GOLD),
+            self.equation(r'\mathbf e_{\mathrm{rx},R}=\frac{i\widehat{\mathbf y}+\widehat{\mathbf z}}{\sqrt2},\qquad \mathbf e_{\mathrm{rx},R}^{\dagger}\mathbf C_\perp=\frac{C_z-iC_y}{\sqrt2}',38,BLUE),
+            self.equation(r'\sigma_R\ \propto\ \frac{|C_z-iC_y|^2}{2}\quad\neq\quad |C_y|^2+|C_z|^2',38,GOLD),
             self.prose('MAARSY example: LHCP transmit, backward RHCP receive.',29,FG),
             self.prose('Keep radar aspect and receive polarization explicit in every comparison.',25))
+        self.finish()
+
+    def rayleigh_geometry(self):
+        self.start_slide('A simple alternative: locate the overdense part of the cloud',
+            'Marshall and Close compare the plasma to a conducting sphere whose radius is the location where '
+            'plasma frequency equals radar frequency. First derive the critical density from omega_p=2 pi f_r. '
+            'For a spherical cloud the projected overdense area is pi r_p squared, not the full surface area. '
+            'The approximation applies to an overdense cloud; underdense clouds still scatter through their induced current.')
+        self.play(Write(self.equation(r'f_p=\frac1{2\pi}\sqrt{\frac{n_ee^2}{\epsilon_0m_e}},\quad f_p=f_r\ \Rightarrow\quad n_{\rm crit}=\frac{\epsilon_0m_e}{e^2}(2\pi f_r)^2',34,BLUE).shift(UP*2.65)))
+        outer=Circle(1.35,color=GREEN,fill_opacity=.06).move_to([-3.8,.15,0])
+        core=Circle(.8,color=GOLD,fill_opacity=.2).move_to(outer)
+        self.play(Create(outer),Create(core))
+        self.play(GrowArrow(Arrow([-6.1,.15,0],[-5.3,.15,0],buff=0,color=BLUE)))
+        self.add(self.prose('Incident radar wave',22,BLUE).move_to([-4.5,1.95,0]))
+        self.play(Create(Line(core.get_center(),core.get_right(),color=GOLD)))
+        self.add(self.equation(r'r_p',27,GOLD).move_to([-3.35,-.25,0]),
+            self.equation(r'f_p=f_r',27,GOLD).move_to([-3.8,-1.6,0]))
+        self.play(Write(self.equation(r'n_e(r_p)=n_{\rm crit},\qquad A_{\rm od}=\pi r_p^2',34,GOLD).move_to([2.5,.7,0])))
+        self.play(FadeIn(self.equation(r'f_r:\ \text{radar frequency [Hz]};\quad n_{\rm crit}:\ \text{critical density [m}^{-3}\text{]}',23,MUTED).move_to([2.5,-.5,0])))
+        self.play(FadeIn(self.equation(r'r_p:\ \text{critical-surface radius [m]};\quad A_{\rm od}:\ \text{projected area [m}^2\text{]}',24,MUTED).shift(DOWN*2.5)))
+        self.play(FadeIn(self.prose('The enclosed core is overdense. The surrounding plasma also contributes to scattering.',24).shift(DOWN*3.2)))
+        self.citation('Marshall and Close (2015), sections 1.1 and 3, figures 7--8','https://doi.org/10.1002/2015JA021238')
+        self.finish()
+
+        self.start_slide('Rayleigh to geometric scattering: area alone is not always enough',
+            'Use the critical radius in a conducting-sphere surrogate. A small conducting sphere has Rayleigh '
+            'backscatter 9 pi r_p squared times (k r_p) to the fourth. The large-sphere optical limit is pi r_p squared. '
+            'These are limiting approximations, not an exact equality for a graded collisional plasma. '
+            'Marshall and Close find a useful association with overdense size, with Rayleigh-like and optical regimes.')
+        self.play(Write(self.equation(r'x\equiv kr_p=\frac{2\pi r_p}{\lambda_0}:\quad\text{electrical size of the overdense core}',31,BLUE).shift(UP*2.5)))
+        self.play(FadeIn(self.prose('Small compared with wavelength: Rayleigh limit',29,GREEN).shift(UP*1.45)))
+        self.play(Write(self.equation(r'x\ll1:\quad\sigma_{\rm R}\simeq9\pi r_p^2(kr_p)^4\propto r_p^6/\lambda_0^4',37,GREEN).shift(UP*.45)))
+        self.next_slide('A large overdense core approaches the geometric area',
+            notes='The projected area estimate is the optical or geometric limit. It should not be used for every meteor size. The factor nine belongs to a perfectly conducting sphere, including its electromagnetic response; it is not the electric-dipole dielectric-sphere formula on the next benchmark slide.')
+        self.play(FadeIn(self.prose('Large compared with wavelength: geometric / optical limit',29,GOLD).shift(DOWN*.75)))
+        self.play(Write(self.equation(r'x\gg1:\quad\sigma_{\rm G}\simeq A_{\rm od}=\pi r_p^2',40,GOLD).shift(DOWN*1.75)))
+        self.play(FadeIn(self.prose('Near the transition, use the full plasma scattering solution.',24).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('Changing radar frequency also changes the critical radius.',24,BLUE).shift(DOWN*3.15)))
+        self.citation('Marshall and Close (2015): conducting-sphere approximation','https://doi.org/10.1002/2015JA021238')
         self.finish()
 
     def limits(self):
@@ -1982,6 +2338,114 @@ class MeteorHeadRCS(Slide):
         self.play(Write(self.equation(r'\boxed{P_r=\frac{P_tG_tG_r\lambda_0^2\sigma_{\rm rx}}{(4\pi)^3R^4}}',37,BLUE).shift(DOWN*2.35)))
         self.play(FadeIn(self.equation(r'P_t,P_r:\ \mathrm W;\quad G_t,G_r:\ \text{power gains};\quad R:\ \text{range [m]};\quad A_{\rm eff}:\ \mathrm{m^2}',23,MUTED).shift(DOWN*3.25)))
         self.citation('MIT Lincoln Laboratory, Introduction to Radar Systems: radar equation','https://www.ll.mit.edu/sites/default/files/outreach/doc/2018-07/lecture%201.pdf')
+        self.finish()
+
+    def radar_worked_examples(self):
+        self.start_slide('Put the computed RCS here to obtain received power',
+            'The scattering calculation supplies receive-polarized RCS in square metres. The radar parameters supply '
+            'peak transmit power, boresight gains, wavelength and range. Gains must be linear, not dBi, in this equation. '
+            'These examples omit additional propagation/feed losses; use RCS for the selected receive polarization.')
+        formula=MathTex(r'P_r=\frac{P_tG_tG_r\lambda_0^2}{(4\pi)^3R^4}',r'\sigma_{\rm rx}',font_size=48,color=FG).shift(UP*1.7)
+        formula[1].set_color(GOLD);self.play(Write(formula))
+        box=SurroundingRectangle(formula[1],color=GOLD,buff=.15)
+        self.play(Create(box))
+        self.play(FadeIn(self.prose('RCS from the plasma scattering calculation, in square metres',28,GOLD).shift(UP*.4)))
+        self.play(Write(self.equation(r'\sigma_{\rm dBsm}=-40\quad\Rightarrow\quad\sigma_{\rm rx}=10^{-40/10}=10^{-4}\ \mathrm{m^2}',35,GOLD).shift(DOWN*.8)))
+        self.play(Write(self.equation(r'G_{\rm dBi}=33.5\quad\Rightarrow\quad G=10^{33.5/10}\simeq2239',34,BLUE).shift(DOWN*1.95)))
+        self.play(FadeIn(self.prose('Use peak power during the pulse; waveform processing enters the SNR calculation.',25).shift(DOWN*3.0)))
+        self.finish()
+        with h5py.File(ROOT/'radar_examples.h5') as f:
+            sig=f['worked/rcs_m2'][:];power=f['worked/power_w'][:];snr=f['worked/snr_db'][:]
+            params=f['parameters'][:];mn=f['sigma_min_m2_10db_1mhz'][:]
+            gaussian=f['gaussian_sigma_m2'][:];gpower=f['gaussian_received_w'][:]
+            gsnr=f['gaussian_snr_db_10khz'][:]
+
+        self.start_slide('Worked example: RCS to power to SNR',
+            'MAARSY-like full-array parameters: 53.5 MHz, 736 kW peak, 33.5 dBi transmit and receive gains. '
+            'Choose 100 km range, assumed 1000 K system noise and 10 kHz effective noise bandwidth. '
+            'This is an ideal calculation, not a measured MAARSY threshold. dBm is power relative to one milliwatt.')
+        self.play(Write(self.equation(r'f_0=53.5\ \mathrm{MHz},\ P_t=736\ \mathrm{kW},\ G_t=G_r=2239,\ R=100\ \mathrm{km}',29,BLUE).shift(UP*2.55)))
+        self.play(Write(self.equation(r'T_{\rm sys}=1000\ \mathrm K,\ B=10\ \mathrm{kHz}:\quad P_n=k_BT_{\rm sys}B=1.38\times10^{-16}\ \mathrm W',29).shift(UP*1.55)))
+        self.play(Write(self.equation(r'\mathrm{SNR}=P_r/P_n,\quad\mathrm{SNR}_{\rm dB}=10\log_{10}(P_r/P_n),\quad P_{\rm dBm}=10\log_{10}(P_r/10^{-3}\ \mathrm W)',25).shift(UP*.55)))
+        self.next_slide('Compare three echo strengths',
+            notes='Each tenfold increase in RCS gives tenfold power and ten dB more SNR. Values are computed from the stated ideal radar equation and noise assumptions. No unmentioned coherent integration is included.')
+        xs=[-4.6,-1.8,1.5,4.7]
+        for x,label in zip(xs,['RCS [dBsm]','RCS [square m]','Power [dBm]','SNR [dB]']):
+            self.add(self.prose(label,25,BLUE).move_to([x,-.35,0]))
+        for y,sg,pw,sn in zip([-1.1,-1.85,-2.6],sig,power,snr):
+            values=[f'{10*np.log10(sg):.0f}',f'{sg:.0e}',f'{10*np.log10(pw/1e-3):.1f}',f'{sn:+.1f}']
+            self.play(*[FadeIn(self.prose(value,28,FG).move_to([x,y,0])) for x,value in zip(xs,values)])
+        self.play(FadeIn(self.prose('Double the range: -12 dB. Reduce noise bandwidth by ten: +10 dB SNR.',24,GOLD).shift(DOWN*3.25)))
+        self.citation('MAARSY power/gain: Latteck et al.; noise temperature and bandwidth here are assumed','https://doi.org/10.1002/2015JD023291')
+        self.finish()
+
+        self.start_slide('Radar comparison: specify the instrument and the observing mode',
+            'Representative on-axis monostatic link budgets. Arecibo is a historical 430 MHz configuration. '
+            'Jicamarca is a full-array illustration with gain derived from the 75000 square metre effective aperture, '
+            'not the quarter-array meteor mode. Millstone uses the zenith antenna. EISCAT 3D uses published Stage 1 design parameters. '
+            'These are not contemporaneous calibrated operating records.')
+        xs=[-4.9,-1.8,.3,2.6,4.8]
+        for x,label in zip(xs,['Radar / configuration','f [MHz]','Peak [MW]','Gain [dBi]','Noise [K]']):
+            self.add(self.prose(label,24,BLUE).move_to([x,2.25,0]))
+        names=['Arecibo: historical','Jicamarca: full array','Millstone: zenith','EISCAT 3D: design']
+        for y,name,row in zip([1.3,.3,-.7,-1.7],names,params):
+            self.play(FadeIn(self.prose(name,24).move_to([xs[0],y,0])),
+                *[FadeIn(self.prose(f'{value:g}' if j!=2 else f'{value:.1f}',26,FG).move_to([x,y,0])) for j,(x,value) in enumerate(zip(xs[1:],row))])
+        self.play(FadeIn(self.prose('Use one common range, bandwidth, polarization and SNR criterion for comparison.',25).shift(DOWN*2.8)))
+        refs=[('Arecibo: Janches et al. (2015)','https://pmc.ncbi.nlm.nih.gov/articles/PMC5023023/',-3.7,-3.45),
+            ('Jicamarca: Wannberg et al. (2010)','https://www.diva-portal.org/smash/get/diva2:981094/FULLTEXT01.pdf',3.7,-3.45),
+            ('Millstone: Haystack; US ISR school','https://www.sgo.fi/Events/RS2012/l/04_Stromme_US_ISRs.pdf',-3.7,-3.85),
+            ('EISCAT 3D: Kastinen et al. (2020)','https://doi.org/10.5194/angeo-38-861-2020',3.7,-3.85)]
+        links=[(label,url,self.prose(label,17,BLUE).move_to([x,y,0])) for label,url,x,y in refs]
+        self.play(*[FadeIn(item) for _,_,item in links]);self.paper_links(links)
+        self.finish()
+
+        self.start_slide('Illustrative sensitivity: what RCS gives 10 dB SNR?',
+            'Solve the radar equation for RCS using P_r=SNR k_B T_sys B. '
+            'Take range 100 km, matched on-axis polarization, loss factor one, and no extra processing gain. '
+            'Columns show one MHz and ten kHz effective noise bandwidth. They are standardized ideal thresholds, '
+            'not published operational detection limits. A detector threshold also depends on false-alarm probability and search trials.')
+        self.play(Write(self.equation(r'\sigma_{\min}=\frac{(4\pi)^3R^4\,k_BT_{\rm sys}B\,\mathrm{SNR}_{\min}}{P_tG_tG_r\lambda_0^2}',36,BLUE).shift(UP*2.2)))
+        self.play(Write(self.equation(r'R=100\ \mathrm{km},\quad \mathrm{SNR}_{\min}=10\ (=10\ \mathrm{dB}),\quad L=1',27).shift(UP*1.2)))
+        xs=[-4.5,0,4.4]
+        for x,label in zip(xs,['Radar','Min. RCS: 1 MHz [dBsm]','Min. RCS: 10 kHz [dBsm]']):
+            self.add(self.prose(label,24,BLUE).move_to([x,.3,0]))
+        for y,name,sg in zip([-.5,-1.2,-1.9,-2.6],['Arecibo (historical)','Jicamarca (full array)','Millstone Hill (zenith)','EISCAT 3D (design)'],mn):
+            self.play(FadeIn(self.prose(name,24).move_to([xs[0],y,0])),
+                FadeIn(self.prose(f'{10*np.log10(sg):.1f}',28,FG).move_to([xs[1],y,0])),
+                FadeIn(self.prose(f'{10*np.log10(sg)-20:.1f}',28,GREEN).move_to([xs[2],y,0])))
+        self.play(FadeIn(self.prose('A smaller noise bandwidth requires enough coherent signal duration and correct Doppler matching.',23).shift(DOWN*3.35)))
+        self.finish()
+
+        self.start_slide('The same plasma can have a different RCS at each frequency',
+            'For an explicit teaching benchmark use a weak unmagnetized Gaussian cloud, rather than assigning a universal '
+            'frequency-independent meteor RCS. N_e is the total electron number and a is the standard deviation in every spatial direction. '
+            'For matched linear polarization, first Born scattering is the squared spatial Fourier integral of density at backscatter wavevector 2k. '
+            'This benchmark is not a Dimant-Oppenheim FDTD prediction.')
+        self.play(Write(self.equation(r'n_e(\mathbf r)=\frac{N_e}{(2\pi)^{3/2}a^3}e^{-r^2/(2a^2)},\quad N_e=10^{10},\quad a=0.10\ \mathrm m',31,BLUE).shift(UP*2.2)))
+        self.play(FadeIn(self.equation(r'N_e:\ \text{total electrons};\quad a:\ \text{Gaussian width};\quad\nu_{en}=10^7\ \mathrm{s^{-1}};\quad B_0=0',25).shift(UP*1.25)))
+        self.play(Write(self.equation(r'\int n_e(\mathbf r)e^{2ikx}\,d^3r=N_ee^{-2k^2a^2}',35,GREEN).shift(UP*.1)))
+        self.next_slide('Shorter wavelength increases phase cancellation across this cloud',
+            notes='Fourier-transforming a Gaussian produces another Gaussian. Square its amplitude for power. The collision response adds omega squared over omega squared plus nu squared. The peak plasma frequency is about 7.2 MHz, well below the lowest radar frequency here; this is a weak-scattering example.')
+        self.play(Write(self.equation(r'\sigma_{\rm back}=4\pi r_e^2N_e^2\,e^{-4k^2a^2}\frac{\omega^2}{\omega^2+\nu_{en}^2}',37,GOLD).shift(DOWN*1.3)))
+        self.play(FadeIn(self.equation(r'r_e=\frac{e^2}{4\pi\epsilon_0m_ec^2}:\ \text{classical electron radius [m]};\quad k=\omega/c',25,MUTED).shift(DOWN*2.4)))
+        self.play(FadeIn(self.prose('Illustrative weak-scattering cloud; replace it with the full plasma solve for a meteor prediction.',24,RED).shift(DOWN*3.2)))
+        self.citation('Coherent-electron scattering: Janches et al. (2015); far-field current integral above','https://pmc.ncbi.nlm.nih.gov/articles/PMC5023023/')
+        self.finish()
+
+        self.start_slide('Same example cloud: RCS, received power and SNR',
+            'Apply each radar frequency to the same Gaussian benchmark, then use each stated radar link budget. '
+            'Use 100 km range and ten kHz equivalent noise bandwidth, matched linear polarization and no additional losses. '
+            'RCS differs through scattering; power and SNR additionally depend on radar hardware. '
+            'These are illustrative calculations, not measurements of this cloud at four radars.')
+        xs=[-4.8,-1.1,2.,5.]
+        for x,label in zip(xs,['Radar','RCS [dBsm]','Power [dBm]','SNR [dB]']):
+            self.add(self.prose(label,25,BLUE).move_to([x,2.3,0]))
+        for y,name,sg,pw,sn in zip([1.3,.25,-.8,-1.85],['Arecibo (historical)','Jicamarca (full array)','Millstone Hill (zenith)','EISCAT 3D (design)'],gaussian,gpower,gsnr):
+            values=[name,f'{10*np.log10(sg):.1f}',f'{10*np.log10(pw/1e-3):.1f}',f'{sn:+.1f}']
+            self.play(*[FadeIn(self.prose(value,25,FG).move_to([x,y,0])) for x,value in zip(xs,values)])
+        self.play(FadeIn(self.prose('Same electrons; different interference and radar sensitivity.',25,GOLD).shift(DOWN*2.85)))
+        self.play(FadeIn(self.prose('R = 100 km; B = 10 kHz; instrument parameters from the preceding table.',23).shift(DOWN*3.45)))
         self.finish()
 
     def detection(self):
