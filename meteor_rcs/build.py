@@ -11,6 +11,7 @@ def main():
     commands=[
         [sys.executable,'fetch_assets.py'],
         [sys.executable,'-m','meteor_rcs.prepare_assets'],
+        [sys.executable,'-m','meteor_rcs.check_ionization_layout'],
         ['manim-slides','render','-r','1920,1080','--fps','30','--disable_caching',
          '-o','MeteorHeadRCS','meteor_head_rcs.py','MeteorHeadRCS'],
         [sys.executable,'export_web.py','web','MeteorHeadRCS'],
@@ -26,7 +27,7 @@ def package():
     names=['AGENTS.md','fetch_assets.py','asset_manifest.json','meteor_head_rcs.py','test_meteor_rcs.py','meteor_rcs/README.md',
            'meteor_rcs/prepare_assets.py',
            'meteor_rcs/do_density.py','meteor_rcs/__init__.py','meteor_rcs/build.py',
-           'meteor_rcs/inspect_slides.py','meteor_rcs/prepare_webgl.py','meteor_rcs/record_webgl.py',
+           'meteor_rcs/inspect_slides.py','meteor_rcs/prepare_webgl.py','meteor_rcs/record_webgl.py','meteor_rcs/check_ionization_layout.py',
            'meteor_rcs/radar_examples.py',
            'meteor_rcs/prepare_current.py',
            'meteor_rcs/current_solver/Cargo.toml','meteor_rcs/current_solver/Cargo.lock','meteor_rcs/current_solver/src/main.rs','planck_to_ktb.py','rayleigh_jeans_accuracy.py',

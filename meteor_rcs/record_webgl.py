@@ -6,7 +6,7 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw): super().__init__(*a,directory=str(ROOT),**kw)
     def do_POST(self):
         name=self.path.removeprefix('/record/')
-        if name not in {'do_height.mp4','do_height.webm','do_physical.mp4','do_physical.webm','fdtd_current.mp4','fdtd_current.webm'}:
+        if name not in {'do_height.mp4','do_height.webm','do_physical.mp4','do_physical.webm','fdtd_current.mp4','fdtd_current.webm','g_ion.mp4','g_ion.webm'}:
             self.send_error(400);return
         size=int(self.headers.get('Content-Length',0))
         if not 0<size<100_000_000:self.send_error(400);return

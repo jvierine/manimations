@@ -249,6 +249,16 @@ formula rather than presenting it as a universal optical-scattering law.
 
 ## GPU camera movies and current animation
 
+The ion-production sequence uses a true three-dimensional MeshView animation
+before deriving the constant angular cross section. Each dot represents an
+outgoing direction from a separate ionizing encounter in the collision
+centre-of-mass frame. Antipodal equal-area samples illustrate the isotropic
+source assumption at fixed relative speed. Two equal solid-angle cones explain
+equal expected shares and the factor `1/(4*pi)`. This is a velocity-direction
+illustration, not a collision simulation or a spherical plasma-density model.
+The native annotation audit reserves the complete text gutter and checks a
+conservative enclosing sphere at all 481 recorded camera times.
+
 Both DO views use Rustplotlib MeshView with actual indexed triangles, a
 perspective camera, smooth normals and a shared WebGL depth buffer. The first
 view is a log-density height graph; the second is a spatial isodensity with a

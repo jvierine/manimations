@@ -152,6 +152,7 @@ class MeteorHeadRCS(Slide):
         self.line_density()
         self.source_terms()
         self.do_introduction()
+        self.isotropic_ionization()
         self.density_amplitude_introduction()
         self.do_gallery_animation()
         self.do_parameters()
@@ -1383,14 +1384,39 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Ionizing-collision cross section per unit scattering solid angle.',25,FG).shift(DOWN*.2)))
         self.play(FadeIn(self.equation(r'\sigma_{\rm ion}:\ \text{total ionization cross section [m}^2\text{]};'
             r'\quad\Omega:\ \text{scattering solid angle [sr]}',23,MUTED).shift(DOWN*.75)))
-        self.next_slide('The isotropic ionization assumption',
-            notes='The differential cross section is independent of angle at a fixed relative collision speed, in the collision centre-of-mass frame. This is an assumption of Part 2, not a statement of speed independence.')
-        self.play(Write(self.equation(r'G_{\rm ion}=\frac{\sigma_{\rm ion}}{4\pi}'
-            r'\quad\text{at fixed collision speed}',30,GOLD).shift(DOWN*1.4)))
-        self.play(FadeIn(self.prose('Equal solid angles are equally likely in the collision centre-of-mass frame.',24).shift(DOWN*2.05)))
         self.play(Write(self.equation(r'n_e\simeq n_i:\quad\text{quasi-neutral electron-density approximation}',28,BLUE).shift(DOWN*2.7)))
         self.play(FadeIn(self.prose('The directed atmospheric stream still makes the plasma asymmetric.',24).shift(DOWN*3.25)))
         self.citation('Dimant and Oppenheim (2017), Parts 1--2','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+    def isotropic_ionization(self):
+        self.start_slide('Assume isotropic ion production: no preferred beam direction',
+            'At a fixed relative collision speed, DO Part 2 replaces the angular ionization cross section by a constant. '
+            'This movie shows outgoing ion directions in the collision centre-of-mass frame. '
+            'Each red dot represents a different ionizing encounter, not many ions from one collision. '
+            'Equal-area directional samples illustrate the angular distribution, not the plasma-cloud shape. '
+            'Two equal solid-angle cones collect equal expected shares. A finite sample need not have exactly equal counts. '
+            'The angular dependence is a simplifying assumption, not an established measurement for all species.')
+        self.play_gpu_movie('g_ion.mp4',center=[0,.2,0],width=12.7)
+        self.play(FadeIn(self.prose('Directions in velocity space; one dot per separate ionizing collision.',25).shift(DOWN*3.2)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, section 2','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Equal solid angles give a constant differential cross section',
+            'A solid angle measures a patch of directions in three dimensions. The whole sphere is 4 pi steradians. '
+            'The two cones have equal solid angle, therefore equal conditional probability for an ionizing collision. '
+            'The probability per solid angle is G_ion divided by total sigma_ion. '
+            'Integrate the constant over the entire sphere to obtain sigma_ion=4 pi G_ion.')
+        self.play(FadeIn(self.prose('Keep the collision speed fixed. Compare two equal cones of directions.',28).shift(UP*2.55)))
+        self.play(Write(self.equation(r'\Delta\Omega_A=\Delta\Omega_B\quad\Rightarrow\quad P_A=P_B',40,GREEN).shift(UP*1.5)))
+        self.play(FadeIn(self.equation(r'\Delta\Omega:\ \text{solid angle [sr]};\quad P:\ \text{fraction of ionizing encounters [dimensionless]}',24,MUTED).shift(UP*.7)))
+        self.play(Write(self.equation(r'P(\Delta\Omega)=\frac{1}{\sigma_{\rm ion}}\int_{\Delta\Omega}G_{\rm ion}\,d\Omega=\frac{\Delta\Omega}{4\pi}',37,BLUE).shift(DOWN*.2)))
+        self.next_slide('Sum all directions to recover the total ionization cross section',
+            notes='A complete sphere subtends 4 pi steradians. The differential cross section has units square metres per steradian; integrating it over all directions gives square metres. No preferential beam is added to the collision source in this frame.')
+        self.play(Write(self.equation(r'\sigma_{\rm ion}=\int_{4\pi}G_{\rm ion}\,d\Omega=4\pi G_{\rm ion}\quad\Rightarrow\quad\boxed{G_{\rm ion}=\frac{\sigma_{\rm ion}}{4\pi}}',36,GOLD).shift(DOWN*1.5)))
+        self.play(FadeIn(self.prose('Isotropic in the collision frame; bulk motion still affects the meteor-frame ions.',25).shift(DOWN*2.65)))
+        self.play(FadeIn(self.prose('This describes production directions, not a spherical plasma-density cloud.',25,BLUE).shift(DOWN*3.2)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, section 2','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
 

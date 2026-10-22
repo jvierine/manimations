@@ -14,6 +14,18 @@ struct Scene {
     scale: [f64; 3],
     camera_distance: f64,
     camera_targets: Vec<[f64; 3]>,
+    #[serde(default)]
+    yaw_start: Option<f64>,
+    #[serde(default)]
+    yaw_span: Option<f64>,
+    #[serde(default)]
+    pitch: Option<f64>,
+    #[serde(default)]
+    view_width: Option<f64>,
+    #[serde(default)]
+    gutter_left: Option<f64>,
+    #[serde(default)]
+    frames: Option<usize>,
 }
 
 pub fn check(path: &Path) -> Result<()> {
@@ -30,10 +42,17 @@ pub fn check(path: &Path) -> Result<()> {
         ColorMap::sequential(),
     )?);
     // Millimetres map to ten output pixels. A measured TeX rule reserves all
-    // pixels x=1560..1920, y=105..895, with additional validator padding.
-    let gutter = Label::new(r"\rule{36mm}{79mm}", 174., 50.);
+    // pixels in the fixed right-hand gutter, with additional validator padding.
     for (name, scene) in scenes {
         let height = name == "height";
+        let view_width = scene.view_width.unwrap_or(153.6);
+        let gutter_left = scene.gutter_left.unwrap_or(156.);
+        let frames = scene.frames.unwrap_or(360);
+        let gutter = Label::new(
+            format!(r"\rule{{{}mm}}{{88mm}}", 192. - gutter_left),
+            (gutter_left + 192.) / 2.,
+            45.,
+        );
         let radius = (0..3)
             .map(|k| ((scene.bounds[2 * k + 1] - scene.bounds[2 * k]) * scene.scale[k]).powi(2))
             .sum::<f64>()
@@ -44,7 +63,9 @@ pub fn check(path: &Path) -> Result<()> {
             .chunks_exact(3)
             .map(|p| [p[0], p[1], p[2]])
             .collect();
-        points.extend(if height {
+        points.extend(if name == "ionization" {
+            vec![[0., 0., 0.]]
+        } else if height {
             vec![
                 [-5., -10., -3.],
                 [20., -10., -3.],
@@ -55,16 +76,22 @@ pub fn check(path: &Path) -> Result<()> {
             vec![[-2., 0., 0.], [8., 0., 0.], [0., 4.5, 0.], [0., 0., 4.5]]
         });
         let mut rejected_control = false;
-        for frame in 0..=360 {
-            let t = frame as f64 / 360.;
+        for frame in 0..=frames {
+            let t = frame as f64 / frames as f64;
             let q = t * (scene.camera_targets.len() - 1) as f64;
             let i = (q.floor() as usize).min(scene.camera_targets.len() - 2);
             let u = q - i as f64;
             let target: [f64; 3] = std::array::from_fn(|k| {
                 scene.camera_targets[i][k] * (1. - u) + scene.camera_targets[i + 1][k] * u
             });
-            let yaw = (if height { -0.85 } else { 0.85 }) + std::f64::consts::TAU * t;
-            let pitch: f64 = if height { 0.42 } else { 0.28 };
+            let yaw = scene.yaw_start.unwrap_or(if height { -0.85 } else { 0.85 })
+                + scene.yaw_span.unwrap_or(std::f64::consts::TAU)
+                    * if name == "ionization" {
+                        (t / 0.8).min(1.)
+                    } else {
+                        t
+                    };
+            let pitch: f64 = scene.pitch.unwrap_or(if height { 0.42 } else { 0.28 });
             let front = [
                 yaw.cos() * pitch.cos(),
                 yaw.sin() * pitch.cos(),
@@ -85,7 +112,7 @@ pub fn check(path: &Path) -> Result<()> {
                 let z = scene.camera_distance - dot(front);
                 ensure!(z > 0., "{name} frame {frame}: geometry behind camera");
                 let xy = [
-                    (0.5 + 0.5 * dot(right) * 2.4142137 / (1536. / 900. * z)) * 153.6,
+                    (0.5 + 0.5 * dot(right) * 2.4142137 / (view_width / 90. * z)) * view_width,
                     (0.5 - 0.5 * dot(up) * 2.4142137 / z) * 90.,
                 ];
                 for k in 0..2 {
@@ -94,7 +121,7 @@ pub fn check(path: &Path) -> Result<()> {
                 }
             }
             ensure!(
-                lo[0] > 0. && hi[0] < 153.6 && lo[1] > 0. && hi[1] < 90.,
+                lo[0] > 0. && hi[0] < view_width && lo[1] > 0. && hi[1] < 90.,
                 "{name} frame {frame}: clipped geometry"
             );
             let mut panel = Panel::new(
@@ -123,7 +150,8 @@ pub fn check(path: &Path) -> Result<()> {
             "{name}: collision positive control was not rejected"
         );
         println!(
-            "{name}: 361 camera frames clear annotations and canvas bounds; injected collision rejected"
+            "{name}: {} camera frames clear annotations and canvas bounds; injected collision rejected",
+            frames + 1
         );
     }
     Ok(())

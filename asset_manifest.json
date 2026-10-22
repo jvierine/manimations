@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "url": "https://juha.no/space/manimations-assets/build-assets-3d01f6349c97a2d6.tar.gz",
-  "sha256": "3d01f6349c97a2d6f54ed4a38724efbd94867da8dcd301e43e8b7169184ba029",
+  "url": "https://juha.no/space/manimations-assets/build-assets-ead9482dd1f4be30.tar.gz",
+  "sha256": "ead9482dd1f4be30366dc39d3edc03e549ef78577bfc2dcb24c11974661f4d36",
   "files": [
     {
       "path": "assets/antenna_symbol.png",
@@ -192,6 +192,11 @@
       "path": "meteor_rcs/webgl/scenes.json",
       "sha256": "1c0af17a706aabc87b09b24fa0702a10f445e4fa2cbff72f04f84074bfc88801",
       "bytes": 2775627
+    },
+    {
+      "path": "meteor_rcs/assets/g_ion.mp4",
+      "sha256": "20b0b4783071fab3cf6795de0e599ad764ac61cff88a158ad2145edbcbdbde98",
+      "bytes": 14068829
     }
   ]
 }
