@@ -1927,6 +1927,309 @@ class MeteorHeadRCS(Slide):
         self.play(FadeIn(self.prose('Rotate this distribution to the radar aspect, then sample the solver grid.',26).shift(DOWN*2.9)))
         self.finish()
 
+    def ion_transport_derivation(self):
+        # Particle conservation and characteristics, not a new DO simulation.
+        from meteor_rcs.kinetic_transport import backtrace, slab_density
+        kinetic_url='https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/b7c22c3d68ab558bcc3a59867b710e1a_MIT16_55F14_Lecture8.pdf'
+        do_url='https://doi.org/10.1002/2017JA023960'
+        def at(item, xy, width=6.):
+            if item.width>width:item.scale_to_fit_width(width)
+            return item.move_to([*xy,0])
+        def words(text, xy, size=27, color=MUTED, width=6.):
+            return at(self.prose(text,size,color),xy,width)
+        def eq(tex, xy, size=34, color=FG, width=12.4):
+            return at(self.equation(tex,size,color),xy,width)
+
+        self.start_slide('First count ions by position AND velocity',
+            'We want the electron-density field around the meteor, but a birth location alone is insufficient: '
+            'an ion velocity determines where it goes. Phase space means position and velocity together. '
+            'f_i is a number distribution, not a probability. The drawing is a physical-space slice; the velocity '
+            'bin on the right selects all three velocity components. Colours identify velocity classes, not species.')
+        self.add(words('Phase space means three position coordinates plus three velocity components.',(0,2.95),24,width=12.4))
+        box=Rectangle(width=3.6,height=2.5,color=BLUE).move_to([-3.8,.7,0])
+        self.play(Create(box))
+        particles=VGroup()
+        for x,y,d,color in [(-4.8,1.25,RIGHT,GREEN),(-3.8,1.3,UP,GOLD),(-2.9,1.,LEFT,RED),
+                             (-4.6,.15,RIGHT,GREEN),(-3.5,.2,DOWN,GOLD),(-2.9,.1,RIGHT,GREEN)]:
+            p=VGroup(Dot([x,y,0],radius=.07,color=color),Arrow([x+.12,y,0],np.array([x+.12,y,0])+.42*d,buff=0,color=color,stroke_width=3))
+            particles.add(p)
+        self.play(FadeIn(particles))
+        self.add(eq(r'd^3r=dx\,dy\,dz\quad[\mathrm{m^3}]',(-3.8,-1.05),27,BLUE,5.5))
+        self.add(words('Small physical volume',(-3.8,2.35),27,BLUE))
+        self.add(words('Select a small velocity range',(3.1,2.35),27,GREEN))
+        self.play(Write(eq(r'\mathbf v_i=(v_x,v_y,v_z)',(3.1,1.35),33,GREEN,6.)))
+        self.play(Write(eq(r'd^3v_i=dv_x\,dv_y\,dv_z',(3.1,.45),33,GREEN,6.)))
+        self.add(eq(r'[d^3v_i]=(\mathrm{m/s})^3',(3.1,-.35),27,MUTED,6.))
+        self.add(words('Only the green velocity class is counted.',(3.1,-1.05),24,GREEN))
+        self.play(Write(eq(r'dN_i=f_i(\mathbf r,\mathbf v_i,t)\,d^3r\,d^3v_i',(0,-2.05),39,BLUE)))
+        self.add(eq(r'[f_i]=\mathrm{m^{-3}(m/s)^{-3}}=\mathrm{s^3m^{-6}}',(0,-2.85),27))
+        self.add(eq(r'f_i:\ \text{ion phase-space number density};\quad\mathbf r:\ \text{position [m]};\quad t:\ \text{time [s]}',(0,-3.32),24,MUTED))
+        self.citation('Phase-space counting: MIT 16.55 (2014), lecture 8',kinetic_url)
+        self.finish()
+
+        self.start_slide('Ionizing collisions supply a local birth rate',
+            'Q_i counts all new ions per physical volume per second. It follows from target density times '
+            'the volume swept out by each neutral per second. n_n is the local evaporated-neutral density, '
+            'not the surface density n_0. The velocity average is replaced by a single relative speed only '
+            'for a narrow hyperthermal encounter distribution. Each primary single-ionization event also creates an electron.')
+        self.add(words('Ablated neutral meets atmospheric particle',(0,2.55),29,width=12.4))
+        neutral=Dot([-4.3,1.1,0],radius=.13,color=GOLD)
+        air=Dot([-2.5,1.1,0],radius=.13,color=BLUE)
+        self.add(neutral,air)
+        self.play(neutral.animate.shift(RIGHT*1.5),run_time=1.3)
+        self.play(neutral.animate.set_color(RED),FadeIn(Dot([-2.1,1.8,0],radius=.06,color=GREEN)))
+        self.add(words('New ion',(-3.5,.25),24,RED),eq(r'e^-',(-1.75,2.),27,GREEN,1.))
+        self.add(eq(r'\text{volume swept per second}=\sigma_{\rm ion}v_{\rm rel}',(2.6,1.25),30,BLUE,6.4))
+        self.add(eq(r'\text{births per neutral per second}=n_A\sigma_{\rm ion}v_{\rm rel}',(2.6,.3),29,BLUE,6.4))
+        self.play(Write(eq(r'Q_i(\mathbf r)=n_n(\mathbf r)n_A\langle\sigma_{\rm ion}v_{\rm rel}\rangle',(0,-.85),37,GREEN)))
+        self.play(Write(eq(r'Q_i\simeq n_n n_A\beta_{\rm Si}\sigma_c(v)v\qquad[\mathrm{m^{-3}s^{-1}}]',(0,-1.85),34)))
+        self.add(eq(r'n_n,n_A:\ \mathrm{m^{-3}};\quad\sigma_{\rm ion},\sigma_c:\ \mathrm{m^2};\quad v_{\rm rel},v:\ \mathrm{m/s}',(0,-2.72),25,MUTED))
+        self.add(eq(r'n_n:\ \text{local ablated-neutral density};\quad n_A:\ \text{air density}',(0,-3.25),25,MUTED))
+        self.citation('Dimant and Oppenheim (2017), Part 1: ion production',do_url)
+        self.finish()
+
+        self.start_slide('The source also records the newborn ion velocities',
+            'Q_i alone cannot predict spatial transport. p_b is a normalized probability density of birth '
+            'velocities, conditional on position. Multiplying it by Q_i gives S_ion, ions born per unit '
+            'position volume per velocity volume per second. A constant differential ionization cross section '
+            'in the collision centre-of-mass frame does not imply isotropic birth velocities in the grain frame.')
+        self.add(words('One collision model, many possible recoil velocities',(0,2.55),29,width=12.4))
+        origin=np.array([-3.8,.65,0]);self.add(Dot(origin,color=RED,radius=.12))
+        # An illustrative set of unequal velocity classes, not an angular PDF.
+        for delta in [[1.35,.6,0],[1.6,.05,0],[.9,-.65,0],[.45,.95,0]]:
+            self.play(GrowArrow(Arrow(origin,origin+delta,buff=.15,color=BLUE)),run_time=.25)
+        self.add(words('Recoil directions and speeds',(-3.4,-.7),24,BLUE))
+        self.add(words('Grain-frame velocities need not be isotropic.',(-3.4,-1.35),23,width=5.8))
+        self.add(words('Birth-velocity probability density',(3.,2.0),25,BLUE,width=6.4))
+        self.play(Write(eq(r'\int p_b(\mathbf v_i\mid\mathbf r)\,d^3v_i=1',(3.,1.1),32,BLUE,6.4)))
+        self.play(Write(eq(r'S_{\rm ion}(\mathbf r,\mathbf v_i)=Q_i(\mathbf r)p_b(\mathbf v_i\mid\mathbf r)',(3.,-.1),33,GREEN,6.4)))
+        self.add(eq(r'[p_b]=(\mathrm{m/s})^{-3}',(3.,-1.2),26,MUTED,6.4))
+        self.play(Write(eq(r'dN_{\rm born}=S_{\rm ion}\,d^3r\,d^3v_i\,dt',(0,-2.2),37,GREEN)))
+        self.add(eq(r'[S_{\rm ion}]=[f_i]/\mathrm{s}=\mathrm{s^2m^{-6}};\quad\int S_{\rm ion}\,d^3v_i=Q_i',(0,-3.05),27))
+        self.citation('Dimant and Oppenheim (2017), Part 1: collision source',do_url)
+        self.finish()
+
+        self.start_slide('Particle conservation: accumulation = in - out + births',
+            'Follow one fixed velocity bin with v_x positive. The cartoon is a spatial cell of length '
+            'Delta x and face area A. Keep transverse coordinates and all velocities fixed while taking '
+            'the x derivative. Ions stream in, stream out, and are born locally. There are no sinks or forces '
+            'in this first-flight approximation. A is a face area here, not a radiation amplitude.')
+        cell=Rectangle(width=3.2,height=1.65,color=BLUE).move_to([0,.9,0])
+        self.add(cell)
+        incoming=Arrow([-5.,.9,0],[-1.9,.9,0],buff=0,color=GREEN)
+        outgoing=Arrow([1.9,.9,0],[5.,.9,0],buff=0,color=GOLD)
+        self.play(GrowArrow(incoming),GrowArrow(outgoing))
+        self.add(eq(r'f_i(x),\ v_x>0',(-3.6,1.65),27,GREEN,3.6),eq(r'f_i(x+\Delta x)',(3.6,1.65),27,GOLD,3.6))
+        self.add(eq(r'A\ [\mathrm{m^2}]',(-.0,2.35),29,BLUE))
+        self.add(DoubleArrow([-1.6,-.25,0],[1.6,-.25,0],buff=0,color=BLUE),eq(r'\Delta x\ [\mathrm m]',(0,-.7),27,BLUE))
+        birthdots=VGroup(*[Dot([x,y,0],radius=.06,color=RED) for x,y in [(-.7,.6),(.3,1.25),(.8,.65)]])
+        self.play(FadeIn(birthdots))
+        self.add(words('Born inside',(0,.32),22,RED,width=2.5))
+        motion=VGroup(*[Dot([-4.6,y,0],radius=.065,color=GREEN) for y in [.65,1.15]])
+        self.add(motion);self.play(motion.animate.shift(8.9*RIGHT),run_time=2.5,rate_func=linear)
+        self.remove(motion)
+        self.play(Write(eq(r'N\simeq f_i A\Delta x\,\Delta^3v_i',(0,-1.6),36)))
+        self.add(eq(r'\Delta^3v_i=\Delta v_x\Delta v_y\Delta v_z\quad[(\mathrm{m/s})^3]',(0,-2.45),27))
+        self.add(words('Keep the same velocity bin on both faces: count particles, then divide by the bin size.',(0,-3.15),24,width=12.4))
+        self.wait(.6)
+        self.next_slide('Count the rates through the two faces',notes='Flux of the chosen velocity bin is v_x f_i Delta^3v_i. Multiply by face area, add births, then divide by the cell volume and velocity-bin volume.')
+        self.play(*[FadeOut(m) for m in list(self.mobjects) if m.get_center()[1]<2.9],run_time=.3)
+        # Large, separately paced balance prevents undefined differential operators.
+        self.play(Write(eq(r'\frac{dN}{dt}=\underbrace{A\Delta^3v_i\,v_x f_i(x)}_{\text{in}}-\underbrace{A\Delta^3v_i\,v_x f_i(x+\Delta x)}_{\text{out}}',(0,1.7),34)))
+        self.play(Write(eq(r'\hspace{1.5cm}+\underbrace{S_{\rm ion}A\Delta x\,\Delta^3v_i}_{\text{births inside}}',(0,.25),34,RED)))
+        self.add(words('Divide every term by the same cell and velocity-bin volume.',(0,-1.),26,width=12.4))
+        self.play(Write(eq(r'\frac{\partial f_i}{\partial t}=-v_x\frac{f_i(x+\Delta x)-f_i(x)}{\Delta x}+S_{\rm ion}',(0,-2.),35,BLUE)))
+        self.add(words('As the cell becomes small, the difference quotient becomes a spatial derivative.',(0,-3.05),24,width=12.4))
+        self.citation('Particle conservation: MIT 16.55 (2014), lecture 8',kinetic_url)
+        self.finish()
+
+        self.start_slide('The streaming operator is just flow through all six faces',
+            'The x-face argument repeats for y and z. The directional derivative v dot grad is the rate '
+            'of change caused by motion through a spatially varying distribution. A stationary pattern '
+            'in the grain frame sets partial_t f to zero; individual ions still move. The simplified '
+            'equation neglects postbirth forces and subsequent collisions for the near-head secondary component.')
+        self.add(words('Local accumulation + net streaming out = local creation',(0,2.55),29,width=12.4))
+        self.play(Write(eq(r'\partial_t f_i+v_x\partial_x f_i+v_y\partial_y f_i+v_z\partial_z f_i=S_{\rm ion}',(0,1.45),35)))
+        self.play(Write(eq(r'\mathbf v_i\cdot\nabla_{\mathbf r}f_i\equiv v_x\partial_xf_i+v_y\partial_yf_i+v_z\partial_zf_i',(0,.35),34,BLUE)))
+        self.add(words('A steady pattern in the moving-grain frame',(0,-.75),29,GREEN,width=12.4))
+        self.play(Write(eq(r'\partial_t f_i=0\quad\Longrightarrow\quad\boxed{\mathbf v_i\cdot\nabla_{\mathbf r}f_i=S_{\rm ion}}',(0,-1.7),39,GREEN)))
+        self.add(words('Constant postbirth velocity; no later collisions or forces in this approximation.',(0,-2.75),25,width=12.4))
+        self.add(words('Steady density does not mean stationary ions. Both sides have units of f per second.',(0,-3.27),23,width=12.4))
+        self.citation('Dimant and Oppenheim (2017), Part 1, secondary particles',do_url)
+        self.finish()
+
+        self.start_slide('Ask where an ion at this point could have been born',
+            'For one fixed velocity, all possible birth positions lie on one backward straight ray. '
+            'The hollow point traces earlier locations computationally; real ions travel forward along the arrow. '
+            'Tau is lookback time, not negative physical motion. A different velocity would require a different ray. '
+            'The source patch is illustrative and need not be homogeneous.')
+        observation=np.array([4.5,.7,0]);velocity=np.array([1.,0.,0.])
+        patch=Rectangle(width=3.,height=1.8,fill_color=GOLD,fill_opacity=.10,stroke_color=GOLD).move_to([-1.6,.7,0])
+        self.add(patch,Line([-5.5,.7,0],observation,color=BLUE))
+        self.add(Dot(observation,color=GREEN,radius=.10),eq(r'\mathbf r',(4.5,1.35),33,GREEN,1.))
+        self.add(words('Ion-producing region',(-1.6,2.),26,GOLD),words('Observe here',(4.5,2.),25,GREEN,width=3.))
+        physical=Arrow([-3.1,-.65,0],[.0,-.65,0],buff=0,color=BLUE)
+        self.play(GrowArrow(physical))
+        self.add(words('Actual ion motion',(-1.6,-1.2),24,BLUE),eq(r'\mathbf v_i',(1.,-.65),29,BLUE,1.))
+        marker=Circle(.14,color=RED).move_to(observation)
+        self.add(marker)
+        self.add(words('Trace earlier positions',(-3.8,-2.),26,RED,width=5.))
+        self.play(marker.animate.move_to(backtrace(observation,velocity,7.8)),run_time=3.,rate_func=linear)
+        self.add(eq(r'\mathbf r_b(\tau)=\mathbf r-\mathbf v_i\tau,\qquad\tau\geq0',(0,-2.75),37,RED))
+        self.add(words('Lookback time in seconds; subtract velocity times elapsed time to find the birth position.',(0,-3.3),22,width=12.4))
+        self.citation('Characteristics of the kinetic equation: MIT 16.55, lecture 8',kinetic_url)
+        self.finish()
+
+        self.start_slide('Along that ray, the transport equation becomes ordinary calculus',
+            'Apply the chain rule holding the chosen ion velocity fixed. Increasing lookback time moves '
+            'opposite to the physical velocity, which explains the minus sign. The stationary transport '
+            'equation then replaces v dot grad f by the source. This converts a partial differential '
+            'equation to an integral along a particle trajectory.')
+        self.add(words('Use the same velocity class along the whole straight path.',(0,2.55),28,width=12.4))
+        self.play(Write(eq(r'\frac{d}{d\tau}f_i(\mathbf r-\mathbf v_i\tau,\mathbf v_i)=-\mathbf v_i\cdot\nabla_{\mathbf r}f_i',(0,1.35),38,BLUE)))
+        self.add(words('The minus sign comes from tracing backward.',(0,.15),28,RED,width=12.4))
+        self.play(Write(eq(r'\frac{d}{d\tau}f_i(\mathbf r-\mathbf v_i\tau,\mathbf v_i)=-S_{\rm ion}(\mathbf r-\mathbf v_i\tau,\mathbf v_i)',(0,-1.),37,GREEN)))
+        self.add(words('Every short segment adds the ions born there to the population that can reach us.',(0,-2.25),27,width=12.4))
+        self.add(eq(r'\Delta f_i\simeq S_{\rm ion}\,\Delta\tau\quad\text{when following the flow forward}',(0,-3.),30))
+        self.citation('Dimant and Oppenheim (2017), Part 1: ballistic transport',do_url)
+        self.finish()
+
+        self.start_slide('The integral needs an upstream boundary condition',
+            'Integrate the chain rule from zero to a finite lookback T. Keep the upstream value explicitly. '
+            'The source alone does not fix the solution: there could also be ions entering from outside. '
+            'For the meteoric component, impose zero incoming distribution sufficiently far upstream; '
+            'a background ionosphere, if included, is a separate component. A finite boundary needs its own value.')
+        self.add(eq(r'T:\ \text{finite lookback time [s]}',(0,2.7),27,MUTED))
+        self.add(words('Current population = arriving population + births along the path',(0,2.05),27,width=12.4))
+        self.play(Write(eq(r'f_i(\mathbf r,\mathbf v_i)=\underbrace{f_i(\mathbf r-\mathbf v_iT,\mathbf v_i)}_{\text{incoming at the earlier boundary}}',(0,.85),37,BLUE)))
+        self.play(Write(eq(r'\hspace{2cm}+\int_0^T S_{\rm ion}(\mathbf r-\mathbf v_i\tau,\mathbf v_i)\,d\tau',(0,-.25),37,GREEN)))
+        self.add(words('T is the finite travel time from the earlier boundary to the observation point.',(0,-1.7),26,width=12.4))
+        self.add(words('A source equation alone cannot tell us whether ions were already coming in.',(0,-2.7),27,BLUE,width=12.4))
+        self.wait(.6)
+        self.next_slide('Remove the incoming term only with a stated boundary condition',notes='For the meteoric component, f tends to zero far upstream and the source integral converges. The infinite upper limit includes the whole earlier ray, not an infinite local production time.')
+        self.play(*[FadeOut(m) for m in list(self.mobjects) if m.get_center()[1]<2.9],run_time=.3)
+        self.add(words('No incoming meteoric ions far upstream; the source integral converges.',(0,2.4),28,width=12.4))
+        self.play(Write(eq(r'\boxed{f_i(\mathbf r,\mathbf v_i)=\int_0^\infty S_{\rm ion}(\mathbf r-\mathbf v_i\tau,\mathbf v_i)\,d\tau}',(0,.95),40,GREEN)))
+        self.add(words('Look backward along one trajectory and add its source contributions.',(0,-.55),28,width=12.4))
+        self.add(words('The infinite limit includes the entire earlier source region.',(0,-1.6),27,width=12.4))
+        self.add(words('It does not mean ions accumulate at this point forever.',(0,-2.45),27,BLUE,width=12.4))
+        self.add(eq(r'[S_{\rm ion}]\,\mathrm s=[f_i]',(0,-3.15),29,MUTED))
+        self.citation('Source integration of ballistic ions: DO (2017), Part 1',do_url)
+        self.finish()
+
+        self.start_slide('Why integrate over time? It measures residence in the source',
+            'Approximate the integral by short source segments. A velocity class crossing length Delta ell '
+            'spends Delta tau = Delta ell / V there. Therefore each segment adds S Delta ell / V to f. '
+            'Holding the source fixed, faster particles spend less time in the same region and have a smaller '
+            'steady population. V is the ion speed in the grain frame, not the meteoroid atmospheric speed v.')
+        self.add(words('Each earlier path segment contributes source rate times time spent there.',(0,2.55),28,width=12.4))
+        for j in range(6):
+            segment=Rectangle(width=1.1,height=.8,color=GOLD,fill_opacity=.08).move_to([-3.3+j*1.1,1.,0])
+            self.play(FadeIn(segment),run_time=.15)
+        self.add(Arrow([-4.3,-.1,0],[4.3,-.1,0],buff=0,color=BLUE))
+        self.add(eq(r'V=|\mathbf v_i|\quad[\mathrm{m/s}]',(0,-.65),29,BLUE))
+        self.play(Write(eq(r'\Delta\tau=\frac{\Delta\ell}{V},\qquad\Delta f_i\simeq S_{\rm ion}\Delta\tau',(0,-1.65),38)))
+        self.play(Write(eq(r'f_i=\int_{\rm upstream}^{\mathbf r}\frac{S_{\rm ion}}{V}\,d\ell',(0,-2.8),37,GREEN)))
+        self.citation('Ballistic characteristics: MIT 16.55 (2014), lecture 8',kinetic_url)
+        self.finish()
+
+        self.start_slide('Density means adding all velocities at the same location',
+            'Now sum velocity classes in one physical volume, without summing over space. Each bin '
+            'contributes f Delta^3v to the local number density. The sum becomes a velocity integral '
+            'as bins shrink. This is number counting, not a new plasma model. Quasineutrality is a separate '
+            'near-head assumption that lets the single-charge ion density approximate electron density.')
+        self.add(words('Keep this physical cell fixed; include every velocity class.',(0,2.55),28,width=12.4))
+        colors=[GREEN,GOLD,BLUE,RED]
+        for j,color in enumerate(colors):
+            x=-4.5+3*j
+            self.add(Rectangle(width=2.2,height=1.,color=color).move_to([x,1.05,0]))
+            self.play(FadeIn(eq(r'f_i(\mathbf r,\mathbf v_{%d})\,\Delta^3v_i'%j,(x,1.05),26,color,2.)) ,run_time=.25)
+        self.play(Write(eq(r'n_i(\mathbf r)\simeq\sum_k f_i(\mathbf r,\mathbf v_k)\,\Delta^3v_i',(0,-.35),38,BLUE)))
+        self.play(Write(eq(r'\boxed{n_i(\mathbf r)=\int_{\mathbb R^3}f_i(\mathbf r,\mathbf v_i)\,d^3v_i}',(0,-1.55),40,GREEN)))
+        self.add(eq(r'[f_i](\mathrm{m/s})^3=\mathrm{m^{-3}}',(0,-2.55),29))
+        self.add(eq(r'n_e\simeq n_i\quad\text{for singly charged, quasineutral near-head plasma}',(0,-3.2),26,MUTED))
+        self.citation('Velocity moments: MIT 16.55, lecture 8; DO (2017), Part 2',kinetic_url)
+        self.finish()
+
+        self.start_slide('A simple source slab makes the integral tangible',
+            'Teaching example only: one-dimensional constant-area flow, one ion speed, uniform volume '
+            'birth rate inside a slab, no loss and no incoming ions. dn/dx = Q_0/V inside and zero outside. '
+            'Unlike a real meteor cloud, this example has no geometric spreading. The downstream flat '
+            'profile belongs only to this example. The numbers are illustrative, not a DO or MSIS prediction.')
+        axes=Axes(x_range=[-.5,1.6,.5],y_range=[0,1.5,.5],x_length=6.,y_length=2.7,
+            axis_config={'color':MUTED,'include_ticks':True,'include_tip':False}).move_to([-3.2,.75,0])
+        slab=Polygon(axes.c2p(0,0),axes.c2p(1,0),axes.c2p(1,1.4),axes.c2p(0,1.4),
+            stroke_width=0,fill_color=GOLD,fill_opacity=.10)
+        x=np.linspace(-.5,1.6,140)
+        curve=VMobject(color=GREEN,stroke_width=4).set_points_as_corners([axes.c2p(a,b) for a,b in zip(x,slab_density(x,1e3,1e10)/1e7)])
+        axes.x_axis.add_numbers([0,1],font_size=24,color=MUTED)
+        axes.y_axis.add_numbers([1],font_size=24,color=MUTED)
+        self.add(axes,slab)
+        self.add(eq(r'x\ [\mathrm m]',(-3.2,-1.),25),eq(r'n_i/(10^7\,\mathrm{m^{-3}})',(-3.2,2.55),25,GREEN))
+        self.play(Create(curve),run_time=2.)
+        self.add(words('Uniform births only in the shaded slab',(-3.2,-1.65),23,GOLD,width=6.))
+        rows=self.term_definitions([
+            r'Q_0=10^{10}\ \mathrm{m^{-3}s^{-1}}',r'L=1\ \mathrm m,\quad V=10^3\ \mathrm{m/s}',
+            r'V\frac{dn_i}{dx}=Q_0\quad(0<x<L)',r'n_{\rm out}=\frac{Q_0L}{V}=10^7\ \mathrm{m^{-3}}'],[3.3,.45,0],30,6.)
+        for row in rows:self.play(Write(row))
+        self.add(words('Constant-area, single-speed teaching example; no geometric spreading.',(0,-2.65),25,width=12.4))
+        self.add(words('Double V at fixed Q and L: half the time in the source, half the steady density.',(0,-3.25),25,GREEN,width=12.4))
+        self.finish()
+
+        self.start_slide('The factor V squared is a velocity-space volume',
+            'The drawing is a slice through velocity space, not an ion trajectory or physical plasma shape. '
+            'A shell at speed V has surface area 4 pi V squared. A solid-angle patch occupies area '
+            'V squared dOmega_v; multiply by radial thickness dV to get its small velocity volume. '
+            'Angles here specify grain-frame velocity direction; they are not collision centre-of-mass scattering angles.')
+        c=np.array([-3.8,.4,0]);radius=1.55
+        self.add(Circle(radius,color=BLUE).move_to(c),Circle(radius+.22,color=BLUE,stroke_opacity=.5).move_to(c))
+        wedge=AnnularSector(inner_radius=radius,outer_radius=radius+.22,angle=.60,start_angle=.30,
+            color=GOLD,fill_opacity=.55,stroke_width=1).shift(c)
+        self.play(FadeIn(wedge))
+        self.add(Dot(c,color=FG,radius=.045),Arrow(c,c+radius*np.array([np.cos(.6),np.sin(.6),0]),buff=0,color=GREEN))
+        self.add(eq(r'V=|\mathbf v_i|',(-3.8,-.35),29,GREEN,3.))
+        self.add(eq(r'dV',(-1.65,1.7),27,GOLD,1.),words('Slice of a 3D velocity shell',(-3.8,2.65),25,BLUE,width=5.7))
+        self.add(words('All axes are velocities, not metres.',(-3.8,-1.7),23,width=6.))
+        rows=self.term_definitions([r'\text{shell patch area}=V^2\,d\Omega_v',r'\text{radial thickness}=dV',
+            r'\boxed{d^3v_i=V^2\,dV\,d\Omega_v}',r'[d^3v_i]=(\mathrm{m/s})^3'],[3.2,.55,0],31,6.)
+        for row in rows:self.play(Write(row))
+        self.add(eq(r'd\Omega_v=\sin\vartheta_v\,d\vartheta_v\,d\varphi_v\quad[\mathrm{sr}]',(0,-2.6),31))
+        self.add(eq(r'\vartheta_v,\varphi_v:\ \text{velocity polar and azimuthal angles [rad]};\quad dV:\ \mathrm{m/s}',(0,-3.2),24,MUTED))
+        self.citation('Velocity-space integration: DO (2017), Part 2, equation 10','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Sum the whole velocity shell, without assuming isotropy',
+            'Integrate the radial speeds from zero to infinity and the velocity directions over the whole '
+            'sphere. The V squared factor is the spherical-coordinate Jacobian. f can depend on direction. '
+            'Only an isotropic f in this same grain frame permits replacing the angular integral by 4 pi. '
+            'This counting measure is what enters the next recoil-kinematics mass-ratio derivation.')
+        self.add(words('Different directions can contain different numbers of ions.',(0,2.55),29,width=12.4))
+        self.play(Write(eq(r'n_i(\mathbf r)=\int_0^\infty\!\int_{4\pi}f_i(\mathbf r,V,\Omega_v)\,V^2\,d\Omega_v\,dV',(0,1.15),39,GREEN)))
+        self.add(words('Speed: every V from zero upward. Direction: every point on the velocity sphere.',(0,-.3),27,width=12.4))
+        self.play(Write(eq(r'\int_{4\pi}f_i\,d\Omega_v=4\pi f_i\quad\text{only if }f_i\text{ is isotropic}',(0,-1.5),34,RED)))
+        self.add(words('An isotropic collision cross section does not guarantee an isotropic grain-frame distribution.',(0,-2.65),25,width=12.4))
+        self.add(words('Next: use the recoil speeds supplied by two-body collision kinematics.',(0,-3.25),25,BLUE,width=12.4))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 3 and 10','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
+        self.start_slide('Why show these equations? They connect births to the radar target',
+            'The ablation and collision model supplies a source, the kinetic equation transports it, and '
+            'the velocity integral counts the ions at each position. Quasineutrality gives electron density '
+            'for the near-head component. DO evaluates these integrals with its source and collision kinematics. '
+            'This is why a collision model can predict a spatial electron-density field for the EM calculation.')
+        stages=[('COLLISIONS',r'S_{\rm ion}(\mathbf r,\mathbf v_i)','Where and how fast ions are born',GOLD),
+                ('TRANSPORT',r'f_i=\int_{\rm past}S_{\rm ion}\,d\tau','Which births can reach this point',BLUE),
+                ('COUNT',r'n_i=\int f_i\,d^3v_i','All velocities at the same place',GREEN)]
+        for j,(label,formula,caption,color) in enumerate(stages):
+            y=2.1-j*1.5
+            self.play(FadeIn(words(label,(-4.8,y),27,color,width=3.)))
+            self.play(Write(eq(formula,(0,y),34,color,5.)))
+            self.add(words(caption,(4.5,y),23,width=4.))
+        self.play(Write(eq(r'n_e(\mathbf r)\simeq n_i(\mathbf r)\quad\longrightarrow\quad\text{plasma response and radar scattering}',(0,-2.35),34,GREEN)))
+        self.add(words('DO evaluates the source and trajectory integrals; it does not postulate a cloud shape.',(0,-3.2),25,width=12.4))
+        self.citation('Dimant and Oppenheim (2017), Parts 1 and 2','https://doi.org/10.1002/2017JA023963')
+        self.finish()
+
     def normalization(self):
         # DO Part 1 Eq. 18 outgoing half-Maxwellian and surface flux; Part 2
         # Eq. 45. Keep its n0 convention, including sqrt(2/pi), throughout.
@@ -1996,24 +2299,7 @@ class MeteorHeadRCS(Slide):
         self.citation('Dimant and Oppenheim (2017), Part 2, isotropic ionization assumption','https://doi.org/10.1002/2017JA023963')
         self.finish()
 
-        self.start_slide('From individual collisions to a plasma density field',
-            'DO first derives the ion velocity distribution from the neutral source and ionizing collision kinematics. '
-            'Ballistic ions reaching a point may have been born at many earlier points. Integrate their source '
-            'backward along trajectories, then integrate over velocity to count ions per unit volume. '
-            'This schematic transport expression omits subsequent collisions and forces, as in the near-head approximation.')
-        point=np.array([-2.4,.45,0]);births=[[-5.2,1.6,0],[-5.2,.45,0],[-5.2,-.7,0]]
-        self.add(Dot(point,color=GREEN,radius=.11))
-        for birth in births:
-            self.play(FadeIn(Dot(birth,color=RED,radius=.06)),GrowArrow(Arrow(birth,point,buff=.18,color=BLUE)),run_time=.35)
-        self.add(self.prose('Ions born along earlier paths',22).move_to([-4.,-1.35,0]))
-        rows=self.term_definitions([r'\mathbf v_i\cdot\nabla f_i=S_{\rm ion}',
-            r'f_i(\mathbf r,\mathbf v_i)=\int_0^\infty S_{\rm ion}(\mathbf r-\mathbf v_i t,\mathbf v_i)\,dt',
-            r'n_i(\mathbf r)=\int f_i\,d^3v_i=\int f_i V^2\,dV\,d\Omega'],[2.6,.65,0],30,7.1)
-        for row in rows:self.play(Write(row))
-        self.play(FadeIn(self.equation(r'f_i:\ \text{ion phase-space density};\quad S_{\rm ion}:\ \text{ion source per unit phase space per second}',23,MUTED).shift(DOWN*2.35)))
-        self.play(FadeIn(self.equation(r'\mathbf v_i:\ \text{ion velocity};\quad V=|\mathbf v_i|;\quad d\Omega:\ \text{velocity solid angle}',24,MUTED).shift(DOWN*3.05)))
-        self.citation('Dimant and Oppenheim (2017), Part 1 kinetic equation; Part 2, equations 3 and 10','https://doi.org/10.1002/2017JA023963')
-        self.finish()
+        self.ion_transport_derivation()
 
         self.start_slide('Where does the ion-to-air mass ratio enter?',
             'Two-body collision kinematics gives the recoil speed of a nearly stationary meteor atom struck by an '
@@ -2745,18 +3031,20 @@ class MeteorHeadRCS(Slide):
              'https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/ba010aa23f0da845aa3ff555f3d60921_MIT16_55F14_Lecture6-7.pdf'),
             ('Empirical collisions: Bronshten (1983)','10.1007/978-94-009-7222-3'),
             ('Collision cross section: Sugar et al. (2018), section 5.3','10.1002/2018JA025265'),
+            ('Phase-space conservation: MIT 16.55 (2014), lecture 8',
+             'https://ocw.mit.edu/courses/16-55-ionized-gases-fall-2014/b7c22c3d68ab558bcc3a59867b710e1a_MIT16_55F14_Lecture8.pdf'),
             ('Kinetic model: Dimant and Oppenheim (2017), Part 1','10.1002/2017JA023960'),
             ('Density solution: Dimant and Oppenheim (2017), Part 2','10.1002/2017JA023963'),
             ('Staggered Maxwell grid: Yee (1966)','10.1109/TAP.1966.1138693'),
             ('Absorbing layer: Roden and Gedney (2000)','10.1002/1098-2760(20001205)27:5%3C334::AID-MOP14%3E3.0.CO;2-A'),
             ('Plasma FDTD: Marshall and Close (2015)','10.1002/2015JA021238'),
             ('Head-plasma profiles: Marshall, Brown and Close (2017)','10.1016/j.pss.2016.12.011')]
-        pages=(len(entries)+4)//5
+        pages=(len(entries)+5)//6
         for page in range(pages):
             self.start_slide('References (%d/%d)'%(page+1,pages),'Clickable primary references for the physical derivation.')
-            subset=entries[page*5:page*5+5]
-            rows=VGroup(*[VGroup(self.prose(title,25,FG),self.prose('MIT OpenCourseWare: Collision Theory' if doi.startswith('https://') else 'doi:'+doi.replace('%3C','<').replace('%3E','>'),17,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
-                for title,doi in subset]).arrange(DOWN,buff=.4,aligned_edge=LEFT).move_to(ORIGIN)
+            subset=entries[page*6:page*6+6]
+            rows=VGroup(*[VGroup(self.prose(title,23,FG),self.prose(('MIT OpenCourseWare: Kinetic Theory' if 'Lecture8' in doi else 'MIT OpenCourseWare: Collision Theory') if doi.startswith('https://') else 'doi:'+doi.replace('%3C','<').replace('%3E','>'),16,BLUE)).arrange(DOWN,buff=.14,aligned_edge=LEFT)
+                for title,doi in subset]).arrange(DOWN,buff=.3,aligned_edge=LEFT).move_to(ORIGIN)
             for row in rows:self.play(FadeIn(row),run_time=.3)
             self.paper_links([(title,doi if doi.startswith('https://') else 'https://doi.org/'+doi,row) for (title,doi),row in zip(subset,rows)])
             if page<pages-1:self.finish()

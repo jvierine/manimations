@@ -29,6 +29,7 @@ def package():
            'meteor_rcs/do_density.py','meteor_rcs/__init__.py','meteor_rcs/build.py',
            'meteor_rcs/inspect_slides.py','meteor_rcs/prepare_webgl.py','meteor_rcs/record_webgl.py','meteor_rcs/check_ionization_layout.py',
            'meteor_rcs/radar_examples.py','meteor_rcs/collision_physics.py','test_collision_physics.py',
+           'meteor_rcs/kinetic_transport.py','test_kinetic_transport.py',
            'meteor_rcs/prepare_current.py',
            'meteor_rcs/current_solver/Cargo.toml','meteor_rcs/current_solver/Cargo.lock','meteor_rcs/current_solver/src/main.rs','planck_to_ktb.py','rayleigh_jeans_accuracy.py',
            'export_web.py','final_slide_guard.js','paper_links.js','manim.cfg']

@@ -76,6 +76,17 @@ three dimensions. Both axial and transverse distances scale with the same
 thermal collision length. The reference amplitude is not a peak density or a
 unit-integral normalization.
 
+The source-to-density derivation now begins with phase-space particle counting,
+then builds the ion source from a volume birth rate and a conditional recoil
+velocity distribution. A finite-cell in-minus-out-plus-births balance derives
+the kinetic streaming equation. Straight backward characteristics explain the
+source integral, including its upstream boundary condition. Velocity-bin sums
+and a spherical-shell diagram derive the density integral and its V-squared
+Jacobian without assuming isotropy. A constant-area source slab illustrates
+residence time numerically; it is a teaching example, not a DO cloud prediction.
+Presenter-controlled steps separate counting, conservation, chain-rule
+integration, the boundary condition, and summation over velocity classes.
+
 ## Build from the repository root
 
 ```bash
@@ -101,13 +112,14 @@ accents to match the native Rustplotlib figures.
 
 ## Native Rustplotlib figures
 
-All quantitative plots are constructed and rendered by
+Archived numerical plots are constructed and rendered by
 [`jvierine/rustplotlib`](https://github.com/jvierine/rustplotlib), pinned to
 `fb711f434845727e9ff4377aad1179a2e377c3d8` in `plots/Cargo.toml`.
 `plots/src/main.rs` owns axes, labels, layout, colors, and SVG/PNG exports.
 Manim imports the PNGs; the matching SVGs remain available for vector reuse.
 Python prepares numerical arrays and passes them over stdin to the small Rust
-program. HDF5 remains the saved scientific data format. Matplotlib is not used.
+program. Explanatory counting cells, trajectories, and the analytical source-slab
+diagram use native Manim geometry. HDF5 remains the saved scientific data format. Matplotlib is not used.
 The first build needs Cargo, network access to fetch dependencies, and LaTeX
 with dvisvgm; subsequent builds use the Cargo and glyph caches.
 
