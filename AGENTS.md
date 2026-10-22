@@ -3,6 +3,13 @@
 Use the base conda environment for Python commands (`conda run -n base python ...`).
 Use HDF5 rather than CSV for scientific data products.
 
+## Keep Git code-only
+
+Never commit media, scientific data, generated scene arrays, compiled browser
+packages, or rendered outputs. Keep them local or on juha.no and restore needed
+inputs through fetch_assets.py with asset_manifest.json. Do not use Git LFS for
+these assets. Run bash check_code_only.sh before committing.
+
 ## Keep provenance out of rendered material
 
 Keep script names, file paths, generator credits, and build/source provenance

@@ -1,0 +1,197 @@
+{
+  "schema": 1,
+  "url": "https://juha.no/space/manimations-assets/build-assets-3d01f6349c97a2d6.tar.gz",
+  "sha256": "3d01f6349c97a2d6f54ed4a38724efbd94867da8dcd301e43e8b7169184ba029",
+  "files": [
+    {
+      "path": "assets/antenna_symbol.png",
+      "sha256": "9f11bcce6d8ec12b23e1767b48d82019b5f1d7b4df0a8aed4b8a666c33fd2622",
+      "bytes": 5030
+    },
+    {
+      "path": "assets/atmospheric_windows_nasa.gif",
+      "sha256": "106360f7d000f8805cac31e7b36a2860d2b3939bb71b7cd56d202c51dad6b8ae",
+      "bytes": 16403
+    },
+    {
+      "path": "assets/dss14_goldstone.png",
+      "sha256": "025df22c5498214d25fa14725e23ec9c8e851292cd1b52e87331f56f63fce9ca",
+      "bytes": 9364438
+    },
+    {
+      "path": "assets/haslam_408mhz.h5",
+      "sha256": "431a2e7450a74399ddb246e64a9a00d7466e00474027378ecbac7971082ca699",
+      "bytes": 8601352
+    },
+    {
+      "path": "assets/haslam_408mhz.png",
+      "sha256": "e404973ae8dee296ba2f0217e2ba32ac367984f7edc3696596c316194ef8f9b6",
+      "bytes": 864009
+    },
+    {
+      "path": "assets/planck_cmb_esa.jpg",
+      "sha256": "265f320ee0cee6524cf58805d1228884bfa4712125c95755b67135d2304fe46e",
+      "bytes": 1681556
+    },
+    {
+      "path": "assets/voyager_spacecraft.png",
+      "sha256": "77da6071b519e7d78c1895f576fec2dd7eaa3ddbc8a8c71cb05fe3e1cbea084b",
+      "bytes": 450037
+    },
+    {
+      "path": "meteor_rcs/ablation_profiles.h5",
+      "sha256": "7b6372cc769690238d434aa45907a53f04c67c8653992b2f5ce9b3c0bcde3f78",
+      "bytes": 216987
+    },
+    {
+      "path": "meteor_rcs/assets/ablation.png",
+      "sha256": "50951220bf8aa072fe20dd4c20ba5aeb1b9cdb36081129e704f2c248a7f92e12",
+      "bytes": 48705
+    },
+    {
+      "path": "meteor_rcs/assets/ablation.svg",
+      "sha256": "a039dacdd61afc5bef6ee6ffd02be49fde2453cac0beeec57c8b72946347c5f6",
+      "bytes": 101314
+    },
+    {
+      "path": "meteor_rcs/assets/ablation_profiles.png",
+      "sha256": "c67078abc33c7cb4fd71ff7a8789cea1f0e5fe5f2a195200658c8356e1287489",
+      "bytes": 149371
+    },
+    {
+      "path": "meteor_rcs/assets/ablation_profiles.svg",
+      "sha256": "8d1031b8184d713c26ccddd1f67745501d9507826031191c8f467d07ab4bab4b",
+      "bytes": 297256
+    },
+    {
+      "path": "meteor_rcs/assets/cutoff.png",
+      "sha256": "a149cf297ae96289c2d32aec62db10194ca7e29ac0c986c59d87edd627b914ec",
+      "bytes": 30666
+    },
+    {
+      "path": "meteor_rcs/assets/cutoff.svg",
+      "sha256": "a1b5fb1bf5548dab5d3408e0765759c3cce30615c17d4636aaaed9308ce2f2eb",
+      "bytes": 43443
+    },
+    {
+      "path": "meteor_rcs/assets/density.png",
+      "sha256": "034a8db1054b84efff3d3864c72123b186d6d2f1414c1dea3dc284cb0a4bc2d9",
+      "bytes": 74934
+    },
+    {
+      "path": "meteor_rcs/assets/density.svg",
+      "sha256": "1be88722883f0cbff7a89e6e12e3bb498270eabcf79b09429fd75545d2b9dc86",
+      "bytes": 147528
+    },
+    {
+      "path": "meteor_rcs/assets/do_height.mp4",
+      "sha256": "e34640ac7a612ebbb0be3a7cc122201ed3ea61b3559b8d63c3594f3efc0fb94a",
+      "bytes": 6174310
+    },
+    {
+      "path": "meteor_rcs/assets/do_physical.mp4",
+      "sha256": "4d07657a64b3f1f922f1d3a91e5657a3f0133a410f5ee8c9a161435b5460272c",
+      "bytes": 3769541
+    },
+    {
+      "path": "meteor_rcs/assets/fdtd_current.mp4",
+      "sha256": "ef633965071fd7c086240b796dbf8b116854f826f74d81b830c8c0e683b1b053",
+      "bytes": 2662989
+    },
+    {
+      "path": "meteor_rcs/assets/ionization.png",
+      "sha256": "78f087b7730c0e0919c7a28a66fcf0d023ca3ce696967b5b2288450cb8bbfe7c",
+      "bytes": 27878
+    },
+    {
+      "path": "meteor_rcs/assets/ionization.svg",
+      "sha256": "02ec8cddacad470fa0321559dbab48eb94fb66cc99ad5f05dc20adfe803bcd24",
+      "bytes": 46643
+    },
+    {
+      "path": "meteor_rcs/current_preview.h5",
+      "sha256": "52648b186526ac6d0e628b4608d9b5c77a2f9d69930f67bb4c375847e6079f76",
+      "bytes": 10002616
+    },
+    {
+      "path": "meteor_rcs/data.h5",
+      "sha256": "577630b3fb8c1b7c8d1721f23ec3ebd29b99d18776d34b377d4d4917aaf44c34",
+      "bytes": 403504
+    },
+    {
+      "path": "meteor_rcs/inputs.h5",
+      "sha256": "2452c29d4b49496c5c40142bbb9adfddfb7ee13886b43e7ac60787b5cd389696",
+      "bytes": 149732
+    },
+    {
+      "path": "meteor_rcs/maarsy_array.h5",
+      "sha256": "cf19110563d26fd44c093a8cd861e7928d05e4ceec8d7c3dfc5c2a6024f1af77",
+      "bytes": 13072
+    },
+    {
+      "path": "meteor_rcs/plots/src/support/dimant_colormap.rgb",
+      "sha256": "5eecb185d3d37c00ef46c210e987b337f4b28d3587634e1ce0082d80b53a0f12",
+      "bytes": 3462
+    },
+    {
+      "path": "meteor_rcs/radar_examples.h5",
+      "sha256": "8060aa69c8952011ffc7a1286ca15c0fedd3c33e82068e168b29cac8b962a2ce",
+      "bytes": 14456
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/axr.svg",
+      "sha256": "57c6be7dd2f1798372895f1fce85646529887a83145c1fabbba1fd8063bc0394",
+      "bytes": 4628
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/axx.svg",
+      "sha256": "8588ba350a5ab7a7350c506e965b6ed4378196c56086876805f526f3f00d8d08",
+      "bytes": 4597
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/axy.svg",
+      "sha256": "36dee88e3037e5f715c36238b8ab841c7f174f00bce425207653eaa24f18c36e",
+      "bytes": 4613
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/axz.svg",
+      "sha256": "bfb4e08c85eedb4ccebbb1eadbabd966eb84d5d9260cf27e2683fd9ab14c0e87",
+      "bytes": 4554
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/current.svg",
+      "sha256": "885f86a463c5faeab570efe28a716958dcf0644c9dcb42e200219d6f5272c6fe",
+      "bytes": 6746
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/electric.svg",
+      "sha256": "260a35df0e85734e40ac587fc49a7b7a6d1b81485a3af770026cd4129711b6fc",
+      "bytes": 6633
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/iso.svg",
+      "sha256": "d324d63bd73fa80d5c2e062fc32788b506b5aa83da8d17990c384c932b2d0ef0",
+      "bytes": 7371
+    },
+    {
+      "path": "meteor_rcs/webgl/glyphs/log.svg",
+      "sha256": "81d9504f0c9e153513128a296a1d377a3498fa8c9555e262ef1e60b364817166",
+      "bytes": 11981
+    },
+    {
+      "path": "meteor_rcs/webgl/pkg/rustplotlib_web.js",
+      "sha256": "b2f03d89d7df86d892c6af5f4c6deb691c92dea6f2cbe5b421edef033c803bd2",
+      "bytes": 45533
+    },
+    {
+      "path": "meteor_rcs/webgl/pkg/rustplotlib_web_bg.wasm",
+      "sha256": "3bae711557901f8a12e847667b3fdba8212d50b72c35756f4d7db365cd733f9e",
+      "bytes": 177671
+    },
+    {
+      "path": "meteor_rcs/webgl/scenes.json",
+      "sha256": "1c0af17a706aabc87b09b24fa0702a10f445e4fa2cbff72f04f84074bfc88801",
+      "bytes": 2775627
+    }
+  ]
+}

@@ -1,14 +1,29 @@
 # Manim Slides teaching decks
 
+This repository contains source code and configuration only. Images, movies,
+scientific datasets, browser scene arrays, and compiled WebAssembly are excluded
+from Git, including its history. The published decks and their build inputs live
+on juha.no.
+
+Restore the checksum-verified build inputs after cloning:
+
+```bash
+conda run -n base python fetch_assets.py
+```
+
+`asset_manifest.json` pins the external archive and every input by SHA-256.
+The render scripts fetch missing inputs automatically. Generated media stays
+local or is published to juha.no; never add it to Git or Git LFS.
+
 ## Meteor head echo: comet dust to RCS
 
 [`meteor_head_rcs.py`](meteor_head_rcs.py) follows a 100-micrometre grain from
 55P/Tempel--Tuttle to atmospheric entry, sputtering, Langmuir evaporation,
 ionization, and detection by MAARSY. It derives the complete
 ablation → line density → Dimant--Oppenheim → FDTD → polarized RCS calculation,
-then explains parameter inference. See [build commands, data and assumptions](meteor_rcs/README.md).
+then calculates received power and SNR. See [build commands, data and assumptions](meteor_rcs/README.md).
 All quantitative figures use native [Rustplotlib](https://github.com/jvierine/rustplotlib)
-exports; the scientific arrays and their provenance are bundled in HDF5.
+exports; the external scientific arrays retain their provenance in HDF5.
 
 ```bash
 conda run -n base python -m meteor_rcs.prepare_assets

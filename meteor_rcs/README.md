@@ -1,5 +1,11 @@
 # Meteor head echo: comet dust to radar cross section
 
+Git contains code only. Run `conda run -n base python fetch_assets.py` from the
+repository root to restore checksum-verified scientific inputs and cached media
+from juha.no. All HDF5 files, figures, movies, browser scene arrays, TeX glyph
+images, and compiled WebAssembly mentioned below are external build assets,
+not repository contents. The full build fetches missing assets automatically.
+
 `../meteor_head_rcs.py` is a native `manim_slides.Slide` presentation. Its opening
 follows a roughly 100-micrometre grain from 55P/Tempel--Tuttle, through long-term
 orbital evolution and an illustrative Earth encounter, to sputtering, heating,
