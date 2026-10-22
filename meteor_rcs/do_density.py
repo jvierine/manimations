@@ -20,11 +20,17 @@ from scipy.special import erf
 # sqrt((1 + A)/(2*pi)) and moved the lower integration bound near the axis.
 # The corresponding MetAblate fixes are in https://github.com/jvierine/ablate/pull/1.
 
-def electron_density(z, r):
-    R = np.hypot(z, r)
-    if R == 0:
-        return np.nan  # The point-source model is undefined at the meteor.
-    cos_theta = z / R
+def shape_components(R, cos_theta):
+    """Return the three weighted, dimensionless Eq. 45 terms in H.
+
+    R means s=physical radius/lambda_T here; cos_theta is the SPATIAL
+    polar cosine (not the recoil cosine called mu earlier in the paper).
+    Terms are |cos(theta)| f1, cos(theta) f2, f3. These are algebraic
+    contributions to one ion population, not three particle populations.
+    Eq. 46 is an interpolation; Eq. 48 uses the Eq. 9 trajectory approximation.
+    """
+    if R <= 0 or abs(cos_theta) > 1:
+        raise ValueError('Use s > 0 and a spatial cosine between -1 and 1')
     c = abs(cos_theta)
     q = R ** (2 / 3)
     f1 = np.sqrt(2 * np.pi / 3) / R * erf(np.sqrt(1.5) * (R * c) ** (1 / 3))
@@ -40,4 +46,11 @@ def electron_density(z, r):
         return kernel * (np.sqrt(max(0, xi**2 - c**2) / (1 - xi**2)) + c * angle)
 
     f3 = quad(integrand, c, 1, epsabs=1e-8)[0] if c < 1 else 0.0
-    return (c * f1 + cos_theta * f2 + f3) / R
+    return c * f1, cos_theta * f2, f3
+
+
+def electron_density(z, r):
+    R = np.hypot(z, r)
+    if R == 0:
+        return np.nan  # The point-source model is undefined at the meteor.
+    return sum(shape_components(R, z / R)) / R

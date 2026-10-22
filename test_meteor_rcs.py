@@ -94,3 +94,68 @@ def test_native_gallery_matches_python_and_physical_surface_level():
         length=f.attrs['density_100km_lambda_m']
         n=f.attrs['density_100km_number_density']
         np.testing.assert_allclose(length,collision_lengths(50000.,2000.,n)[1])
+
+
+def test_shape_terms_match_independent_path_weight_and_front_back_difference():
+    # Part 2 Eqs. 25, 40--41: the signed term is the finite-leg source
+    # integral. Check it independently of the closed-form erf evaluation.
+    from scipy.integrate import quad
+    from meteor_rcs.do_density import shape_components
+    for radius in [.1, 1., 3., 10.]:
+        weight=lambda eta:(1+(radius*eta)**(2/3))*np.exp(-1.5*(radius*eta)**(2/3))
+        finite_leg=quad(weight, 0., 1., epsabs=1e-11)[0]
+        for cosine in [.2, .5, 1.]:
+            behind=np.array(shape_components(radius, cosine))
+            front=np.array(shape_components(radius, -cosine))
+            np.testing.assert_allclose(behind[1], cosine*finite_leg, rtol=1e-9)
+            np.testing.assert_allclose(behind[[0,2]],front[[0,2]])
+            np.testing.assert_allclose(behind.sum()-front.sum(),2*cosine*finite_leg,rtol=1e-10)
+            assert front.sum()>0
+        # The partial-azimuth region disappears on the axis; only f3 remains
+        # at a right angle to the trajectory. These are geometrical limits.
+        assert shape_components(radius, 1.)[2]==0.
+        np.testing.assert_array_equal(shape_components(radius, 0.)[:2],[0.,0.])
+
+
+def test_angular_access_boundary_follows_recoil_geometry():
+    # The allowed-azimuth interval switches from all/none to partial at
+    # xi=abs(cos theta), since B^2-A^2=xi^2-cos(theta)^2.
+    for cosine in [-.8,-.3,.3,.8]:
+        for xi in [.1,.5,.95]:
+            a=np.sqrt(1-xi**2)*cosine
+            b=xi*np.sqrt(1-cosine**2)
+            np.testing.assert_allclose(b*b-a*a,xi*xi-cosine*cosine)
+            crosses_zero=(a-b<0<a+b)
+            assert crosses_zero==(xi>abs(cosine))
+
+
+def test_regrouped_shape_integral_matches_direct_allowed_ray_sum():
+    # Independently check the regrouping in Part 2 Eq. 25, including the
+    # azimuth factor 1/2, against a direct angular sum. Smooth synthetic ray
+    # weights isolate this geometry from the paper's f1/J approximations.
+    from scipy.integrate import quad
+    nodes,weights=np.polynomial.legendre.leggauss(160)
+    phi_nodes,phi_weights=np.polynomial.legendre.leggauss(512)
+    phi=np.pi*(phi_nodes+1)
+    for chi in [-.7,.3,.7]:
+        c=abs(chi)
+        jinfty=lambda xi:np.exp(-xi)*(1+.3/xi)
+        jr=lambda xi:.4*(1-xi)*jinfty(xi)
+        direct=0.
+        cut=np.arcsin(c)
+        for lower,upper in [(0.,cut),(cut,np.pi/2)]:
+            theta=lower+(nodes+1)*(upper-lower)/2
+            xi=np.sin(theta)
+            for sign in [-1,1]:
+                kappa=sign*np.cos(theta[:,None])*chi+xi[:,None]*np.sqrt(1-chi*chi)*np.cos(phi)
+                angular=.5*np.pi*(np.maximum(kappa,0)@phi_weights)
+                path=jinfty(xi)+sign*jr(xi)
+                direct+=(upper-lower)/2*np.dot(weights,xi*path*angular)
+        f1=quad(lambda xi:jinfty(xi)*xi,0.,c)[0]
+        f2=quad(lambda xi:jr(xi)*xi,0.,1.)[0]
+        def partial(xi):
+            angle=np.arcsin(np.clip(c*np.sqrt(1-xi*xi)/(xi*np.sqrt(1-c*c)),0,1))
+            k=np.sqrt((xi*xi-c*c)/(1-xi*xi))+c*angle
+            return 2/np.pi*jinfty(xi)*xi*k
+        f3=quad(partial,c,1.,epsabs=1e-10)[0]
+        np.testing.assert_allclose(direct,np.pi*(c*f1+chi*f2+f3),rtol=3e-5)

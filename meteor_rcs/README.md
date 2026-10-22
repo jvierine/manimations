@@ -96,6 +96,20 @@ The uniform source slab isolates the explicit recoil mass factor at fixed birth
 rate, geometry, speed, and direction. It does not replace the full DO angular or
 spatial integrals, or predict a composition trend with other physics held free.
 
+Eleven additional steps trace the dimensionless density-shape bracket back to
+Part 2 Eqs. 6--7, 12, 17 and 25. The lecture explicitly identifies `H` as its own
+shorthand and uses `chi=cos(theta)` for the spatial angle, distinct from the
+recoil cosine. Straight-ray diagrams derive the closest-approach Jacobian and
+the incoming/outgoing path limits. The permitted recoil directions explain the
+split at `xi=abs(chi)`. The three scalar shape functions are defined as path and
+angular integrals, one is derived by exchanging integration order, and their
+regrouping reconstructs `H`. They are contributions to one density, not separate
+ion populations or the earlier phase-space distribution. A computed mirror-point
+example shows the sole odd term. The presentation distinguishes the interpolated
+first path integral, the analytic finite-leg integral, and the remaining
+numerical angular quadratures. Independent tests compare the angular regrouping
+with a direct allowed-ray sum and the analytic signed term with source quadrature.
+
 ## Build from the repository root
 
 ```bash

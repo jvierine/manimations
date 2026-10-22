@@ -2477,6 +2477,231 @@ class MeteorHeadRCS(Slide):
         self.citation('Dimant and Oppenheim (2017), Part 2, equations 3, 11 and 45',paper2)
         self.finish()
 
+    def density_shape_derivation(self):
+        """Unpack Part 2 Eqs. 6--7, 12, 25, 33--41 and 45--48.
+
+        H is our shorthand for the bracket in Eq. 45. Use chi for the
+        spatial cosine, kappa for the recoil cosine, and b for R_0 to avoid
+        overloading earlier phase-space f_i, source line density q, or mu.
+        The trajectory kernel W is the paper's approximate thermal-neutral
+        kernel, not an independently derived or universal collision law.
+        """
+        from meteor_rcs.do_density import shape_components
+        url='https://doi.org/10.1002/2017JA023963'
+
+        def eq(tex,x,y,size=33,color=FG,width=6.2):
+            item=self.equation(tex,size,color)
+            if item.width>width:item.scale_to_fit_width(width)
+            return item.move_to([x,y,0])
+
+        def words(text,x,y,size=25,color=MUTED,width=6.2):
+            item=self.prose(text,size,color)
+            if item.width>width:item.scale_to_fit_width(width)
+            return item.move_to([x,y,0])
+
+        self.start_slide('What is H? A name for the density shape',
+            'H is lecture shorthand for the square bracket in DO Part 2 Eq. 45. It is dimensionless, '
+            'not a new field or physical law. Introduce real-space radius R, spatial polar angle theta '
+            'and chi=cos(theta). The paper earlier calls cos(recoil angle) mu; avoid that collision here. '
+            'The f1, f2, f3 below are scalar shape functions, not the ion phase-space distribution f_i.')
+        origin=np.array([-4.6,-.4,0]);point=np.array([-2.1,1.4,0])
+        self.play(Create(Arrow(origin+LEFT*1.4,origin+RIGHT*3.5,buff=0,color=BLUE)),
+                  FadeIn(Dot(origin,radius=.11,color=GOLD)),FadeIn(Dot(point,color=GREEN)))
+        radial=Arrow(origin,point,buff=.14,color=GREEN)
+        self.play(GrowArrow(radial),Create(Arc(radius=.72,start_angle=0,angle=np.arctan2(1.8,2.5),arc_center=origin,color=GREEN)))
+        self.play(FadeIn(eq(r'R',-3.7,.9,32,GREEN)),FadeIn(eq(r'\theta',-3.5,-.06,30,GREEN)),
+                  FadeIn(words('Grain',-4.6,-.95,23,GOLD)),FadeIn(words('Behind: positive z',-2.5,-.95,23,BLUE)))
+        for item in [eq(r's=R/\lambda_T,\quad\chi=\cos\theta',3.3,2.1,34),
+                     eq(r'H(s,\chi)\equiv |\chi|f_1(s,\chi)+\chi f_2(s)+f_3(s,\chi)',3.3,.75,32,BLUE),
+                     eq(r'\chi>0:\ \text{behind};\quad\chi<0:\ \text{in front}',3.3,-.35,27),
+                     eq(r'\kappa=\cos\vartheta:\ \text{ion recoil direction}',3.3,-1.4,27,GREEN)]:self.play(Write(item))
+        self.play(FadeIn(words('One ion population; three terms left after integrating its velocities.',0,-2.65,28,FG,12.3)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equation 45 and Figure 1',url)
+        self.finish()
+
+        self.start_slide('A density sums the ion births along each earlier path',
+            'Recall f_i is the integral of the source along the backward ion trajectory. '
+            'DO writes that path integral in terms of its closest approach b=R_0 to the grain. '
+            'R-prime is the source point radius, ell the distance along the straight path, '
+            'and R is the observer radius. These are positions in the grain frame, not velocity coordinates.')
+        grain=np.array([-4.4,-1.2,0]);foot=np.array([-4.4,.65,0]);p=np.array([-1.65,.65,0]);birth=np.array([-5.7,.65,0])
+        self.play(Create(Arrow([-6.3,.65,0],[-1.1,.65,0],buff=0,color=BLUE)),FadeIn(Dot(grain,radius=.11,color=GOLD)))
+        self.play(Create(DashedLine(grain,foot,color=GOLD)),Create(Line(grain,birth,color=GREEN)),Create(Line(grain,p,color=MUTED)))
+        self.play(FadeIn(Dot(birth,color=GREEN)),FadeIn(Dot(p,color=BLUE)),
+                  FadeIn(eq(r'b',-4.7,-.25,30,GOLD)),FadeIn(eq(r"R'",-5.45,-.55,30,GREEN)),FadeIn(eq(r'R',-2.55,-.7,30)))
+        self.play(FadeIn(words('Earlier birth',-5.8,1.25,23,GREEN)),FadeIn(words('Observer P',-1.8,1.25,23,BLUE)),
+                  FadeIn(words('Grain',-4.4,-1.65,23,GOLD)))
+        ion=Dot(birth,radius=.07,color=GREEN);self.add(ion)
+        self.play(ion.animate.move_to(p),run_time=2.7,rate_func=linear)
+        self.play(Write(eq(r"R'^2=b^2+\ell^2",3.15,1.75,36)),
+                  Write(eq(r'\xi=b/R=\sin\Theta,\quad 0\leq\xi\leq1',3.15,.6,31)))
+        self.play(FadeIn(words('Closest approach labels a ray; integrate births along it.',3.15,-.6,27,FG)))
+        self.play(Write(eq(r'\Theta:\ \text{angle between ion velocity and radius }\mathbf R',3.15,-1.6,26)))
+        self.play(FadeIn(words('The same ion source is viewed along many directions at P.',0,-2.8,27,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 6--7, 10 and 16',url)
+        self.finish()
+
+        self.start_slide('Why does the path integral contain a square root?',
+            'A spherically expanding neutral source contributes a squared grain-radius over squared '
+            'source-radius factor. W is the thermally averaged primary-neutral attenuation kernel used in '
+            'DO Eq. 7; do not confuse it with a single-speed exponential survival probability. '
+            'Change from path distance ell to radius R-prime. The square root is solely the geometry '
+            'of a straight line passing the grain at distance b. J has units of length; j below is dimensionless.')
+        for item in [eq(r"\text{Neutral source weight}\ \propto\ \frac{a^2}{R'^2}W(R'/\lambda_T)",0,2.25,33,BLUE,12),
+                     eq(r'W(x)=(1+x^{2/3})\exp[-\tfrac32x^{2/3}],\qquad x=R^{\prime}/\lambda_T',0,1.2,32,FG,12),
+                     eq(r"R'^2=b^2+\ell^2\quad\Longrightarrow\quad |d\ell|=\frac{R'\,dR'}{\sqrt{R'^2-b^2}}",0,.05,36,GREEN,12),
+                     eq(r"\boxed{J_{L}^{U}(b)=a^2\int_L^U\frac{W(R'/\lambda_T)}{R'\sqrt{R'^2-b^2}}\,dR'}",0,-1.3,37,BLUE,12)]:self.play(Write(item))
+        self.play(FadeIn(eq(r'a,L,U,b:\ \mathrm{m};\quad b\leq L;\qquad [J]=\mathrm{m}',0,-2.65,27,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, Eq. 7; Part 1 thermal-neutral model',url)
+        self.finish()
+
+        self.start_slide('Before and after closest approach: count the path segments',
+            'The backward trajectory before closest approach samples only the upstream radial leg R to infinity. '
+            'After closest approach it samples the whole upstream leg b to infinity and the outward leg b to R. '
+            'Hence I_minus=J_R^infinity and I_plus=2J_b^infinity-J_R^infinity. '
+            'Their sum and difference explain why Eq. 25 contains both a full-ray integral and a finite-leg integral.')
+        for y in [1.8,-.25]:
+            self.add(Dot([-3.9,y-1.,0],radius=.1,color=GOLD),DashedLine([-3.9,y-1.,0],[-3.9,y,0],color=GOLD))
+            self.play(Create(Arrow([-6.3,y,0],[-1.2,y,0],buff=0,color=MUTED)))
+        self.play(Create(Line([-6.25,1.8,0],[-5.,1.8,0],color=GREEN,stroke_width=7)),FadeIn(Dot([-5.,1.8,0],color=BLUE)))
+        self.play(Create(Line([-6.25,-.25,0],[-2.,-.25,0],color=GREEN,stroke_width=7)),FadeIn(Dot([-2.,-.25,0],color=BLUE)))
+        self.play(FadeIn(words('Before closest approach',-3.8,2.45,24,BLUE)),FadeIn(words('After closest approach',-3.8,.4,24,BLUE)))
+        self.play(Write(eq(r'I_-=J_R^\infty(b)',3.2,1.9,36,GREEN)),Write(eq(r'I_+=J_b^\infty(b)+J_b^R(b)',3.2,.6,33,GREEN)))
+        self.play(Write(eq(r'J_b^R=J_b^\infty-J_R^\infty',3.2,-.55,32)),
+                  Write(eq(r'I_++I_-=2J_b^\infty',0,-2.,34,BLUE,12)))
+        self.play(Write(eq(r'I_+-I_-=2J_b^R',0,-2.95,34,GOLD,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 6 and 24--25',url)
+        self.finish()
+
+        self.start_slide('Which ray directions can carry freshly produced ions?',
+            'The cold-target recoil calculation permits kappa=cos(vartheta)>0. '
+            'At P, resolve ion direction into radial and transverse components: '
+            'kappa=sigma_R sqrt(1-xi^2) chi+xi sqrt(1-chi^2) cos(Phi). '
+            'sigma_R is plus for outward motion and minus for inward motion. '
+            'As the azimuth Phi rotates, kappa ranges between A-B and A+B. '
+            'The interval first crosses zero at xi=abs(chi). This is the origin of the split integration limit.')
+        for item in [eq(r'\kappa=A+B\cos\Phi>0',0,2.25,38,BLUE,12),
+                     eq(r'A=\sigma_R\sqrt{1-\xi^2}\,\chi,\qquad B=\xi\sqrt{1-\chi^2}',0,1.25,34,FG,12),
+                     eq(r'\sigma_R=+1:\ \text{outgoing};\quad\sigma_R=-1:\ \text{incoming}',0,.35,27,FG,12)]:self.play(Write(item))
+        self.play(FadeIn(eq(r'\Phi:\ \text{azimuth of ion velocity about the local radius }\mathbf R',0,-.2,25,MUTED,12)))
+        left=NumberLine(x_range=[-1,1,.5],length=4.2,include_numbers=False,color=MUTED).move_to([-3.4,-1.,0])
+        right=left.copy().move_to([3.4,-1.,0])
+        self.play(Create(left),Create(right))
+        self.play(Create(Line(left.n2p(.15),left.n2p(.85),color=GREEN,stroke_width=8)),
+                  Create(Line(right.n2p(-.6),right.n2p(0),color=RED,stroke_width=8)),
+                  Create(Line(right.n2p(0),right.n2p(.8),color=GREEN,stroke_width=8)))
+        for axis in [left,right]:self.add(eq(r'0',axis.n2p(0)[0],-1.4,24))
+        self.play(FadeIn(eq(r'\xi<c:\ \text{all or none of the azimuths}',-3.4,-2.05,27)),
+                  FadeIn(eq(r'\xi>c:\ \text{only part of the azimuths}',3.4,-2.05,27)))
+        self.play(Write(eq(r'B^2-A^2=\xi^2-\chi^2\quad\Rightarrow\quad c\equiv|\chi|\ \text{is the boundary}',0,-3.,30,GOLD,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 12 and 18--23',url)
+        self.finish()
+
+        self.start_slide('The three functions collect the angular and path integrals',
+            'Scale J by a^2/R to form dimensionless j_infinity and j_R. These depend on s=R/lambda_T and xi=b/R. '
+            'After integrating azimuth and summing incoming and outgoing rays, Eq. 25 has four terms. '
+            'The first defines f1, the second defines f2, and the two partial-azimuth terms together define f3. '
+            'They are not separate ion populations. The scalar f1,f2,f3 are not the earlier phase-space density f_i.')
+        self.play(Write(eq(r'j_\infty(s,\xi)=\frac{R}{a^2}J_b^\infty(b),\qquad j_R(s,\xi)=\frac{R}{a^2}J_b^R(b)',0,2.25,33,FG,12)))
+        self.play(Write(eq(r'f_1(s,\chi)=\int_0^c j_\infty(s,\xi)\,\xi\,d\xi',-3.35,.85,34,BLUE)),
+                  Write(eq(r'f_2(s)=\int_0^1 j_R(s,\xi)\,\xi\,d\xi',3.35,.85,34,GOLD)))
+        for x,limit,color in [(-3.35,.55,BLUE),(3.35,1.,GOLD)]:
+            axis=NumberLine(x_range=[0,1,.5],length=4.5,include_numbers=False,color=MUTED).move_to([x,-.35,0])
+            self.play(Create(axis),Create(Line(axis.n2p(0),axis.n2p(limit),stroke_width=8,color=color)))
+            self.add(eq(r'0',axis.n2p(0)[0],-.8,24),eq('c' if limit<1 else '1',axis.n2p(limit)[0],-.8,24))
+        self.play(FadeIn(words('Full ray: the all-or-none angular region',-3.35,-1.55,25,BLUE)),
+                  FadeIn(words('Finite leg: its cosine factor supplies the sign',3.35,-1.55,25,GOLD)))
+        self.play(Write(eq(r'\boxed{H=c\,f_1+\chi\,f_2+f_3},\qquad c=|\chi|',0,-2.8,38,GREEN,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 25, 33, 40 and 45',url)
+        self.finish()
+
+        self.start_slide('Derive the signed term from the source integral',
+            'Show one function explicitly, rather than treating it as a lookup. '
+            'Insert the finite-ray integral into f2 and interchange the triangular domain '
+            '0<xi<eta<1. The inner integral is eta, canceling its denominator. '
+            'The resulting one-dimensional thermal-source integral is evaluated analytically in Eq. 41. '
+            'f2 is exact for the adopted W. f1 instead uses an interpolation in Eqs. 34--39; '
+            'its residual integral has a reported worst mismatch near six percent, not a universal exact identity.')
+        self.play(Write(eq(r'\eta=R^{\prime}/R,\qquad j_R(s,\xi)=\int_\xi^1\frac{W(s\eta)}{\eta\sqrt{\eta^2-\xi^2}}\,d\eta',0,2.15,32,FG,12)))
+        self.play(Write(eq(r'f_2=\int_0^1\int_\xi^1\frac{W(s\eta)\,\xi}{\eta\sqrt{\eta^2-\xi^2}}\,d\eta\,d\xi',0,.85,35,GOLD,12)))
+        self.play(Write(eq(r'=\int_0^1\frac{W(s\eta)}{\eta}\underbrace{\int_0^\eta\frac{\xi\,d\xi}{\sqrt{\eta^2-\xi^2}}}_{\displaystyle\eta}\,d\eta',0,-.65,35,GREEN,12)))
+        self.play(Write(eq(r'\boxed{f_2(s)=\int_0^1W(s\eta)\,d\eta>0}',0,-2.25,39,BLUE,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 27b and 40--41',url)
+        self.finish()
+
+        self.start_slide('The remaining term accounts for partial angular access',
+            'For xi>c the permitted recoil interval clips the azimuth circle. '
+            'Integrating the positive recoil cosine gives both a square-root boundary term and '
+            'an inverse-sine term from the angular interval. These are the last two terms of Eq. 25, '
+            'collected in f3. The endpoint square root is integrable. The two integrals vanish on the '
+            'major axis because their lower and upper limits coincide. Published Eq. 48 uses the '
+            'Eq. 9 approximate full-ray kernel (reported within one percent), and numerical quadrature.')
+        self.play(FadeIn(words('Only directions with a positive recoil cosine contribute.',0,2.35,28,FG,12)))
+        self.play(Write(eq(r'K(\xi,c)=\underbrace{\sqrt{\frac{\xi^2-c^2}{1-\xi^2}}}_{\text{angular boundary}}+'
+            r'\underbrace{c\arcsin\!\left(\frac{c\sqrt{1-\xi^2}}{\xi\sqrt{1-c^2}}\right)}_{\text{allowed angular interval}}',0,.7,35,GREEN,12)))
+        self.play(Write(eq(r'\boxed{f_3(s,\chi)=\frac{2}{\pi}\int_c^1 j_\infty(s,\xi)\,\xi\,K(\xi,c)\,d\xi}',0,-1.,37,BLUE,12)))
+        self.play(Write(eq(r'c=1:\ f_3=0;\qquad c=0:\ H=f_3',0,-2.25,33,GOLD,12)))
+        self.play(FadeIn(words('Use quadrature for these remaining angles; there is no general elementary formula.',0,-3.,25,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 23, 25 and 48',url)
+        self.finish()
+
+        self.start_slide('Now sum all the allowed rays',
+            'This is the bridge from the kinetic density integral to H. The positive-part notation '
+            'enforces the recoil condition. The factor one half converts the full azimuth integral '
+            'to the paper I_mu convention. M has units of length; R*M/(pi*a^2) is dimensionless. '
+            'Insert the incoming and outgoing path integrals, integrate the allowed azimuths, '
+            'and separate xi below and above c. The four terms of Eq. 25 combine into these three '
+            'groups. The original dimensional density prefactor is restored on the next normalization slide.')
+        self.play(Write(eq(r'[\kappa]_+\equiv\max(\kappa,0):\ \text{keep only allowed recoil directions}',0,2.4,28,FG,12)))
+        self.play(Write(eq(r'\mathcal M=\frac12\sum_{\sigma_R=\pm1}\int_0^1'
+            r'\frac{I_{\sigma_R}\,\xi\,d\xi}{\sqrt{1-\xi^2}}'
+            r'\int_0^{2\pi}[\kappa]_+\,d\Phi',0,1.4,35,BLUE,12)))
+        self.play(Write(eq(r'\begin{aligned}\frac{R\mathcal M}{\pi a^2}'
+            r'&=c\underbrace{\int_0^c j_\infty\xi\,d\xi}_{f_1}'
+            r'+\chi\underbrace{\int_0^1 j_R\xi\,d\xi}_{f_2}\\[.5em]'
+            r'&\quad+\underbrace{\frac{2}{\pi}\int_c^1j_\infty\xi K\,d\xi}_{f_3}'
+            r'=\boxed{H(s,\chi)}\end{aligned}',0,-1.,33,GREEN,12)))
+        self.play(FadeIn(words('This is the same density integral, regrouped for efficient evaluation.',0,-2.95,26,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, equations 17, 21--25 and 45',url)
+        self.finish()
+
+        self.start_slide('Why an absolute cosine, then a signed cosine?',
+            'f1 and f3 depend only on c=abs(chi) and are identical at mirror locations. '
+            'The signed chi*f2 term adds behind and subtracts in front. '
+            'It is the sole odd term in Eq. 25, originating in the difference of incoming and outgoing path lengths. '
+            'Compute the displayed values using the exact same Eqs. 46--48 implementation as the density movies. '
+            'The negative front contribution is an algebraic subtraction, never a negative ion population.')
+        plus=shape_components(1.,.5);minus=shape_components(1.,-.5)
+        for x,sign,color in [(-3.4,1,BLUE),(3.4,-1,GOLD)]:
+            self.play(FadeIn(words('Behind' if sign>0 else 'In front',x,2.3,31,color)))
+            self.play(Write(eq(r'\chi=+1/2' if sign>0 else r'\chi=-1/2',x,1.45,34,color)))
+            vals=plus if sign>0 else minus
+            self.play(Write(eq(r'H\simeq'+f'{vals[0]:.3f}'+('+' if sign>0 else '-')+f'{abs(vals[1]):.3f}'+r'+'+f'{vals[2]:.3f}',x,.35,34)))
+            self.play(Write(eq(r'H='+f'{sum(vals):.3f}',x,-.7,42,color)))
+        self.play(Write(eq(r'H(s,\chi)-H(s,-\chi)=2\chi f_2(s),\qquad s=1\ \text{in this example}',0,-2.,33,GREEN,12)))
+        self.play(FadeIn(words('The subtraction accounts for unequal paths. Every physical density remains nonnegative.',0,-3.,25,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, Eq. 25: even and odd terms',url)
+        self.finish()
+
+        self.start_slide('The shape records where ions were born and how they arrived',
+            'Near the grain the neutral source is roughly proportional to one over radius squared; '
+            'integrating over a local path contributes one power of radius, giving density proportional to one over R. '
+            'Far behind, the birth region has finite scale lambda_T and the ions stream outward with inverse-square dilution. '
+            'Far in front, earlier permitted paths miss that birth region, so the density is strongly suppressed. '
+            'The functions are compact evaluations of these same birth-and-transport integrals. '
+            'f1 uses the published interpolation; f2 is analytic within the adopted neutral model; '
+            'f3 uses numerical quadrature with the approximate full-ray kernel. Now return to the amplitude normalization.')
+        for x,name,color in [(-3.35,'Near the grain',GREEN),(3.35,'Far behind the grain',BLUE)]:
+            self.play(FadeIn(words(name,x,2.3,29,color)))
+        self.play(Write(eq(r'\frac{1}{R^2}\times R\ \longrightarrow\ n_i\propto R^{-1}',-3.35,1.,35,GREEN)),
+                  Write(eq(r'\text{finite source}\ \longrightarrow\ n_i\propto R^{-2}',3.35,1.,34,BLUE)))
+        self.play(FadeIn(words('A longer local path adds more ion births.',-3.35,-.15,25)),
+                  FadeIn(words('An expanding stream dilutes the ions.',3.35,-.15,25)))
+        self.play(Write(eq(r'H(s,\chi):\ \text{dimensionless integrated shape},\qquad F_{\rm DO}=H/s',0,-1.45,33,GOLD,12)))
+        self.play(FadeIn(words('An interpolated path integral, an analytic one, and the numerical angular remainder.',0,-2.55,25,FG,12)))
+        self.citation('Dimant and Oppenheim (2017), Part 2, Eqs. 14, 32 and 45--48',url)
+        self.finish()
+
     def normalization(self):
         # DO Part 1 Eq. 18 outgoing half-Maxwellian and surface flux; Part 2
         # Eq. 45. Keep its n0 convention, including sqrt(2/pi), throughout.
@@ -2550,6 +2775,8 @@ class MeteorHeadRCS(Slide):
 
         self.recoil_mass_derivation()
 
+        self.density_shape_derivation()
+
         self.start_slide('Separate the DO kinetic shape from its density scale',
             'Start from DO Part 2 Eq. 45, rather than a dimensional guess. H denotes the dimensionless angular/radial '
             'combination of f1, f2 and f3. Write R=lambda_T*s and absorb H/s into F_DO. The mass ratio is from '
@@ -2559,7 +2786,7 @@ class MeteorHeadRCS(Slide):
         original=self.equation(r'n_i(R,\theta)=\frac{8\pi a^2n_0n_AG_{\rm ion}}{\sqrt3\,R}'
             r'\left(1+\frac{m_{\rm Si}}{m_A}\right)H(R/\lambda_T,\cos\theta)',35).shift(UP*1.35)
         self.play(Write(original))
-        definitions=self.equation(r's=R/\lambda_T,\quad H=|\mu|f_1+\mu f_2+f_3,\quad F_{\rm DO}=H/s,\quad\mu=\cos\theta',28,MUTED).shift(UP*.25)
+        definitions=self.equation(r's=R/\lambda_T,\quad\chi=\cos\theta,\quad H=|\chi|f_1+\chi f_2+f_3,\quad F_{\rm DO}=H/s',28,MUTED).shift(UP*.25)
         self.play(Write(definitions))
         self.play(Write(self.equation(r'\frac{H}{R}=\frac{1}{\lambda_T}\frac{H}{s}=\frac{F_{\rm DO}}{\lambda_T}',35,GREEN).shift(DOWN*.7)))
         self.play(Write(self.equation(r'n_e\simeq n_i=n_\star F_{\rm DO},\qquad '
