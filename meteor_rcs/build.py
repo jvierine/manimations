@@ -33,7 +33,7 @@ def package():
            'export_web.py','final_slide_guard.js','paper_links.js','manim.cfg']
     names += ['meteor_rcs/plots/Cargo.toml','meteor_rcs/plots/Cargo.lock',
               'meteor_rcs/plots/src/main.rs']
-    names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/plots/src').rglob('*') if p.is_file() and p.name!='main.rs']
+    names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/plots/src').rglob('*.rs') if p.is_file() and p.name!='main.rs']
     names += [str(p.relative_to(ROOT)) for p in (ROOT/'meteor_rcs/webgl').iterdir() if p.is_file() and p.suffix in {'.html','.js'}]
     with zipfile.ZipFile(destination/'source.zip','w',zipfile.ZIP_DEFLATED) as archive:
         for name in names:archive.write(ROOT/name,arcname=name)
